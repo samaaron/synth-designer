@@ -1,8 +1,13 @@
-@synth hammond
+@synth <shortname>
+longname : string
+author : string
+version : string
+doc : string
+@end
 
 @param <pname>
 type : input | output | int | float 
-doc : "this is the doc string"
+doc : string
 max : int | float
 min : int | float
 values : 0="on", 1="off", 2="none"
@@ -11,7 +16,7 @@ default : int | float
 
 @param <pname>
 type : input | output | int | float 
-doc : "this is the doc string"
+doc : string
 max : int | float
 min : int | float
 values : 0="on", 1="off", 2="none"
@@ -33,4 +38,8 @@ default : int | float
 <vname>.<name> = param.<pname>
 <vname>.<name> = param.<pname> | map(float,float)
 <vname>.<name> = random(float,float)
+<vname>.<name> = <expr>
 
+<expr> = <term> | <expr> + <expr> | <expr> * <expr> | <expr>-<expr>
+
+<term> = <number> | <pname>
