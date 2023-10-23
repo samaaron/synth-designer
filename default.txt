@@ -1,0 +1,16 @@
+@synth short-name
+longname : "this is a string"
+author : "Guy J Brown"
+version : 1.2
+doc : "This is a documentation string"
+@end
+
+# this is a comment
+
+filter.cutoff = 2000
+filter.cutoff = param.cutoff
+filter.cutoff = map(param.keyboard,200,2000)*param.cutoff
+vco.pitch = 450
+filter.cutoff = random(20,400)*param.cutoff
+filter.resonance = random(0,5)
+

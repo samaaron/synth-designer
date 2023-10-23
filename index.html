@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="sheet.css">
+  <title>Synth Builder</title>
+</head>
+
+<body>
+
+  <h2>Synth Builder</h2>
+
+  <p>
+    <button class="greybutton" id="load-button">Load</button>
+    <button class="greybutton" id="save-button">Save</button>
+    <button class="greybutton" id="save-as-button">Save As</button>
+  </p>
+
+  <p>
+  <div id="file-label">
+    Current file: none
+  </div>
+  </p>
+
+  <p><textarea class="textarea" rows=20 id="synth-spec"></textarea></p>
+  <p><textarea readonly class="textarea" rows=8 id="parse-errors"></textarea></p>
+
+  <p>
+    <button class="orangebutton" id="parse-button">Parse</button>
+  </p>
+
+  <script src="builder.js"></script>
+  <script src="unpkg.com_ohm-js@17.1.0_dist_ohm.js"></script>
+
+</body>
+
+</html>
