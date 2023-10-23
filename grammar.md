@@ -40,6 +40,9 @@ default : int | float
 <vname>.<name> = random(float,float)
 <vname>.<name> = <expr>
 
-<expr> = <term> | <expr> + <expr> | <expr> * <expr> | <expr>-<expr>
+<expr> = <expr> + <term> | <expr> - <term> | <term>
 
-<term> = <number> | <pname>
+<term> = <term> * <factor> | <term> / <factor> | <factor>
+
+<factor> = int | float | param.<pname> | ( <expr> ) | - <factor>
+
