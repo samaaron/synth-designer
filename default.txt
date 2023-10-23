@@ -5,6 +5,14 @@ version : 1.2
 doc : "This is a documentation string"
 @end
 
+@param cutoff
+type : float
+doc : "cutoff frequency"
+max : 1
+min : 0
+default : 0.5
+@end
+
 # this is a comment
 
 filter.cutoff = 2000
