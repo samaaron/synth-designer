@@ -1,0 +1,35 @@
+# param.cutoff 2 *
+
+filter.cutoff = param.cutoff*2
+
+# param.cutoff log 2 +
+
+filter.cutoff = log(param.cutoff)+2
+
+# 3 param.resonance 42 + exp *
+
+filter.cutoff = 3*exp(param.resonance+42)
+
+# param.resonance 2 3 map
+
+filter.cutoff = map(param.resonance,2,3)
+
+# 0 1 random param.cutoff +
+
+filter.cutoff = random(0,1)+param.cutoff
+
+# param.cutoff log 0.2 param.pitch 50 1000 map * -
+
+filter.cutoff = log(param.cutoff)-0.2*map(param.pitch,50,1000)
+
+# 2 param.cutoff exp * 3 param.resonance log / + param.pitch 50 1000 map + log
+
+filter.cutoff = log(2*exp(param.cutoff)+3/log(param.resonance)+map(param.pitch,50,1000))
+
+# 3
+
+filter.cutoff = 3
+
+# 50 1000 random param.cutoff * 0.4 param.resonance log * +
+
+filter.cutoff = random(50,1000)*param.cutoff+0.4*log(param.resonance)
