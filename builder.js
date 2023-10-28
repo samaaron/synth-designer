@@ -15,6 +15,8 @@ function init() {
 
   makeGrammar();
 
+  runTestSuite();
+
 }
 
 // ------------------------------------------------------------
@@ -313,7 +315,8 @@ function parseExpressions(json) {
   for (const e of obj) {
     if (e.tweak) {
       console.log(e.tweak.expression);
-      convertToPostfix(e.tweak.expression);
+      let postfix = convertToPostfix(e.tweak.expression);
+      console.log(postfix);
     }
   }
 }
@@ -360,7 +363,7 @@ function convertToPostfix(expression) {
       }
     }
     if (t in ops) {
-      while ((stack.length > 0) && (top(stack) in ops) && (ops[top(stack)]>=ops[t])) {
+      while ((stack.length > 0) && (top(stack) in ops) && (ops[top(stack)] >= ops[t])) {
         let current = stack.pop();
         result.push(current);
       }
@@ -373,7 +376,7 @@ function convertToPostfix(expression) {
       result.push(current);
     }
   }
-  console.log(`result is ${result}`);
+  return result;
 }
 
 function isNumber(t) {
@@ -381,7 +384,110 @@ function isNumber(t) {
 }
 
 function isIdentifier(t) {
-  return t.startsWith("param.");
+  return (typeof t === "string") && (t.startsWith("param."));
+}
+
+function evaluatePostfix(expression, params, maxima, minima) {
+  let stack = [];
+  const getValue = function (t) {
+    return params[t.replace("param.", "")]
+  };
+  for (let t of expression) {
+    console.log(stack);
+    if (isNumber(t)) {
+      stack.push(parseFloat(t));
+      continue;
+    }
+    if (isIdentifier(t)) {
+      stack.push(t);
+      continue;
+    }
+    if (t === "*") {
+      let op1 = stack.pop();
+      if (isIdentifier(op1))
+        op1 = getValue(op1);
+      let op2 = stack.pop();
+      if (isIdentifier(op2))
+        op2 = getValue(op2);
+      stack.push(op1 * op2);
+      continue;
+    }
+    if (t === "/") {
+      let op1 = stack.pop();
+      if (isIdentifier(op1))
+        op1 = getValue(op1);
+      let op2 = stack.pop();
+      if (isIdentifier(op2))
+        op2 = getValue(op2);
+      stack.push(op1 / op2);
+      continue;
+    }
+    if (t === "-") {
+      let op1 = stack.pop();
+      if (isIdentifier(op1))
+        op1 = getValue(op1);
+      let op2 = stack.pop();
+      if (isIdentifier(op2))
+        op2 = getValue(op2);
+      stack.push(op1 - op2);
+      continue;
+    }
+    if (t === "+") {
+      let op1 = stack.pop();
+      if (isIdentifier(op1))
+        op1 = getValue(op1);
+      let op2 = stack.pop();
+      if (isIdentifier(op2))
+        op2 = getValue(op2);
+      stack.push(op1 + op2);
+      continue;
+    }
+    if (t === "log") {
+      let op = stack.pop();
+      if (isIdentifier(op))
+        op = getValue(op);
+      stack.push(Math.log(op));
+      continue;
+    }
+    if (t === "exp") {
+      let op = stack.pop();
+      if (isIdentifier(op))
+        op = getValue(op);
+      stack.push(Math.exp(op));
+      continue;
+    }
+    if (t === "random") {
+      // random parameters are always numbers
+      let op1 = stack.pop();
+      console.log(`random op1=${op1}`);
+      let op2 = stack.pop();
+      console.log(`random op2=${op2}`);
+      let r = randomBetween(op2, op1); // op2 is the second smaller value
+      stack.push(r);
+      continue;
+    }
+    if (t === "map") {
+      let op1 = stack.pop();
+      let op2 = stack.pop();
+      let op3 = stack.pop();
+      console.log(`op1=${op1} op2=${op2} op3=${op3}`);
+    }
+  }
+}
+
+// ------------------------------------------------------------
+// test suite for expression evaluation
+// ------------------------------------------------------------
+
+function runTestSuite() {
+  let infix = "2*param.cutoff+log(param.resonance)*0.3+random(3,5)+map(param.cutoff,50,1000)";
+  let postfix = convertToPostfix(infix);
+  console.log(`INFIX: ${infix}`);
+  console.log(`POSTFIX: ${postfix}`);
+  let params = { "cutoff": 2, "resonance": 3, "timbre": 4, "noise": 5, "level": 0.5 };
+  let minima = { "cutoff": 0, "resonance": 0, "timbre": 0, "noise": 0, "level": 0 };
+  let maxima = { "cutoff": 10, "resonance": 10, "timbre": 5, "noise": 5, "level": 1 };
+  evaluatePostfix(postfix, params, maxima, minima);
 }
 
 // ------------------------------------------------------------
@@ -435,4 +541,20 @@ async function saveAsFile() {
   await writable.close();
   gui("file-label").textContent = "Current file: " + fileHandle.name;
   wasEdited = false;
+}
+
+// ------------------------------------------------------------
+// Make a random number between two values
+// ------------------------------------------------------------
+
+function randomBetween(min, max) {
+  return min + Math.random() * (max - min);
+}
+
+// ------------------------------------------------------------
+// Scale a value p in the range (low,high) to a new range (min,max)
+// ------------------------------------------------------------
+
+function scaleValue(low, high, min, max, p) {
+  return min + (p - low) * (max - min) / (high - low);
 }
