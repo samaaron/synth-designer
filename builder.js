@@ -387,107 +387,93 @@ function isIdentifier(t) {
   return (typeof t === "string") && (t.startsWith("param."));
 }
 
-function evaluatePostfix(expression, params, maxima, minima) {
+function evaluatePostfix(expression, param, maxima, minima) {
   let stack = [];
-  const getValue = function (t) {
-    return params[t.replace("param.", "")]
-  };
+  const popOperand = function () {
+    let op = stack.pop();
+    if (isIdentifier(op)) {
+      op = param[op.replace("param.", "")];
+    }
+    return op;
+  }
   for (let t of expression) {
-    console.log(stack);
     if (isNumber(t)) {
       stack.push(parseFloat(t));
-      continue;
-    }
-    if (isIdentifier(t)) {
+    } else if (isIdentifier(t)) {
       stack.push(t);
-      continue;
-    }
-    if (t === "*") {
-      let op1 = stack.pop();
-      if (isIdentifier(op1))
-        op1 = getValue(op1);
-      let op2 = stack.pop();
-      if (isIdentifier(op2))
-        op2 = getValue(op2);
-      stack.push(op1 * op2);
-      continue;
-    }
-    if (t === "/") {
-      let op1 = stack.pop();
-      if (isIdentifier(op1))
-        op1 = getValue(op1);
-      let op2 = stack.pop();
-      if (isIdentifier(op2))
-        op2 = getValue(op2);
-      stack.push(op1 / op2);
-      continue;
-    }
-    if (t === "-") {
-      let op1 = stack.pop();
-      if (isIdentifier(op1))
-        op1 = getValue(op1);
-      let op2 = stack.pop();
-      if (isIdentifier(op2))
-        op2 = getValue(op2);
-      stack.push(op1 - op2);
-      continue;
-    }
-    if (t === "+") {
-      let op1 = stack.pop();
-      if (isIdentifier(op1))
-        op1 = getValue(op1);
-      let op2 = stack.pop();
-      if (isIdentifier(op2))
-        op2 = getValue(op2);
-      stack.push(op1 + op2);
-      continue;
-    }
-    if (t === "log") {
-      let op = stack.pop();
-      if (isIdentifier(op))
-        op = getValue(op);
+    } else if (t === "*" || t === "/" || t === "+" || t == "-") {
+      let op2 = popOperand();
+      let op1 = popOperand();
+      switch (t) {
+        case "*": stack.push(op1 * op2); break;
+        case "/": stack.push(op1 / op2); break;
+        case "+": stack.push(op1 + op2); break;
+        case "-": stack.push(op1 - op2); break;
+      }
+    } else if (t === "log") {
+      let op = popOperand();
       stack.push(Math.log(op));
-      continue;
-    }
-    if (t === "exp") {
-      let op = stack.pop();
-      if (isIdentifier(op))
-        op = getValue(op);
+    } else if (t === "exp") {
+      let op = popOperand();
       stack.push(Math.exp(op));
-      continue;
-    }
-    if (t === "random") {
-      // random parameters are always numbers
+    } else if (t === "random") {
       let op1 = stack.pop();
-      console.log(`random op1=${op1}`);
       let op2 = stack.pop();
-      console.log(`random op2=${op2}`);
-      let r = randomBetween(op2, op1); // op2 is the second smaller value
+      let r = randomBetween(op2, op1);
       stack.push(r);
-      continue;
-    }
-    if (t === "map") {
+    } else if (t === "map") {
       let op1 = stack.pop();
       let op2 = stack.pop();
       let op3 = stack.pop();
-      console.log(`op1=${op1} op2=${op2} op3=${op3}`);
+      let control = op3.replace("param.", "");
+      let minval = minima[control];
+      let maxval = maxima[control];
+      let s = scaleValue(minval, maxval, op2, op1, param[control]);
+      stack.push(s);
     }
   }
+  return stack[0];
 }
 
 // ------------------------------------------------------------
-// test suite for expression evaluation
+// run a test suite for expression evaluation
 // ------------------------------------------------------------
 
 function runTestSuite() {
-  let infix = "2*param.cutoff+log(param.resonance)*0.3+random(3,5)+map(param.cutoff,50,1000)";
-  let postfix = convertToPostfix(infix);
-  console.log(`INFIX: ${infix}`);
-  console.log(`POSTFIX: ${postfix}`);
-  let params = { "cutoff": 2, "resonance": 3, "timbre": 4, "noise": 5, "level": 0.5 };
+  let infix = [];
+  infix.push("2*param.cutoff");
+  infix.push("2+param.cutoff");
+  infix.push("param.cutoff+param.resonance");
+  infix.push("log(param.cutoff)+exp(param.resonance)");
+  infix.push("2");
+  infix.push("4/5");
+  infix.push("8-5");
+  infix.push("param.cutoff/3");
+  infix.push("param.cutoff+random(0,1)");
+  infix.push("exp(param.cutoff-param.noise)");
+  infix.push("0*param.level");
+  let param = { "cutoff": 2, "resonance": 3, "timbre": 4, "noise": 5, "level": 0.5 };
   let minima = { "cutoff": 0, "resonance": 0, "timbre": 0, "noise": 0, "level": 0 };
   let maxima = { "cutoff": 10, "resonance": 10, "timbre": 5, "noise": 5, "level": 1 };
-  evaluatePostfix(postfix, params, maxima, minima);
+  for (let item of infix)
+    testExpression(item, param, minima, maxima);
+}
+
+// ------------------------------------------------------------
+// for testing, compare an expression in infix and postfix form
+// ------------------------------------------------------------
+
+function testExpression(infix, param, minima, maxima) {
+  console.log(infix);
+  let postfix = convertToPostfix(infix);
+  console.log("".concat(postfix.map(z => `${z}`)));
+  infix = infix.replace("log", "Math.log");
+  infix = infix.replace("exp", "Math.exp");
+  infix = infix.replace("random", "randomBetween");
+  infixResult = eval(infix);
+  postfixResult = evaluatePostfix(postfix, param, maxima, minima);
+  console.log(`infix=${infixResult} postfix=${postfixResult}`);
+  console.log("");
 }
 
 // ------------------------------------------------------------
