@@ -66,8 +66,38 @@ function makeGrammar() {
   semantics = synthGrammar.createSemantics();
 
   semantics.addOperation("interpret", {
-    Graph(a) {
-      return `[${"".concat(a.children.map(z => z.interpret()))}]`;
+    Graph(a, b,c) {
+      return `{"synth":{${a.interpret()}},"params":[${"".concat(b.children.map(z => z.interpret()))}],"statements":[${"".concat(c.children.map(z => z.interpret()))}]}`;
+    },
+    Synthblock(a, b, c, d, e, f, g) {
+      return `${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()}`;
+    },
+    Parameter(a,b,c,d,e,f,g,h) {
+      return `{${b.interpret()}}`;
+    },
+    paramname(a) {
+      return `"name":"${a.sourceString}"`;
+    },
+    shortname(a, b) {
+      return `"shortname":"${a.sourceString}${b.sourceString}"`;
+    },
+    Longname(a, b, c) {
+      return `"longname":${c.interpret()}`;
+    },
+    Author(a, b, c) {
+      return `"author":${c.interpret()}`;
+    },
+    Version(a, b, c) {
+      return `"version":${c.interpret()}`;
+    },
+    Docstring(a, b, c) {
+      return `"doc":${c.interpret()}`;
+    },
+    string(a,b) {
+      return `"${a.sourceString}${b.sourceString}"`;
+    },
+    versionstring(a) {
+      return `"${a.sourceString}"`;
     },
     Tweak(a, b, c) {
       return `{"tweak":{${a.interpret()},${c.interpret()}}}`;
@@ -146,7 +176,51 @@ function getGrammarSource() {
   return String.raw`
   Synth {
 
-  Graph = Statement+
+  Graph = Synthblock Parameter* Statement+
+
+  Parameter = "@param" paramname Paramtype Minval Maxval Defaultval Docstring "@end"
+
+  Synthblock = "@synth" shortname Longname Author Version Docstring "@end"
+
+  shortname = letter (letter | "-")+
+
+  paramname = letter+
+
+  Paramtype (a parameter type)
+  = "type" ":" validtype
+  
+  validtype (a valid type)
+  = "float" | "int"
+
+  Longname (a long name)
+  = "longname" ":" string
+
+  Minval (a minimum value)
+  = "min" ":" number
+
+  Maxval (a maximum value)
+  = "max" ":" number
+
+  Defaultval (a default value) 
+  = "default" ":" number
+
+  Author (an author)
+  = "author" ":" string
+
+  Version (a version string)
+  = "version" ":" versionstring
+  
+  Docstring (a documentation string)
+  = "doc" ":" string
+
+  versionstring (a version string)
+  = (alnum | "." | "-" | " ")+
+
+  string (a string)
+  = letter (alnum | "." | "-" | " ")*
+
+  quote (a quote)
+  = "\""
 
   Statement = comment 
   | Tweak 
@@ -208,90 +282,6 @@ function getGrammarSource() {
 `;
 }
 
-/*
-function getGrammarSource() {
-  return String.raw`
-  Synth {
-
-  Graph = Synthblock Statement+
-
-  Synthblock = "@synth" shortname Longname Author Version Docstring "@end"
-
-  shortname = letter (letter | "-")+
-
-  Longname = "longname" ":" string
-
-  Author = "author" ":" string
-
-  Version = "version" ":" versionnumber
-
-  versionnumber = digit+ ("." digit+)?
-  
-  Docstring = "doc" ":" string
-
-  string (a string)
-  = quote letter (alnum | "." | "-" | " ")* quote
-
-  quote (a quote)
-  = "\""
-
-  Statement = comment 
-  | Tweak 
-
-  comment (a comment)
-  = "#" (alnum | blank)* 
-
-  Tweak = tweakable "=" Exp 
-
-  Exp 
-    = AddExp
-
-  AddExp 
-    = AddExp "+" MulExp  -- add
-  | AddExp "-" MulExp  -- subtract
-  | MulExp 
-
-  MulExp 
-    = MulExp "*" ExpExp -- times
-    | MulExp "/" ExpExp -- divide
-    | ExpExp
-
-  ExpExp 
-    = "(" AddExp ")" -- paren
-    | "-" ExpExp -- neg
-    | Function 
-    | number
-    | control
-
-  Function
-    = "map" "(" AddExp "," number "," number ")" -- map
-    | "random" "(" number "," number ")" -- random
-
-  control (a control parameter)
-  = "param." letter+
-
-  tweakable
-  = varname "." parameter
-
-  parameter = "pitch" | "detune" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release"
-
-  varname (a module name)
-  = lower alnum*
-    
-  number (a number)
-  = floatingpoint | integer
-
-  floatingpoint = "-"? digit+ "." digit+
-
-  integer = "-"? digit+
-
-  blank = " "
-
-}
-`;
-}
-*/
-
 // ------------------------------------------------------------
 // parse the graph
 // ------------------------------------------------------------
@@ -312,7 +302,7 @@ function parseSynthSpec() {
 
 function parseExpressions(json) {
   const obj = JSON.parse(json);
-  for (const e of obj) {
+  for (const e of obj.statements) {
     if (e.tweak) {
       console.log(e.tweak.expression);
       let postfix = convertToPostfix(e.tweak.expression);
