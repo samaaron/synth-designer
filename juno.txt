@@ -11,7 +11,7 @@ step: 0.01
 min: 0
 max: 1
 default: 0.5
-doc: cutoff frequency in Hz
+doc: cutoff frequency (Hz)
 @end
 
 @param resonance
@@ -20,9 +20,35 @@ step: 1
 min: 0
 max: 25
 default: 5
-doc: the filter resonance
+doc: filter resonance
 @end
 
+@param keyboard
+type: float
+step: 0.01
+min: 0
+max: 1
+default: 0.5
+doc: keyboard tracking for the filter
+@end
+
+@param lfodepth
+type: float
+step: 0.01
+min: 0
+max: 1
+default: 0.5
+doc: LFO depth
+@end
+
+@param lforate
+type: float
+step: 0.01
+min: 0
+max: 1
+default: 0.5
+doc: LFO rate (Hz)
+@end
 # this is a comment
 
 vcf.cutoff = map(param.resonance,10,2000)

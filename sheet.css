@@ -9,6 +9,7 @@ color:#ffffff;
   display: flex; /* Use flexbox for layout */
   align-items: center; /* Center elements vertically */
   padding: 3px;
+  margin-bottom: 6px;
 }
 
 .slider {
@@ -41,6 +42,12 @@ color:#ffffff;
   background: #e6983f; /* Green background */
   border-radius: 50%;
   cursor: pointer; /* Cursor on hover */
+}
+
+.docstring {
+  color: #ffffff;
+  opacity: 0.2; 
+  margin-left: 4px; 
 }
 
 label {

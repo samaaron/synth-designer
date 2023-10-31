@@ -17,7 +17,7 @@ function init() {
 
 }
 
-function makeSlider(id, min, max, val, step) {
+function makeSlider(id, docstring, min, max, val, step) {
   // get the root container
   const container = document.getElementById('container');
   // make the slider container
@@ -33,6 +33,12 @@ function makeSlider(id, min, max, val, step) {
   slider.max = max;
   slider.step = step;
   slider.value = val;
+  // doc string
+  const doc = document.createElement("label");
+  doc.className = "docstring";
+  doc.id = "doc-" + id;
+  doc.textContent = docstring;
+  //doc.appendChild(document.createElement("br"));
   // label
   const label = document.createElement("label");
   label.id = "label-" + id;
@@ -43,6 +49,7 @@ function makeSlider(id, min, max, val, step) {
       gui(label.id).textContent = `${id} [${parseFloat(this.value)}]`;
     });  
   // add to the document
+  container.appendChild(doc);
   sliderContainer.appendChild(slider);
   sliderContainer.appendChild(label);
   container.appendChild(sliderContainer);
@@ -288,7 +295,7 @@ function getGrammarSource() {
   = (alnum | "." | "-" | " ")+
 
   string (a string)
-  = letter (alnum | "." | "-" | " ")*
+  = letter (alnum | "." | "-" | " " | "(" | ")" )*
 
   quote (a quote)
   = "\""
@@ -383,7 +390,7 @@ function createControls(json) {
   const obj = JSON.parse(json);
   removeAllSliders();
   for (const p of obj.params) {
-    makeSlider(p.name, p.min, p.max, p.default, p.step);
+    makeSlider(p.name, p.doc, p.min, p.max, p.default, p.step);
   }
 }
 
