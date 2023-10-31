@@ -15,8 +15,43 @@ function init() {
 
   makeGrammar();
 
-  runTestSuite();
+}
 
+function makeSlider(id, min, max, val, step) {
+  // get the root container
+  const container = document.getElementById('container');
+  // make the slider container
+  const sliderContainer = document.createElement("div");
+  sliderContainer.className = "slider-container";
+  sliderContainer.id = "param-" + id;
+  // make the slider
+  const slider = document.createElement("input");
+  slider.className = "slider";
+  slider.type = "range";
+  slider.id = "slider-" + id;
+  slider.min = min;
+  slider.max = max;
+  slider.step = step;
+  slider.value = val;
+  // label
+  const label = document.createElement("label");
+  label.id = "label-" + id;
+  label.setAttribute("for", "slider-" + id);
+  label.textContent = `${id} [${val}]`;
+    // add a callback to the slider
+    slider.addEventListener("input", function() {
+      gui(label.id).textContent = `${id} [${parseFloat(this.value)}]`;
+    });  
+  // add to the document
+  sliderContainer.appendChild(slider);
+  sliderContainer.appendChild(label);
+  container.appendChild(sliderContainer);
+}
+
+function removeAllSliders() {
+  const container = document.getElementById('container');
+  while (container.firstChild)
+    container.removeChild(container.firstChild);
 }
 
 // ------------------------------------------------------------
@@ -49,7 +84,6 @@ function addListenersToGUI() {
   // save as button 
   gui("save-as-button").onclick = async () => { await saveAsFile(); };
 
-
 }
 
 // ------------------------------------------------------------
@@ -61,21 +95,52 @@ function makeGrammar() {
   // get the grammar source, written in Ohm
   const source = getGrammarSource();
 
+  let modules;
+  let patches;
+  let tweaks;
+  let controls;
+  let controlNumber=1;
+
   // make the grammar
   synthGrammar = ohm.grammar(source);
   semantics = synthGrammar.createSemantics();
 
+  // list of control parameters
+
   semantics.addOperation("interpret", {
-    Graph(a, b,c) {
+    Graph(a, b, c) {
+      modules = new Map();
+      patches = new Map();
+      tweaks = new Map();
+      controls = [];
       return `{"synth":{${a.interpret()}},"params":[${"".concat(b.children.map(z => z.interpret()))}],"statements":[${"".concat(c.children.map(z => z.interpret()))}]}`;
     },
     Synthblock(a, b, c, d, e, f, g) {
       return `${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()}`;
     },
-    Parameter(a,b,c,d,e,f,g,h) {
-      return `{${b.interpret()}}`;
+    Parameter(a, b, c, d, e, f, g, h, i) {
+      return `{${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()},${g.interpret()},${h.interpret()}}`;
+    },
+    Paramtype(a, b, c) {
+      return `"type":"${c.interpret()}"`;
+    },
+    validtype(a) {
+      return a.sourceString;
+    },
+    Paramstep(a, b, c) {
+      return `"step":${c.interpret()}`;
+    },
+    Minval(a, b, c) {
+      return `"min":${c.interpret()}`;
+    },
+    Maxval(a, b, c) {
+      return `"max":${c.interpret()}`;
+    },
+    Defaultval(a, b, c) {
+      return `"default":${c.interpret()}`;
     },
     paramname(a) {
+      controls.push(a.sourceString);
       return `"name":"${a.sourceString}"`;
     },
     shortname(a, b) {
@@ -93,7 +158,7 @@ function makeGrammar() {
     Docstring(a, b, c) {
       return `"doc":${c.interpret()}`;
     },
-    string(a,b) {
+    string(a, b) {
       return `"${a.sourceString}${b.sourceString}"`;
     },
     versionstring(a) {
@@ -162,7 +227,10 @@ function makeGrammar() {
       return sign * parseFloat(b.sourceString + "." + d.sourceString);
     },
     control(a, b, c) {
-      return `param.${c.sourceString}`;
+      let ctrl = c.sourceString;
+      if (!controls.includes(ctrl))
+        throw new Error(`control parameter "${ctrl}" has not been defined`);
+      return `param.${ctrl}`;
     }
   });
 
@@ -178,7 +246,7 @@ function getGrammarSource() {
 
   Graph = Synthblock Parameter* Statement+
 
-  Parameter = "@param" paramname Paramtype Minval Maxval Defaultval Docstring "@end"
+  Parameter = "@param" paramname Paramtype Paramstep Minval Maxval Defaultval Docstring "@end"
 
   Synthblock = "@synth" shortname Longname Author Version Docstring "@end"
 
@@ -189,6 +257,9 @@ function getGrammarSource() {
   Paramtype (a parameter type)
   = "type" ":" validtype
   
+  Paramstep (a parameter step value)
+  = "step" ":" number
+
   validtype (a valid type)
   = "float" | "int"
 
@@ -287,17 +358,33 @@ function getGrammarSource() {
 // ------------------------------------------------------------
 
 function parseSynthSpec() {
-
   let result = synthGrammar.match(gui("synth-spec").value + "\n");
   if (result.succeeded()) {
-    gui("parse-errors").value = "OK";
-    const adapter = semantics(result);
-    const json = adapter.interpret();
-    gui("parse-errors").value = json;
-    parseExpressions(json);
-  } else
+    try {
+      gui("parse-errors").value = "OK";
+      const adapter = semantics(result);
+      const json = adapter.interpret();
+      gui("parse-errors").value = json;
+      parseExpressions(json);
+      createControls(json);
+    } catch (error) {
+      gui("parse-errors").value = error.message;
+    }
+  } else {
     gui("parse-errors").value = result.message;
+  }
+}
 
+// ------------------------------------------------------------
+// create the controls for this synth
+// ------------------------------------------------------------
+
+function createControls(json) {
+  const obj = JSON.parse(json);
+  removeAllSliders();
+  for (const p of obj.params) {
+    makeSlider(p.name, p.min, p.max, p.default, p.step);
+  }
 }
 
 function parseExpressions(json) {
@@ -426,47 +513,6 @@ function evaluatePostfix(expression, param, maxima, minima) {
 }
 
 // ------------------------------------------------------------
-// run a test suite for expression evaluation
-// ------------------------------------------------------------
-
-function runTestSuite() {
-  let infix = [];
-  infix.push("2*param.cutoff");
-  infix.push("2+param.cutoff");
-  infix.push("param.cutoff+param.resonance");
-  infix.push("log(param.cutoff)+exp(param.resonance)");
-  infix.push("2");
-  infix.push("4/5");
-  infix.push("8-5");
-  infix.push("param.cutoff/3");
-  infix.push("param.cutoff+random(0,1)");
-  infix.push("exp(param.cutoff-param.noise)");
-  infix.push("0*param.level");
-  let param = { "cutoff": 2, "resonance": 3, "timbre": 4, "noise": 5, "level": 0.5 };
-  let minima = { "cutoff": 0, "resonance": 0, "timbre": 0, "noise": 0, "level": 0 };
-  let maxima = { "cutoff": 10, "resonance": 10, "timbre": 5, "noise": 5, "level": 1 };
-  for (let item of infix)
-    testExpression(item, param, minima, maxima);
-}
-
-// ------------------------------------------------------------
-// for testing, compare an expression in infix and postfix form
-// ------------------------------------------------------------
-
-function testExpression(infix, param, minima, maxima) {
-  console.log(infix);
-  let postfix = convertToPostfix(infix);
-  console.log("".concat(postfix.map(z => `${z}`)));
-  infix = infix.replace("log", "Math.log");
-  infix = infix.replace("exp", "Math.exp");
-  infix = infix.replace("random", "randomBetween");
-  infixResult = eval(infix);
-  postfixResult = evaluatePostfix(postfix, param, maxima, minima);
-  console.log(`infix=${infixResult} postfix=${postfixResult}`);
-  console.log("");
-}
-
-// ------------------------------------------------------------
 // Get the document element with a given name
 // ------------------------------------------------------------
 
@@ -533,4 +579,49 @@ function randomBetween(min, max) {
 
 function scaleValue(low, high, min, max, p) {
   return min + (p - low) * (max - min) / (high - low);
+}
+
+// ------------------------------------------------------------
+// TEST HARNESS
+// ------------------------------------------------------------
+
+// ------------------------------------------------------------
+// run a test suite for expression evaluation
+// ------------------------------------------------------------
+
+function runTestSuite() {
+  let infix = [];
+  infix.push("2*param.cutoff");
+  infix.push("2+param.cutoff");
+  infix.push("param.cutoff+param.resonance");
+  infix.push("log(param.cutoff)+exp(param.resonance)");
+  infix.push("2");
+  infix.push("4/5");
+  infix.push("8-5");
+  infix.push("param.cutoff/3");
+  infix.push("param.cutoff+random(0,1)");
+  infix.push("exp(param.cutoff-param.noise)");
+  infix.push("0*param.level");
+  let param = { "cutoff": 2, "resonance": 3, "timbre": 4, "noise": 5, "level": 0.5 };
+  let minima = { "cutoff": 0, "resonance": 0, "timbre": 0, "noise": 0, "level": 0 };
+  let maxima = { "cutoff": 10, "resonance": 10, "timbre": 5, "noise": 5, "level": 1 };
+  for (let item of infix)
+    testExpression(item, param, minima, maxima);
+}
+
+// ------------------------------------------------------------
+// for testing, compare an expression in infix and postfix form
+// ------------------------------------------------------------
+
+function testExpression(infix, param, minima, maxima) {
+  console.log(infix);
+  let postfix = convertToPostfix(infix);
+  console.log("".concat(postfix.map(z => `${z}`)));
+  infix = infix.replace("log", "Math.log");
+  infix = infix.replace("exp", "Math.exp");
+  infix = infix.replace("random", "randomBetween");
+  infixResult = eval(infix);
+  postfixResult = evaluatePostfix(postfix, param, maxima, minima);
+  console.log(`infix=${infixResult} postfix=${postfixResult}`);
+  console.log("");
 }
