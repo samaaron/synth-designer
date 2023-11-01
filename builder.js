@@ -5,6 +5,8 @@ let synthGrammar;
 let semantics;
 let wasEdited;
 
+let currentJSON = null;
+
 // ------------------------------------------------------------
 // initialise the button callback etc
 // ------------------------------------------------------------
@@ -125,7 +127,7 @@ function makeGrammar() {
       patches = new Map();
       tweaks = [];
       // always have access to pitch and level
-      controls = ["pitch","level"];
+      controls = ["pitch", "level"];
       return `{"synth":{${a.interpret()}},"statements":[${"".concat(b.children.map(z => z.interpret()))}]}`;
     },
     Synthblock(a, b, c, d, e, f, g) {
@@ -187,11 +189,11 @@ function makeGrammar() {
       const from = a.interpret();
       const to = c.interpret();
       if (patches.get(from) === to)
-        throwError(`duplicate patch connection`,this.source);
+        throwError(`duplicate patch connection`, this.source);
       const fromObj = JSON.parse(from);
       const toObj = JSON.parse(to);
       if (fromObj.id === toObj.id)
-        throwError(`cannot patch a module into itself`,this.source);
+        throwError(`cannot patch a module into itself`, this.source);
       patches.set(from, to);
       return `{"patch":{"from":${from},"to":${to}}}`;
     },
@@ -207,7 +209,7 @@ function makeGrammar() {
       const id = a.interpret();
       const param = c.interpret();
       if (id != "audio" && !modules.has(id))
-        throwError(`a module called "${id}" has not been defined`,this.source);
+        throwError(`a module called "${id}" has not been defined`, this.source);
       //const type = modules.get(id);
       return `{"id":"${id}","param":"${param}"}`;
     },
@@ -483,8 +485,8 @@ function parseSynthSpec() {
       gui("parse-errors").value = "OK";
       const adapter = semantics(result);
       const json = adapter.interpret();
-      parseExpressions(json);
       createControls(json);
+      currentJSON = convertToStandardJSON(json);
     } catch (error) {
       gui("parse-errors").value = error.message;
     }
@@ -509,19 +511,56 @@ function createControls(json) {
   }
 }
 
-// ------------------------------------------------------------
-// probably need to ditch this
-// ------------------------------------------------------------
-
-function parseExpressions(json) {
-  const obj = JSON.parse(json);
-  for (const e of obj.statements) {
-    if (e.tweak) {
-      console.log(e.tweak.expression);
-      let postfix = convertToPostfix(e.tweak.expression);
-      console.log(postfix);
+function convertToStandardJSON(json) {
+  // we need to put the JSON from the grammar into a standard format
+  const tree = JSON.parse(json);
+  var std = {};
+  std.longname = tree.synth.longname;
+  std.shortname = tree.synth.shortname;
+  std.version = tree.synth.version;
+  std.author = tree.synth.author;
+  std.doc = tree.synth.doc;
+  std.prototype = "builder";
+  std.modules = [];
+  // filter the statements into the right structures
+  const statements = tree.statements;
+  for (let i = 0; i < statements.length; i++) {
+    let obj = statements[i];
+    if (obj.module) {
+      std.modules.push(obj.module);
+    } else if (obj.patch) {
+      // find the type of the from id
+      let found = std.modules.find((a) => (a.id === obj.patch.from.id));
+      const type = found.type;
+      // we treat envelopes differently for efficiency reasons
+      if (type === "ADSR" || type === "DECAY") {
+        if (!std.envelopes) {
+          std.envelopes = [];
+        }
+        std.envelopes.push(obj.patch);
+      } else {
+        if (!std.patches) {
+          std.patches = [];
+        }
+        std.patches.push(obj.patch);
+      }
+    } else if (obj.param) {
+      if (!std.parameters) {
+        std.parameters = [];
+      }
+      std.parameters.push(obj.param);
+    } else if (obj.tweak) {
+      if (!std.tweaks) {
+        std.tweaks = [];
+      }
+      var mytweak = {};
+      mytweak.id = obj.tweak.id;
+      mytweak.param = obj.tweak.param;
+      mytweak.expression = convertToPostfix(obj.tweak.expression);
+      std.tweaks.push(mytweak);
     }
   }
+  return JSON.stringify(std);
 }
 
 // ------------------------------------------------------------

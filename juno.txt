@@ -63,5 +63,6 @@ vco1.out -> vco2.pitchCV
 # tweaking
 
 filter.cutoff = map(param.cutoff,10,2000)
+filter.resonance = 2
 
 # end of file
