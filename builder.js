@@ -10,12 +10,13 @@ let wasEdited;
 // ------------------------------------------------------------
 
 function init() {
-
   addListenersToGUI();
-
   makeGrammar();
-
 }
+
+// ------------------------------------------------------------
+// dynamically add an HTML slider to the page
+// ------------------------------------------------------------
 
 function makeSlider(id, docstring, min, max, val, step) {
   // get the root container
@@ -54,6 +55,10 @@ function makeSlider(id, docstring, min, max, val, step) {
   sliderContainer.appendChild(label);
   container.appendChild(sliderContainer);
 }
+
+// ------------------------------------------------------------
+// remove all the sliders, if we created any previously
+// ------------------------------------------------------------
 
 function removeAllSliders() {
   const container = document.getElementById('container');
@@ -115,19 +120,19 @@ function makeGrammar() {
   // list of control parameters
 
   semantics.addOperation("interpret", {
-    Graph(a, b, c) {
+    Graph(a, b) {
       modules = new Map();
       patches = new Map();
       tweaks = [];
       // always have access to pitch and level
       controls = ["pitch","level"];
-      return `{"synth":{${a.interpret()}},"params":[${"".concat(b.children.map(z => z.interpret()))}],"statements":[${"".concat(c.children.map(z => z.interpret()))}]}`;
+      return `{"synth":{${a.interpret()}},"statements":[${"".concat(b.children.map(z => z.interpret()))}]}`;
     },
     Synthblock(a, b, c, d, e, f, g) {
       return `${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()}`;
     },
     Parameter(a, b, c, d, e, f, g, h, i) {
-      return `{${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()},${g.interpret()},${h.interpret()}}`;
+      return `{"param":{${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()},${g.interpret()},${h.interpret()}}}`;
     },
     Paramtype(a, b, c) {
       return `"type":"${c.interpret()}"`;
@@ -301,10 +306,18 @@ function makeGrammar() {
 
 }
 
+// ------------------------------------------------------------
+// throw an error message with a line number
+// ------------------------------------------------------------
+
 function throwError(msg, source) {
   var line = getErrorLineNumber(source);
   throw new Error(`Line ${line}:\n${msg}`);
 }
+
+// ------------------------------------------------------------
+// work out the line number where the error occurred, by counting newlines
+// ------------------------------------------------------------
 
 function getErrorLineNumber(source) {
   const textBeforeInterval = source.sourceString.substring(0, source.startIdx);
@@ -320,7 +333,7 @@ function getGrammarSource() {
   return String.raw`
   Synth {
 
-  Graph = Synthblock Parameter* Statement+
+  Graph = Synthblock Statement+
 
   Parameter = "@param" paramname Paramtype Paramstep Minval Maxval Defaultval Docstring "@end"
 
@@ -370,6 +383,7 @@ function getGrammarSource() {
   = "\""
 
   Statement = comment 
+  | Parameter
   | Patch
   | Tweak 
   | Declaration
@@ -469,7 +483,6 @@ function parseSynthSpec() {
       gui("parse-errors").value = "OK";
       const adapter = semantics(result);
       const json = adapter.interpret();
-      gui("parse-errors").value = json;
       parseExpressions(json);
       createControls(json);
     } catch (error) {
@@ -487,10 +500,18 @@ function parseSynthSpec() {
 function createControls(json) {
   const obj = JSON.parse(json);
   removeAllSliders();
-  for (const p of obj.params) {
-    makeSlider(p.name, p.doc, p.min, p.max, p.default, p.step);
+  for (const m of obj.statements) {
+    // find all the parameters
+    if (m.param) {
+      let p = m.param;
+      makeSlider(p.name, p.doc, p.min, p.max, p.default, p.step);
+    }
   }
 }
+
+// ------------------------------------------------------------
+// probably need to ditch this
+// ------------------------------------------------------------
 
 function parseExpressions(json) {
   const obj = JSON.parse(json);
@@ -502,6 +523,10 @@ function parseExpressions(json) {
     }
   }
 }
+
+// ------------------------------------------------------------
+// convert an infix expression to postfix
+// ------------------------------------------------------------
 
 function convertToPostfix(expression) {
   // shunting yard algorithm with functions
@@ -561,13 +586,25 @@ function convertToPostfix(expression) {
   return result;
 }
 
+// ------------------------------------------------------------
+// is this token a number?
+// ------------------------------------------------------------
+
 function isNumber(t) {
   return !isNaN(parseFloat(t)) && isFinite(t);
 }
 
+// ------------------------------------------------------------
+// is this token an identifier?
+// ------------------------------------------------------------
+
 function isIdentifier(t) {
   return (typeof t === "string") && (t.startsWith("param."));
 }
+
+// ------------------------------------------------------------
+// evaluate a postfix expression
+// ------------------------------------------------------------
 
 function evaluatePostfix(expression, param, maxima, minima) {
   let stack = [];
