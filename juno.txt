@@ -49,6 +49,19 @@ max: 1
 default: 0.5
 doc: LFO rate (Hz)
 @end
-# this is a comment
 
-vcf.cutoff = map(param.resonance,10,2000)
+# modules
+
+SAW-OSC : vco1
+SAW-OSC : vco2
+LPF : filter
+
+# patching
+
+vco1.out -> vco2.pitchCV
+
+# tweaking
+
+filter.cutoff = map(param.cutoff,10,2000)
+
+# end of file

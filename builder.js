@@ -44,10 +44,10 @@ function makeSlider(id, docstring, min, max, val, step) {
   label.id = "label-" + id;
   label.setAttribute("for", "slider-" + id);
   label.textContent = `${id} [${val}]`;
-    // add a callback to the slider
-    slider.addEventListener("input", function() {
-      gui(label.id).textContent = `${id} [${parseFloat(this.value)}]`;
-    });  
+  // add a callback to the slider
+  slider.addEventListener("input", function () {
+    gui(label.id).textContent = `${id} [${parseFloat(this.value)}]`;
+  });
   // add to the document
   container.appendChild(doc);
   sliderContainer.appendChild(slider);
@@ -106,7 +106,7 @@ function makeGrammar() {
   let patches;
   let tweaks;
   let controls;
-  let controlNumber=1;
+  let controlNumber = 1;
 
   // make the grammar
   synthGrammar = ohm.grammar(source);
@@ -118,8 +118,9 @@ function makeGrammar() {
     Graph(a, b, c) {
       modules = new Map();
       patches = new Map();
-      tweaks = new Map();
-      controls = [];
+      tweaks = [];
+      // always have access to pitch and level
+      controls = ["pitch","level"];
       return `{"synth":{${a.interpret()}},"params":[${"".concat(b.children.map(z => z.interpret()))}],"statements":[${"".concat(c.children.map(z => z.interpret()))}]}`;
     },
     Synthblock(a, b, c, d, e, f, g) {
@@ -171,14 +172,71 @@ function makeGrammar() {
     versionstring(a) {
       return `"${a.sourceString}"`;
     },
+    inputparam(a) {
+      return a.sourceString;
+    },
+    outputparam(a) {
+      return a.sourceString;
+    },
+    Patch(a, b, c) {
+      const from = a.interpret();
+      const to = c.interpret();
+      if (patches.get(from) === to)
+        throwError(`duplicate patch connection`,this.source);
+      const fromObj = JSON.parse(from);
+      const toObj = JSON.parse(to);
+      if (fromObj.id === toObj.id)
+        throwError(`cannot patch a module into itself`,this.source);
+      patches.set(from, to);
+      return `{"patch":{"from":${from},"to":${to}}}`;
+    },
+    patchoutput(a, b, c) {
+      const id = a.interpret();
+      const param = c.interpret();
+      if (!modules.has(id))
+        throwError(`module "${id}" does not have an output called "${param}"`, this.source);
+      //const type = modules.get(id);
+      return `{"id":"${id}","param":"${param}"}`;
+    },
+    patchinput(a, b, c) {
+      const id = a.interpret();
+      const param = c.interpret();
+      if (id != "audio" && !modules.has(id))
+        throwError(`a module called "${id}" has not been defined`,this.source);
+      //const type = modules.get(id);
+      return `{"id":"${id}","param":"${param}"}`;
+    },
     Tweak(a, b, c) {
-      return `{"tweak":{${a.interpret()},${c.interpret()}}}`;
+      let tweakedParam = a.interpret();
+      let obj = JSON.parse(`{${tweakedParam}}`);
+      let twk = `${obj.id}.${obj.param}`;
+      if (tweaks.includes(twk))
+        throwError(`you cannot set the value of ${twk} more than once`, this.source);
+      tweaks.push(twk);
+      return `{"tweak":{${tweakedParam},${c.interpret()}}}`;
     },
     comment(a, b) {
       return `{"comment":"${b.sourceString.trim()}"}`;
     },
     tweakable(a, b, c) {
-      return `"id":"${a.sourceString}", "param":"${c.sourceString}"`;
+      let id = a.interpret();
+      if (!modules.has(id))
+        throwError(`the module "${id}" has not been defined`, this.source);
+      return `"id":"${id}", "param":"${c.sourceString}"`;
+    },
+    varname(a, b) {
+      return a.sourceString + b.sourceString;
+    },
+    Declaration(a, b, c) {
+      const type = a.interpret();
+      const id = c.interpret();
+      if (modules.has(id))
+        throwError(`module "${id}" has already been defined`, this.source);
+      modules.set(id, type);
+      return `{"module":{"type":"${type}","id":"${id}"}}`;
+    },
+    module(a) {
+      return a.sourceString;
     },
     Exp(a) {
       return `"expression":"${a.interpret()}"`;
@@ -236,11 +294,22 @@ function makeGrammar() {
     control(a, b, c) {
       let ctrl = c.sourceString;
       if (!controls.includes(ctrl))
-        throw new Error(`control parameter "${ctrl}" has not been defined`);
+        throwError(`control parameter "${ctrl}" has not been defined`, this.source);
       return `param.${ctrl}`;
     }
   });
 
+}
+
+function throwError(msg, source) {
+  var line = getErrorLineNumber(source);
+  throw new Error(`Line ${line}:\n${msg}`);
+}
+
+function getErrorLineNumber(source) {
+  const textBeforeInterval = source.sourceString.substring(0, source.startIdx);
+  const lineCount = (textBeforeInterval.match(/\n/g) || []).length;
+  return lineCount + 1;
 }
 
 // ------------------------------------------------------------
@@ -301,14 +370,43 @@ function getGrammarSource() {
   = "\""
 
   Statement = comment 
+  | Patch
   | Tweak 
+  | Declaration
+
+  Patch = patchoutput "->" (patchinput | audio)
+
+  patchoutput = varname "." outputparam 
+
+  patchinput = varname "." inputparam 
+
+  inputparam = "in" | "levelCV" | "pitchCV" | "cutoffCV" | "pulsewidthCV"
+
+  outputparam = "out"
+
+  audio = "audio.in"
 
   comment (a comment)
   = "#" commentchar* 
 
-  commentchar = alnum | "." | "+" | "-" | "/" | "*" | "." | blank
+  commentchar = alnum | "." | "+" | "-" | "/" | "*" | "." | ":" | blank
 
   Tweak = tweakable "=" Exp 
+
+  Declaration = module ":" varname
+
+  module = "SAW-OSC"
+  | "SIN-OSC"
+  | "SQR-OSC"
+  | "TRI-OSC"
+  | "PULSE-OSC"
+  | "NOISE"
+  | "LPF"
+  | "HPF"
+  | "VCA"
+  | "SHAPER"
+  | "ADSR"
+  | "DECAY"
 
   Exp 
     = AddExp
@@ -342,7 +440,7 @@ function getGrammarSource() {
   tweakable
   = varname "." parameter
 
-  parameter = "pitch" | "detune" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release"
+  parameter = "pitch" | "detune" | "level" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release" | "fuzz"
 
   varname (a module name)
   = lower alnum*
