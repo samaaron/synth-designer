@@ -2,7 +2,10 @@
 window.addEventListener('DOMContentLoaded', init);
 
 const MIDDLE_C = 261.63; // Hz
-
+const MAX_MIDI_FREQ = 4186; // C8
+const MIN_MIDI_FREQ = 27.5;  // A0
+const MAX_LEVEL = 1;
+const MIN_LEVEL = 0;
 const SHOW_DOC_STRINGS = false;
 
 let synthGrammar;
@@ -125,29 +128,29 @@ function addListenersToGUI() {
   // save as button 
   gui("save-as-button").onclick = async () => { await saveAsFile(); };
 
-    // play button 
-    gui("play-button").onclick = () => { playSynth(); };
+  // play button 
+  gui("play-button").onclick = () => { playSynth(); };
 
   // start button
   gui("start-button").onclick = () => {
     context = new AudioContext();
     disableGUI(false);
   }
-    // pitch slider
-    gui("pitch").addEventListener("input", function () {
-      gui("pitch-label").textContent = `pitch [${midiToNoteName(parseInt(this.value))}]`;
-    });
-  
-    // amplitude slider
-    gui("level").addEventListener("input", function () {
-      gui("level-label").textContent = `level [${parseFloat(this.value)}]`;
-    });
-  
-    // duration slider
-    gui("duration").addEventListener("input", function () {
-      gui("duration-label").textContent = `duration [${parseFloat(this.value)}]`;
-    });
-  
+  // pitch slider
+  gui("pitch").addEventListener("input", function () {
+    gui("pitch-label").textContent = `pitch [${midiToNoteName(parseInt(this.value))}]`;
+  });
+
+  // amplitude slider
+  gui("level").addEventListener("input", function () {
+    gui("level-label").textContent = `level [${parseFloat(this.value)}]`;
+  });
+
+  // duration slider
+  gui("duration").addEventListener("input", function () {
+    gui("duration-label").textContent = `duration [${parseFloat(this.value)}]`;
+  });
+
 }
 
 // ------------------------------------------------------------
@@ -790,9 +793,10 @@ function makeGrammar() {
     Defaultval(a, b, c) {
       return `"default":${c.interpret()}`;
     },
-    paramname(a) {
-      controls.push(a.sourceString);
-      return `"name":"${a.sourceString}"`;
+    paramname(a, b) {
+      let controlname = a.sourceString + b.sourceString;
+      controls.push(controlname);
+      return `"name":"${controlname}"`;
     },
     shortname(a, b) {
       return `"shortname":"${a.sourceString}${b.sourceString}"`;
@@ -934,8 +938,8 @@ function makeGrammar() {
       const sign = (a.sourceString == "-") ? -1 : 1;
       return sign * parseFloat(b.sourceString + "." + d.sourceString);
     },
-    control(a, b, c) {
-      let ctrl = c.sourceString;
+    control(a, b, c, d) {
+      let ctrl = c.sourceString + d.sourceString;
       if (!controls.includes(ctrl))
         throwError(`control parameter "${ctrl}" has not been defined`, this.source);
       return `param.${ctrl}`;
@@ -979,7 +983,7 @@ function getGrammarSource() {
 
   shortname = letter (letter | "-")+
 
-  paramname = letter+
+  paramname = letter alnum+
 
   Paramtype (a parameter type)
   = "type" ":" validtype
@@ -1015,7 +1019,7 @@ function getGrammarSource() {
   = (alnum | "." | "-" | " ")+
 
   string (a string)
-  = letter (alnum | "." | "-" | " " | "(" | ")" )*
+  = letter (alnum | "." | "," | "-" | " " | "(" | ")" )*
 
   quote (a quote)
   = "\""
@@ -1087,7 +1091,7 @@ function getGrammarSource() {
     | "log" "(" AddExp ")" -- log
 
   control (a control parameter)
-  = "param" "." letter+
+  = "param" "." letter alnum+
 
   tweakable
   = varname "." parameter
@@ -1115,6 +1119,7 @@ function getGrammarSource() {
 // ------------------------------------------------------------
 
 function parseSynthSpec() {
+  synth = null;
   let result = synthGrammar.match(gui("synth-spec").value + "\n");
   if (result.succeeded()) {
     try {
@@ -1124,10 +1129,12 @@ function parseSynthSpec() {
       createControls(json);
       currentJSON = convertToStandardJSON(json);
       synth = new Synth(context, currentJSON);
+      // was there a warning?
+      if (synth.hasWarning) {
+        gui("parse-errors").value += "\n" + synth.warningString;
+      }
       synth.out.connect(context.destination);
-      console.log(synth);
     } catch (error) {
-      console.log(error);
       gui("parse-errors").value = error.message;
     }
   } else {
@@ -1209,22 +1216,39 @@ function convertToStandardJSON(json) {
 
 function convertToPostfix(expression) {
   // shunting yard algorithm with functions
-  const tokens = expression.split(/([\*\+\-\/\,\(\)])/g).filter(x => x);
   const ops = { "+": 1, "-": 1, "*": 2, "/": 2 };
   const funcs = { "log": 1, "exp": 1, "random": 1, "map": 1 };
+  // split the expression
+  const tokens = expression.split(/([\*\+\-\/\,\(\)])/g).filter(x => x);
+  // deal with unary minus
+  // is there a minus at the start?
+  if ((tokens.length > 1) && (tokens[0] == "-") && isNumber(tokens[1])) {
+    tokens.shift();
+    let n = parseFloat(tokens.shift());
+    tokens.unshift(`${-1 * n}`);
+  }
+  // is there a minus after a bracket or other operator?
+  if (tokens.length > 2) {
+    for (let i = 1; i < tokens.length - 1; i++) {
+      let pre = tokens[i - 1];
+      let mid = tokens[i];
+      let post = tokens[i + 1];
+      if ((mid == "-") && isNumber(post) && ((pre == "(") || (pre in ops))) {
+        let n = -1 * parseFloat(post);
+        tokens[i + 1] = `${n}`;
+        tokens.splice(i, 1);
+      }
+    }
+  }
   let top = (s) => s[s.length - 1];
   let stack = [];
   let result = [];
   for (let t of tokens) {
     if (isNumber(t) || isIdentifier(t)) {
       result.push(t);
-      continue;
-    }
-    if (t == "(") {
+    } else if (t == "(") {
       stack.push(t);
-      continue;
-    }
-    if (t == ")") {
+    } else if (t == ")") {
       while (top(stack) != "(") {
         let current = stack.pop();
         result.push(current);
@@ -1236,19 +1260,15 @@ function convertToPostfix(expression) {
           result.push(current);
         }
       }
-      continue;
-    }
-    if (t in funcs) {
+    } else if (t in funcs) {
       stack.push(t);
-      continue;
-    }
-    if (t == ",") {
+    } else if (t == ",") {
       while (top(stack) != "(") {
         let current = stack.pop();
         result.push(current);
       }
-    }
-    if (t in ops) {
+    } else if (t in ops) {
+      // deal with unary minus
       while ((stack.length > 0) && (top(stack) in ops) && (ops[top(stack)] >= ops[t])) {
         let current = stack.pop();
         result.push(current);
@@ -1330,7 +1350,11 @@ function evaluatePostfix(expression, param, maxima, minima) {
       stack.push(s);
     }
   }
-  return stack[0];
+  let result = stack[0];
+  if (isIdentifier(result))
+    return param[result.replace("param.", "")];
+  else
+    return result;
 }
 
 // ------------------------------------------------------------
@@ -1361,13 +1385,15 @@ class Synth {
   #tweaks
   #envelopes
   #parameters
+  #maxima
+  #minima
+  #defaults
   #errorString
   #warningString
   #out
   #context
 
   constructor(ctx, json) {
-    console.log(json);
     const tree = JSON.parse(json);
     this.#context = ctx;
     this.#longname = tree.longname;
@@ -1375,16 +1401,30 @@ class Synth {
     this.#version = tree.version;
     this.#author = tree.author;
     this.#doc = tree.doc;
-    this.#modules = tree.modules;
-    this.#patches = tree.patches;
-    this.#tweaks = tree.tweaks;
-    this.#envelopes = tree.envelopes;
-    this.#parameters = tree.parameters;
+    this.#modules = tree.modules || [];
+    this.#patches = tree.patches || [];
+    this.#tweaks = tree.tweaks || [];
+    this.#envelopes = tree.envelopes || [];
+    this.#parameters = tree.parameters || [];
     this.#out = unityGain(ctx);
     this.#isValid = true;
     this.#hasWarning = false;
     this.#errorString = "";
     this.#warningString = "";
+    // find the maxima and minima of all parameters and store them
+    // but we need to store information about max/min pitch and level
+    this.#maxima = {};
+    this.#maxima.pitch = MAX_MIDI_FREQ;
+    this.#maxima.level = MAX_LEVEL;
+    this.#minima = {};
+    this.#minima.pitch = MIN_MIDI_FREQ;
+    this.#minima.level = MIN_LEVEL;
+    this.#defaults = {};
+    for (let m of this.#parameters) {
+      this.#maxima[m.name] = m.max;
+      this.#minima[m.name] = m.min;
+      this.#defaults[m.name] = m.default;
+    }
     try {
       this.checkForErrors();
     } catch (error) {
@@ -1401,6 +1441,11 @@ class Synth {
   play(pitch, level, durationSec, params) {
 
     let node = {};
+
+    // store the pitch and level as parameters
+
+    params.pitch = pitch;
+    params.level = level;
 
     // make a webaudio object for each node
     for (let i = 0; i < this.#modules.length; i++) {
@@ -1426,44 +1471,16 @@ class Synth {
 
     // do all the parameter tweaks
 
-    /*
     for (let i = 0; i < this.#tweaks.length; i++) {
-      let t = this.#tweaks[i];
-      let obj = node[t.control.id];
-      if (t.value == "random") {
-        let randVal = randomBetween(t.range.min, t.range.max);
-        obj[t.control.param] = randVal;
-      } else if (t.value == "keyboard.pitch")
-        obj[t.control.param] = scaleValue(LOWEST_MIDI_FREQ, HIGHEST_MIDI_FREQ, t.range.min, t.range.max, pitch);
-      else if (t.value == "keyboard.level")
-        obj[t.control.param] = scaleValue(0, 1, t.range.min, t.range.max, level);
-      else if (t.value == "keyboard.cutoff")
-        obj[t.control.param] = scaleValue(0, 1, t.range.min, t.range.max, params.cutoff);
-      else if (t.value == "keyboard.resonance")
-        obj[t.control.param] = scaleValue(0, 1, t.range.min, t.range.max, params.resonance);
-      else if (t.value == "keyboard.timbre")
-        obj[t.control.param] = scaleValue(0, 1, t.range.min, t.range.max, params.timbre);
-      else if (t.value == "keyboard.noise")
-        obj[t.control.param] = scaleValue(0, 1, t.range.min, t.range.max, params.noise);
-      else if (t.value == "keyboard.rate")
-        obj[t.control.param] = scaleValue(0, 1, t.range.min, t.range.max, params.rate);
-      else if (t.value == "keyboard.depth")
-        obj[t.control.param] = scaleValue(0, 1, t.range.min, t.range.max, params.depth);
-      else if (t.value == "keyboard.envelope")
-        obj[t.control.param] = scaleValue(0, 1, t.range.min, t.range.max, params.envelope);
-      else if (t.value == "keyboard.accent")
-        obj[t.control.param] = scaleValue(0, 1, t.range.min, t.range.max, params.accent);
-      else {
-        // it must be numeric
-        obj[t.control.param] = t.value;
-      }
+      let twk = this.#tweaks[i];
+      let obj = node[twk.id];
+      // need to find maxima and minima before doing this
+      obj[twk.param] = evaluatePostfix(twk.expression, params, this.#maxima, this.#minima);
     }
-*/
 
-    // now apply the envelopes
+    // apply the envelopes
 
     const when = this.#context.currentTime;
-
     let maxDurationSec = durationSec;
     for (let i = 0; i < this.#envelopes.length; i++) {
       let e = this.#envelopes[i];
@@ -1514,6 +1531,19 @@ class Synth {
       if (!this.hasTweakWithValue(`param.${param}`))
         msg += `Synth warning: you haven't assigned param.${param} to a control\n`;
     }
+    // has something been patched to audio.in?
+    if (this.hasPatchTo("audio", "in") == false)
+      msg += `Synth warning: you haven't patched anything to audio.in\n`;
+    // check that parameters have reasonable values
+    for (let obj of this.#parameters) {
+      if (obj.max < obj.min)
+        msg += `Synth warning: max of parameter ${obj.name} is less than min\n`;
+      if (obj.default < obj.min)
+        msg += `Synth warning: default of parameter ${obj.name} is less than min\n`;
+      if (obj.default > obj.max)
+        msg += `Synth warning: default of parameter ${obj.name} is greater than max\n`;
+    }
+    // throw the warning if we have one
     if (msg.length > 0)
       this.throwWarning(msg);
   }
@@ -1594,6 +1624,10 @@ class Synth {
 
   get parameters() {
     return this.#parameters;
+  }
+
+  get defaults() {
+    return this.#defaults
   }
 
   // is the synth valid?
@@ -1762,11 +1796,14 @@ function runTestSuite() {
   infix.push("8-5");
   infix.push("param.cutoff/3");
   infix.push("param.cutoff+random(0,1)");
-  infix.push("exp(param.cutoff-param.noise)");
-  infix.push("0*param.level");
-  let param = { "cutoff": 2, "resonance": 3, "timbre": 4, "noise": 5, "level": 0.5 };
-  let minima = { "cutoff": 0, "resonance": 0, "timbre": 0, "noise": 0, "level": 0 };
-  let maxima = { "cutoff": 10, "resonance": 10, "timbre": 5, "noise": 5, "level": 1 };
+  infix.push("exp(param.cutoff-param.resonance)");
+  infix.push("param.pitch");
+  infix.push("-1200");
+  infix.push("(-1)*2");
+  infix.push("2*-4");
+  let param = { "cutoff": 2, "resonance": 3, "timbre": 4, "pitch": 50, "level": 0.5 };
+  let minima = { "cutoff": 0, "resonance": 0, "timbre": 0, "pitch": 20, "level": 0 };
+  let maxima = { "cutoff": 10, "resonance": 10, "timbre": 5, "pitch": 500, "level": 1 };
   for (let item of infix)
     testExpression(item, param, minima, maxima);
 }
