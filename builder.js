@@ -715,10 +715,25 @@ function playSynth() {
     const pitchHz = midiNoteToFreqHz(getFloatParam("pitch"));
     const level = getFloatParam("level");
     const durationSec = getFloatParam("duration");
-    // NEED TO FIX THIS
-    const params = {};
+    const params = getParametersForSynth(synth);
     synth.play(pitchHz, level, durationSec, params);
   }
+}
+
+// ------------------------------------------------------------
+// read all the parameters for this synth from the interface
+// ------------------------------------------------------------
+
+function getParametersForSynth(s) {
+  let params = {};
+  for (let p of s.parameters) {
+    if (p.type === "float") {
+      params[p.name] = getFloatParam("slider-" + p.name);
+    } else if (p.type === "int") {
+      params[p.name] = getIntParam("slider-" + p.name);
+    }
+  }
+  return params;
 }
 
 // ------------------------------------------------------------
