@@ -1,68 +1,139 @@
 @synth juno
-longname: Juno 106 Synth
+longname: Juno 106
 author: Guy Brown
 version: 1.0
-doc: An emulation of the Juno 106 synthesizer
+doc: Rough simulation of Juno 106 synth
 @end
 
-@param cutoff
-type: float
-step: 0.01
-min: 0
-max: 1
-default: 0.5
-doc: cutoff frequency (Hz)
-@end
+# parameter
 
-@param resonance
+@param pulseonoff
 type: int
 step: 1
 min: 0
-max: 25
-default: 5
-doc: filter resonance
+max: 1
+default: 1
+doc : whether the pulse oscillator is on or off
 @end
 
-@param keyboard
+@param sawonoff
+type: int
+step: 1
+min: 0
+max: 1
+default: 1
+doc : whether the saw oscillator is on or off
+@end
+
+@param sub
 type: float
 step: 0.01
 min: 0
-max: 1
-default: 0.5
-doc: keyboard tracking for the filter
+max: 10
+default: 10
+doc: level of the sub-oscillator
 @end
 
-@param lfodepth
+@param noise
 type: float
 step: 0.01
 min: 0
-max: 1
-default: 0.5
-doc: LFO depth
+max: 10
+default: 10
+doc: level of the noise oscillator
 @end
 
-@param lforate
+@param hpffreq
 type: float
 step: 0.01
 min: 0
-max: 1
-default: 0.5
-doc: LFO rate (Hz)
+max: 3
+default: 0
+doc: cutoff of the high pass filter
 @end
 
-# modules
+@param lpffreq
+type: float
+step: 0.01
+min: 0
+max: 10
+default: 6
+doc: cutoff of the low pass filter
+@end
 
-SAW-OSC : vco1
-SAW-OSC : vco2
-LPF : filter
+@param res
+type: float
+step: 0.01
+min: 0
+max: 10
+default: 0
+doc: resonance of the low pass filter
+@end
 
-# patching
+# oscillators
 
-vco1.out -> vco2.pitchCV
+SAW-OSC : saw
+PULSE-OSC : pulse
+SQR-OSC : sub
+NOISE : noise
 
-# tweaking
+VCA : mix
+VCA : subgain
+VCA : noisegain
+VCA : pulsegain
+VCA : sawgain
+HPF : highpass
+LPF : lowpass
+LPF : noisefilter
+VCA : vca
 
-filter.cutoff = map(param.cutoff,10,2000)
-filter.resonance = 2
+# patch the oscillator section
+
+saw.out -> sawgain.in
+sawgain.out -> mix.in
+
+pulse.out -> pulsegain.in
+pulsegain.out -> mix.in
+
+noise.out -> noisefilter.in
+noisefilter.out -> noisegain.in
+noisegain.out -> mix.in
+sub.out -> subgain.in
+subgain.out -> mix.in
+
+# patch the filters
+
+mix.out -> highpass.in
+highpass.out -> lowpass.in
+lowpass.out -> vca.in
+
+# output
+
+vca.out -> audio.in
+
+# noise filter
+
+noisefilter.cutoff = 2630
+noisefilter.resonance = 5
+
+# oscillator controls
+
+pulsegain.level = param.pulseonoff
+sawgain.level = param.sawonoff
+
+# tweaks
+
+saw.pitch = param.pitch
+pulse.pitch = param.pitch
+sub.pitch = param.pitch
+sub.detune = -1200
+noisegain.level = map(param.noise,0,0.1)
+subgain.level = map(param.sub,0,1)
+
+highpass.resonance = 0
+highpass.cutoff = exp(param.hpffreq)*149
+lowpass.resonance = map(param.res,0,20)
+lowpass.cutoff = exp(param.lpffreq)*0.45
+mix.level = 0.4
 
 # end of file
