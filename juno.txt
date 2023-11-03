@@ -7,7 +7,25 @@ doc: Rough simulation of Juno 106 synth
 
 # parameter
 
-@param pulseonoff
+@param lfo_rate
+type: float
+step: 0.01
+min: 0.1
+max: 30
+default: 5
+doc : LFO rate
+@end
+
+@param lfo_delay
+type: float
+step: 0.01
+min: 0
+max: 3
+default: 0
+doc : LFO delay
+@end
+
+@param pulse_on_off
 type: int
 step: 1
 min: 0
@@ -16,7 +34,7 @@ default: 1
 doc : whether the pulse oscillator is on or off
 @end
 
-@param sawonoff
+@param saw_on_off
 type: int
 step: 1
 min: 0
@@ -43,7 +61,7 @@ default: 10
 doc: level of the noise oscillator
 @end
 
-@param hpffreq
+@param hpf_freq
 type: float
 step: 0.01
 min: 0
@@ -52,7 +70,7 @@ default: 0
 doc: cutoff of the high pass filter
 @end
 
-@param lpffreq
+@param lpf_freq
 type: float
 step: 0.01
 min: 0
@@ -76,6 +94,8 @@ SAW-OSC : saw
 PULSE-OSC : pulse
 SQR-OSC : sub
 NOISE : noise
+
+TRI-OSC : lfo
 
 VCA : mix
 VCA : subgain
@@ -118,8 +138,12 @@ noisefilter.resonance = 5
 
 # oscillator controls
 
-pulsegain.level = param.pulseonoff
-sawgain.level = param.sawonoff
+pulsegain.level = param.pulse_on_off
+sawgain.level = param.saw_on_off
+
+# LFO
+
+lfo.pitch = param.lfo_rate
 
 # tweaks
 
@@ -131,9 +155,9 @@ noisegain.level = map(param.noise,0,0.1)
 subgain.level = map(param.sub,0,1)
 
 highpass.resonance = 0
-highpass.cutoff = exp(param.hpffreq)*149
+highpass.cutoff = exp(param.hpf_freq)*149
 lowpass.resonance = map(param.res,0,20)
-lowpass.cutoff = exp(param.lpffreq)*0.45
+lowpass.cutoff = exp(param.lpf_freq)*0.45
 mix.level = 0.4
 
 # end of file

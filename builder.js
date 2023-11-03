@@ -35,6 +35,54 @@ const moduleClasses = {
   "AUDIO": "Audio"
 };
 
+// valid tweaks
+
+const validTweaks = {
+  "SAW-OSC": ["detune", "pitch"],
+  "SIN-OSC": ["detune", "pitch"],
+  "SQR-OSC": ["detune", "pitch"],
+  "TRI-OSC": ["detune", "pitch"],
+  "PULSE-OSC": ["detune", "pitch", "pulsewidth"],
+  "LPF": ["cutoff", "resonance"],
+  "HPF": ["cutoff", "resonance"],
+  "VCA": ["level"],
+  "SHAPER": ["fuzz"],
+  "ADSR": ["attack", "decay", "sustain", "release", "level"],
+  "DECAY": ["attack", "decay", "level"],
+};
+
+// valid patch inputs
+
+const validPatchInputs = {
+  "AUDIO": ["in"],
+  "SAW-OSC": ["pitchCV"],
+  "SIN-OSC": ["pitchCV"],
+  "SQR-OSC": ["pitchCV"],
+  "TRI-OSC": ["pitchCV"],
+  "PULSE-OSC": ["pitchCV", "pulsewidthCV"],
+  "LPF": ["in", "cutoffCV"],
+  "HPF": ["in", "cutoffCV"],
+  "VCA": ["in", "levelCV"],
+  "SHAPER": ["in"],
+};
+
+// valid patch outputs - pointless at the moment but in future modules may have more than one output
+
+const validPatchOutputs = {
+  "SAW-OSC": ["out"],
+  "SIN-OSC": ["out"],
+  "SQR-OSC": ["out"],
+  "TRI-OSC": ["out"],
+  "PULSE-OSC": ["out"],
+  "NOISE": ["out"],
+  "LPF": ["out"],
+  "HPF": ["out"],
+  "VCA": ["out"],
+  "SHAPER": ["out"],
+  "ADSR": ["out"],
+  "DECAY": ["out"],
+};
+
 // ------------------------------------------------------------
 // initialise the button callback etc
 // ------------------------------------------------------------
@@ -841,22 +889,32 @@ function makeGrammar() {
       const id = a.interpret();
       const param = c.interpret();
       if (!modules.has(id))
-        throwError(`module "${id}" does not have an output called "${param}"`, this.source);
-      //const type = modules.get(id);
+        throwError(`a module called "${id}" has not been defined"`, this.source);
+      const type = modules.get(id);
+      if (!validPatchOutputs[type].includes(param))
+        throwError(`cannot patch the parameter "${param}" of module "${id}"`, this.source);
       return `{"id":"${id}","param":"${param}"}`;
     },
     patchinput(a, b, c) {
       const id = a.interpret();
       const param = c.interpret();
-      if (id != "audio" && !modules.has(id))
-        throwError(`a module called "${id}" has not been defined`, this.source);
-      //const type = modules.get(id);
+      if (id != "audio") {
+        if (!modules.has(id))
+          throwError(`a module called "${id}" has not been defined`, this.source);
+        const type = modules.get(id);
+        if (!validPatchInputs[type].includes(param))
+          throwError(`cannot patch the parameter "${param}" of module "${id}"`, this.source);
+      }
       return `{"id":"${id}","param":"${param}"}`;
     },
     Tweak(a, b, c) {
       let tweakedParam = a.interpret();
       let obj = JSON.parse(`{${tweakedParam}}`);
       let twk = `${obj.id}.${obj.param}`;
+      // check that this is a valid tweak
+      let type = modules.get(obj.id);
+      if (!validTweaks[type].includes(obj.param))
+        throwError(`cannot set the parameter "${obj.param}" of module "${obj.id}"`, this.source);
       if (tweaks.includes(twk))
         throwError(`you cannot set the value of ${twk} more than once`, this.source);
       tweaks.push(twk);
@@ -948,6 +1006,7 @@ function makeGrammar() {
 
 }
 
+
 // ------------------------------------------------------------
 // throw an error message with a line number
 // ------------------------------------------------------------
@@ -983,7 +1042,7 @@ function getGrammarSource() {
 
   shortname = letter (letter | "-")+
 
-  paramname = letter alnum+
+  paramname = letter (alnum | "_")+
 
   Paramtype (a parameter type)
   = "type" ":" validtype
@@ -1091,7 +1150,7 @@ function getGrammarSource() {
     | "log" "(" AddExp ")" -- log
 
   control (a control parameter)
-  = "param" "." letter alnum+
+  = "param" "." letter (alnum | "_")+
 
   tweakable
   = varname "." parameter
