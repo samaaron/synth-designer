@@ -1538,7 +1538,9 @@ class Synth {
       let twk = this.#tweaks[i];
       let obj = node[twk.id];
       // need to find maxima and minima before doing this
-      obj[twk.param] = evaluatePostfix(twk.expression, params, this.#maxima, this.#minima);
+      let value = evaluatePostfix(twk.expression, params, this.#maxima, this.#minima);
+      obj[twk.param] = value;
+      console.log(`${twk} ${value}`);
     }
 
     // apply the envelopes
