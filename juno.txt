@@ -65,9 +65,9 @@ doc : the level of the pulse oscillator
 type: float
 step: 0.01
 min: 0
-max: 10
+max: 1
 default: 0
-doc : the level of the saw oscillator
+doc : whether the saw oscillator is on or off
 @end
 
 @param sub_level
@@ -330,11 +330,9 @@ noisegain.level = map(param.noise_level,0,1)
 subgain.level = map(param.sub_level,0,1)
 
 highpass.resonance = 0
-highpass.cutoff = map(param.hpf_freq,0,3000)
-lowpass1.resonance = map(param.res,0,20)
-lowpass1.cutoff = map(param.lpf_freq,0,6000)
-lowpass2.resonance = map(param.res,0,20)
-lowpass2.cutoff = map(param.lpf_freq,0,6000)
+highpass.cutoff = (exp(param.hpf_freq*0.5)-1)*860
+lowpass.resonance = map(param.res,0,20)
+lowpass.cutoff = (exp(param.lpf_freq*0.5)-1)*68
 mix.level = 0.4
 
 pwmgain.level = map(param.pwm,0,0.5)
