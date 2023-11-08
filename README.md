@@ -10,6 +10,8 @@ This is a leaner version of the modular synth designer without the graphical use
 
 * I have added functions for ```log``` and ```exp``` (useful for scaling parameters in a perceptualy meaningful way) and randomness, as well as a function that maps a variable from one numerical range into another. 
 
+* Parsing expressions looks like a lot of work but this is mostly done when the DSL is parsed. At that point each expression is  converted to postfix form, so that it can be quickly evaluated with a stack when the webaudio graph is created. I have profiled this and it takes very little time (~ 2ms).
+
 * A graphical user interface is constructed on the fly with a slider for each parameter.
 
 * MIDI support now works properly with the release phase on envelopes; when a MIDI note off is received the webaudio graph is modified so that envelopes move to the release phase. 
