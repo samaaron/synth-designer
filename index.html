@@ -27,10 +27,10 @@
   <table>
     <tr>
       <td>
-        <textarea class="textarea" rows=30 cols=70 id="synth-spec"></textarea>
+        <textarea class="textarea" rows=30 cols=60 id="synth-spec"></textarea>
       </td>
       <td>
-        <textarea readonly class="textarea" rows=30 cols=40 id="parse-errors"></textarea>
+        <textarea readonly class="textarea" rows=30 cols=30 id="parse-errors"></textarea>
       </td>
       <td valign="top">
         <div class="slider-container">
@@ -46,7 +46,16 @@
           <label id="duration-label" for="duration">duration [1]</label>
         </div>
         <button class="playbutton" id="play-button">Play</button>
-        <div id="container"></div>
+        <table>
+          <tr>
+            <td valign="top">
+              <div id="container1"></div>
+            </td>
+            <td valign="top">
+              <div id="container2"></div>
+            </td>
+          </tr>
+        </table>
       </td>
     </tr>
   </table>

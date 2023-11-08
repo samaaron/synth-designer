@@ -2,7 +2,7 @@
 longname: Hammond organ
 author: Guy Brown
 version: 1.0
-doc: Hammond organ with drawbars, percussion and distortion
+doc: Hammond organ with drawbars and percussion
 @end
 
 # https://www.soundonsound.com/techniques/synthesizing-hammond-organ-effects
@@ -77,7 +77,7 @@ type: float
 step: 0.01
 min: 0
 max: 1
-default: 0.7
+default: 0.28
 doc: quality of percussion sound
 @end
 
@@ -86,17 +86,8 @@ type: float
 step: 0.01
 min: 0
 max: 1
-default: 0.2
+default: 0.8
 doc: master volume
-@end
-
-@param distortion
-type: float
-step: 0.01
-min: 0
-max: 1
-default: 0.2
-doc: distortion
 @end
 
 # oscillators

@@ -1,4 +1,6 @@
 
+// TODO add crossfade node
+
 window.addEventListener('DOMContentLoaded', init);
 
 // various constants
@@ -15,7 +17,6 @@ const SHOW_DOC_STRINGS = false;
 let synthGrammar;
 let semantics;
 let wasEdited;
-
 let currentJSON = null;
 let synth = null;
 let context = null;
@@ -39,7 +40,7 @@ const moduleClasses = {
   "AUDIO": "Audio"
 };
 
-// valid tweaks
+// valid tweaks, used for error checking
 
 const validTweaks = {
   "SAW-OSC": ["detune", "pitch"],
@@ -55,7 +56,7 @@ const validTweaks = {
   "DECAY": ["attack", "decay", "level"],
 };
 
-// valid patch inputs
+// valid patch inputs, used for error checking
 
 const validPatchInputs = {
   "AUDIO": ["in"],
@@ -88,7 +89,7 @@ const validPatchOutputs = {
 };
 
 // ------------------------------------------------------------
-// initialise the button callback etc
+// initialise the button callbacks etc
 // ------------------------------------------------------------
 
 function init() {
@@ -101,9 +102,9 @@ function init() {
 // dynamically add an HTML slider to the page
 // ------------------------------------------------------------
 
-function makeSlider(id, docstring, min, max, val, step) {
+function makeSlider(containerName, id, docstring, min, max, val, step) {
   // get the root container
-  const container = document.getElementById('container');
+  const container = document.getElementById(containerName);
   // make the slider container
   const sliderContainer = document.createElement("div");
   sliderContainer.className = "slider-container";
@@ -145,9 +146,11 @@ function makeSlider(id, docstring, min, max, val, step) {
 // ------------------------------------------------------------
 
 function removeAllSliders() {
-  const container = document.getElementById('container');
-  while (container.firstChild)
-    container.removeChild(container.firstChild);
+  for (let row = 1; row <= 2; row++) {
+    const container = document.getElementById(`container${row}`);
+    while (container.firstChild)
+      container.removeChild(container.firstChild);
+  }
 }
 
 // ------------------------------------------------------------
@@ -336,7 +339,8 @@ moduleContext.PulseOsc = class extends Oscillator {
 
   }
 
-  // set the pulse width
+  // set the pulse width which should be in the range [0,1]
+  // a width of 0.5 corresponds to a square wave
   // we keep track of the frequency in a variable since we need to set the frequency
   // of the oscillator to zero and set frequency through the constantsource node
   // it would cause division by zero issues if used directly
@@ -1010,7 +1014,6 @@ function makeGrammar() {
 
 }
 
-
 // ------------------------------------------------------------
 // throw an error message with a line number
 // ------------------------------------------------------------
@@ -1159,7 +1162,7 @@ function getGrammarSource() {
   tweakable
   = varname "." parameter
 
-  parameter = "pitch" | "detune" | "level" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release" | "fuzz"
+  parameter = "pitch" | "detune" | "level" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release" | "fuzz" | "pulsewidth"
 
   varname (a module name)
   = lower alnum*
@@ -1212,14 +1215,24 @@ function parseSynthSpec() {
 function createControls(json) {
   const obj = JSON.parse(json);
   removeAllSliders();
+  let count = 0;
+  let row = 1;
   for (const m of obj.statements) {
     // find all the parameters
     if (m.param) {
       let p = m.param;
-      makeSlider(p.name, p.doc, p.min, p.max, p.default, p.step);
+      if (count > 11)
+        row = 2;
+      makeSlider(`container${row}`, p.name, p.doc, p.min, p.max, p.default, p.step);
+      count++;
     }
   }
 }
+
+// ------------------------------------------------------------
+// convert the raw JSON from the parser into a standard JSON form that could
+// also be used to describe other kinds of synths
+// ------------------------------------------------------------
 
 function convertToStandardJSON(json) {
   // we need to put the JSON from the grammar into a standard format
