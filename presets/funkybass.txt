@@ -41,6 +41,15 @@ default : 0.7
 doc : controls the level of the attack transient
 @end
 
+@param volume
+type: float
+step: 0.01
+min: 0
+max: 1
+default : 0.7
+doc : controls the volume
+@end
+
 # modules
 
 PULSE-OSC : pwm
@@ -84,13 +93,13 @@ vcf.out -> vca.in
 vca.out -> audio.in
 vcf.resonance = map(param.resonance,0,8)
 
-env1.level = param.level
+env1.level = param.level*param.volume
 env1.attack = 0.001
 env1.decay = 0.5
-env1.sustain = param.level
+env1.sustain = param.level*param.volume
 env1.release = 0.1
 
-env2.level = map(param.accent,400,3000)
+env2.level = map(param.accent,400,4000)
 env2.attack = 0.001
 env2.decay = 0.03
 env2.sustain = map(param.cutoff,250,800)

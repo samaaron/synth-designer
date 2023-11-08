@@ -57,7 +57,7 @@ env.sustain = 0
 env.release = 0.2
 env.level = param.level*param.volume
 
-gain.level = map(param.timbre,1,500)
+gain.level = map(param.timbre,1,500)*map(param.level,0,1)
 
 # tweak
 

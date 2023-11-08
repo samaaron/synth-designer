@@ -14,6 +14,24 @@ default: 0.5
 doc: changes the timbre
 @end
 
+@param release
+type: float
+step: 0.01
+min: 0
+max: 1
+default: 0.2
+doc: release time
+@end
+
+@param volume
+type: float
+step: 0.01
+min: 0
+max: 1
+default: 0.5
+doc: overall volume
+@end
+
 # modules
 
 PULSE-OSC : vco
@@ -58,16 +76,16 @@ mod.pitch = param.pitch
 mod.detune = 1329
 
 env1.attack = 0
-env1.level = param.level
-env1.decay = 0.8
+env1.level = param.level*param.volume
+env1.decay = 2
 env1.sustain = 0
-env1.release = 0.1
+env1.release = param.release
 
 env2.level = map(param.pitch,1000,2500)
 env2.attack = 0
 env2.decay = 0.2
 env2.sustain = map(param.pitch,500,1000)
-env2.release = 0.1
+env2.release = param.release
 
 env3.level = map(param.timbre,0,0.8)
 env3.attack = 0
