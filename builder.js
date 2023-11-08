@@ -22,6 +22,7 @@ const MIDI_NOTE_OFF = 0x80;
 let midi = null;
 let midiInputs = null;
 let midiInputEnabled = false;
+let synthForNote = [];
 
 // gui stuff
 
@@ -302,18 +303,48 @@ function onMIDIMessage(message) {
     if (op === MIDI_NOTE_ON && message.data[2] != 0) {
       // blip the orange dot
       midiDot.style.opacity = 1;
+      // note number
+      let midiNoteNumber = message.data[1];
       // convert note number to freq in Hz
-      const pitchHz = midiNoteToFreqHz(message.data[1]);
+      const pitchHz = midiNoteToFreqHz(midiNoteNumber);
       // convert velocity to level in the range [0,1]
       const level = message.data[2] / 127.0;
-      // get duration
-      const durationSec = getFloatParam("duration");
       // parameters
       const params = getParametersForSynth(synth);
       // play the note 
-      synth.play(pitchHz, level, durationSec, params);
+      // we will stop this note when we get a note off, so play it for an arbitrary duration of 5 minutes
+      // if it times out you are not playing nearly fast enough
+      // https://www.youtube.com/watch?v=abVhSCzByw8 
+      synthForNote[midiNoteNumber] = synth.play(pitchHz, level, 300, params);
       // turn the dot off after a short time
       setTimeout(() => { midiDot.style.opacity = 0; }, DOT_DURATION_MS);
+    }
+    // a note off is a note off, or a note on with zero velocity
+    if (op === MIDI_NOTE_OFF || (op === MIDI_NOTE_ON && message.data[2] === 0)) {
+      // this is horrible and not good at all
+      // to stop a note immediately we need to adjust the envelope release - needs quite some changes
+      // since we need to get the current value of the parameter that the envelope is attached to
+      let midiNoteNumber = message.data[1];
+      let nodeGraph = synthForNote[midiNoteNumber];
+      let now = context.currentTime;
+      let longestRelease = 0;
+      if (nodeGraph) {
+        // why check the nodeGraph exists? I noticed that with HOLD on my keyboard and the arpeggiator running 
+        // (which is a silly thing to do) note offs don't keep up with note ons. So possibly we could have a case
+        // where a note off has been received but there is no nodeGraph from a previous note on
+        Object.values(nodeGraph).forEach((m) => {
+          if (m.release) {
+            m.releaseOnNoteOff(now);
+            if (m.release > longestRelease)
+              longestRelease = m.release;
+          }
+        });
+        // stop after the longest release time plus a safety margin of 0.1 sec
+        Object.values(nodeGraph).forEach((m) => {
+          m.stop?.(now + longestRelease + 0.1);
+        });
+        synthForNote[midiNoteNumber] = null;
+      }
     }
   }
 }
@@ -329,6 +360,10 @@ Oscillator = class {
   constructor(ctx) {
     this.osc = ctx.createOscillator(ctx);
     this.osc.frequency.value = MIDDLE_C;
+    // create a callback so the oscillator is garbage collected when it stops playing
+    this.osc.onended = () => {
+      this.osc.disconnect();
+    }
   }
 
   set detune(n) {
@@ -398,6 +433,9 @@ moduleContext.PulseOsc = class extends Oscillator {
     this.osc2 = ctx.createOscillator();
     this.osc2.frequency.value = 0;
     this.osc2.type = "sawtooth"
+    this.osc2.onended = () => {
+      this.osc2.disconnect();
+    }
 
     // set the initial pulsewidth to 50%
     this.#pulsewidth = 0.5;
@@ -498,7 +536,6 @@ moduleContext.PulseOsc = class extends Oscillator {
     this.osc2.stop(tim);
     this.freqNode.stop(tim);
     this.detuneNode.stop(tim);
-
   }
 }
 
@@ -566,6 +603,9 @@ moduleContext.Noise = class NoiseGenerator {
     this.#noise = ctx.createBufferSource();
     this.#noise.buffer = noiseBuffer;
     this.#noise.loop = true;
+    this.#noise.onended = () => {
+      this.#noise.disconnect();
+    }
   }
 
   get out() {
@@ -683,6 +723,7 @@ moduleContext.Envelope = class {
   #sustain
   #release
   #level
+  #controlledParam
 
   constructor(ctx) {
     this.#attack = 0.1;
@@ -704,6 +745,10 @@ moduleContext.Envelope = class {
     this.#sustain = v;
   }
 
+  get release() {
+    return this.#release;
+  }
+
   set release(v) {
     this.#release = v;
   }
@@ -712,7 +757,15 @@ moduleContext.Envelope = class {
     this.#level = v;
   }
 
+ releaseOnNoteOff(now) {
+    let value = this.#controlledParam.value;
+    this.#controlledParam.cancelScheduledValues(now);
+    this.#controlledParam.setValueAtTime(value, now);
+    this.#controlledParam.linearRampToValueAtTime(0, now + this.#release);
+  }
+
   apply(param, when, durationSec) {
+    this.#controlledParam = param;
     param.setValueAtTime(0, when);
     param.linearRampToValueAtTime(this.#level, when + this.#attack);
     param.linearRampToValueAtTime(this.#sustain, when + this.#attack + this.#decay);
@@ -1612,6 +1665,9 @@ class Synth {
   // destination is the audio node we are connecting to
   // this could be context.destination or it would be an fx unit
 
+  // we return a reference to the node graph since we might need to keep track of it
+  // if playing via MIDI, since note offs can occur whenever
+
   play(pitch, level, durationSec, params) {
 
     let node = {};
@@ -1671,6 +1727,10 @@ class Synth {
       m.start?.(when);
       m.stop?.(when + maxDurationSec);
     });
+
+    // return the node in case we need to stop it later, if doing MIDI control
+
+    return node;
 
   }
 

@@ -52,6 +52,14 @@ default: 0
 doc : filter decay
 @end
 
+@param volume
+type: float
+step: 0.01
+min: 0
+max: 1
+default: 0.7
+doc : volume
+@end
 
 SAW-OSC : saw
 LPF : lowpass1
@@ -71,10 +79,10 @@ vca.out -> audio.in
 
 ampenv.out -> vca.levelCV
 
-ampenv.level = param.level
+ampenv.level = param.level*param.volume
 ampenv.attack = 0.01
 ampenv.release = 0.01
-ampenv.sustain = param.level
+ampenv.sustain = param.level*param.volume
 ampenv.decay = 0.1
 
 filterenv.level = map(param.cutoff,50,10000)

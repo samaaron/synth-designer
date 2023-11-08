@@ -23,6 +23,15 @@ default: 0.5
 doc : controls the decay time of the envelope
 @end
 
+@param randomness
+type: float
+step: 0.01
+min: 0
+max: 1
+default: 0.5
+doc : the amount of randomness
+@end
+
 @param sub_level
 type: float
 step: 0.01
@@ -32,10 +41,19 @@ default: 0.5
 doc : controls the level of the sub oscillator an octave below the note you play
 @end
 
+@param volume
+type: float
+step: 0.01
+min: 0
+max: 1
+default: 0.7
+doc : overall volume
+@end
+
 # modules
 
 SAW-OSC : vco1
-SAW-OSC : vco2
+SQR-OSC : vco2
 LPF : filter
 LPF : filter2
 VCA : vca
@@ -64,7 +82,7 @@ mix2.level = map(param.sub_level,0,0.5)
 vco2.detune = -1202
 vco1.pitch = param.pitch
 vco2.pitch = param.pitch
-filter.resonance = random(0,15)
+filter.resonance = param.randomness*random(0,15)
 env2.out -> filter.cutoffCV
 filter2.cutoff = map(param.cutoff,100,15000)
 filter2.resonance = 0
@@ -72,16 +90,16 @@ filter2.resonance = 0
 # apply the envelope 
 
 env.attack = 0.001
-env.level = param.level
+env.level = param.level*param.volume
 env.sustain = 0
 env.release = 0.1
 env.decay = map(param.decay,0.1,1)
 
 # filter envelope
 
-env2.attack = 0
-env2.level = random(400,8000)
-env2.sustain = 0
+env2.attack = 0.001
+env2.level = map(param.cutoff,100,8000)+param.randomness*random(0,8000)
+env2.sustain = map(param.cutoff,100,8000)
 env2.release = 0.1
 env2.decay = map(param.decay,0.1,1)
 

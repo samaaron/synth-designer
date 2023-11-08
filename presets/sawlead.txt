@@ -94,7 +94,7 @@ ampenv.attack = 0.01
 ampenv.release = 0.01
 ampenv.level = param.level*param.volume
 ampenv.decay = 0.1
-ampenv.sustain = 1
+ampenv.sustain = param.level*param.volume
 
 # end
 
