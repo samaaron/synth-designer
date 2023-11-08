@@ -331,8 +331,8 @@ subgain.level = map(param.sub_level,0,1)
 
 highpass.resonance = 0
 highpass.cutoff = (exp(param.hpf_freq*0.5)-1)*860
-lowpass.resonance = map(param.res,0,20)
-lowpass.cutoff = (exp(param.lpf_freq*0.5)-1)*68
+lowpass1.resonance = map(param.res,0,20)
+lowpass1.cutoff = (exp(param.lpf_freq*0.5)-1)*68
 mix.level = 0.4
 
 pwmgain.level = map(param.pwm,0,0.5)
