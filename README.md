@@ -8,13 +8,13 @@ This is a leaner version of the modular synth designer without the graphical use
 
   ```vca.level = param.level*param.volume```
 
-* I have added funcions for ```log``` and ```exp``` (useful for scaling parameters in a perceptualy meaningful way) and randomness, as well as a function that maps a variable from one numerical range into another. 
+* I have added functions for ```log``` and ```exp``` (useful for scaling parameters in a perceptualy meaningful way) and randomness, as well as a function that maps a variable from one numerical range into another. 
 
 * A graphical user interface is constructed on the fly with a slider for each parameter.
 
 * MIDI support now works properly with the release phase on envelopes; when a MIDI note off is received the webaudio graph is modified so that envelopes move to the release phase. 
 
-Sample patches are included in the ```presets``` folder.
+Sample patches are included in the ```presets``` folder. 
 
-I have also been a lot more careful about memory management now. When a webaudio node stops playing a callback is triggered that disconnects it from the webaudio graph, ensuring that it gets garbage collected. 
+I have also been more careful about memory management now. When a webaudio node stops playing a callback is triggered that disconnects it from the webaudio graph, ensuring that it gets garbage collected. 
 
