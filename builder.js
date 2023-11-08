@@ -12,6 +12,22 @@ const MAX_LEVEL = 1;
 const MIN_LEVEL = 0;
 const SHOW_DOC_STRINGS = false;
 
+// midi stuff
+
+const MIDI_NOTE_ON = 0x90;
+const MIDI_NOTE_OFF = 0x80;
+
+// midi context
+
+let midi = null;
+let midiInputs = null;
+let midiInputEnabled = false;
+
+// gui stuff
+
+const midiDot = gui("dot"); // we need this quickly so cache it
+const DOT_DURATION_MS = 50; // pulse the dot for 50ms when we get a midi note on
+
 // global variables (sorry)
 
 let synthGrammar;
@@ -95,6 +111,7 @@ const validPatchOutputs = {
 function init() {
   disableGUI(true);
   addListenersToGUI();
+  setupMidi();
   makeGrammar();
 }
 
@@ -206,6 +223,24 @@ function addListenersToGUI() {
     gui("duration-label").textContent = `duration [${parseFloat(this.value)}]`;
   });
 
+    // midi input selector
+    gui("midi-input").addEventListener("change", () => {
+      midiInputEnabled = false;
+      const index = parseInt(gui("midi-input").value);
+      if (midi != null && index > 0) {
+        let selectedName = midiInputs[index - 1].name;
+        // note that we need to set all callbacks since we might change the midi input while running
+        // and then the previous callback would persist
+        for (let val of midi.inputs.values()) {
+          if (val.name === selectedName)
+            val.onmidimessage = onMIDIMessage;
+          else
+            val.onmidimessage = undefined;
+        }
+        midiInputEnabled = true;
+      }
+    });
+  
 }
 
 // ------------------------------------------------------------
@@ -218,6 +253,69 @@ function disableGUI(b) {
   gui("save-button").disabled = b;
   gui("save-as-button").disabled = b;
   gui("play-button").disabled = b;
+  gui("midi-label").disabled = b;
+  gui("midi-input").disabled = b;
+}
+
+// ------------------------------------------------------------
+// Set up the MIDI system and find possible input devices
+// ------------------------------------------------------------
+
+function setupMidi() {
+
+  navigator.requestMIDIAccess({ "sysex": "false" }).then((access) => {
+    // Get lists of available MIDI controllers
+    // might need to cache access
+    midi = access;
+    midiInputs = Array.from(access.inputs.values());
+
+    // get the html element for the list of midi inputs
+    const inputSelector = document.getElementById("midi-input");
+
+    // first element in the list is no input
+    let option = document.createElement("option");
+    option.text = "None";
+    option.value = 0;
+    inputSelector.appendChild(option);
+
+    // set the options for the remaining html elements
+    let index = 1;
+    for (let val of midiInputs) {
+      option = document.createElement("option");
+      option.text = val.name;
+      option.value = index;
+      inputSelector.appendChild(option);
+      index++;
+    };
+
+  });
+}
+
+// ------------------------------------------------------------
+// callback for when a MIDI event is received
+// ------------------------------------------------------------
+
+function onMIDIMessage(message) {
+  if (synth != undefined && synth.isValid) {
+    var op = message.data[0] & 0xf0; // mask the lowest nibble since we don't care about which MIDI channel we receive from
+    // a note on is only a note on if it has a non-zero velocity
+    if (op === MIDI_NOTE_ON && message.data[2] != 0) {
+      // blip the orange dot
+      midiDot.style.opacity = 1;
+      // convert note number to freq in Hz
+      const pitchHz = midiNoteToFreqHz(message.data[1]);
+      // convert velocity to level in the range [0,1]
+      const level = message.data[2] / 127.0;
+      // get duration
+      const durationSec = getFloatParam("duration");
+      // parameters
+      const params = getParametersForSynth(synth);
+      // play the note 
+      synth.play(pitchHz, level, durationSec, params);
+      // turn the dot off after a short time
+      setTimeout(() => { midiDot.style.opacity = 0; }, DOT_DURATION_MS);
+    }
+  }
 }
 
 // ------------------------------------------------------------
@@ -1553,7 +1651,6 @@ class Synth {
       // need to find maxima and minima before doing this
       let value = evaluatePostfix(twk.expression, params, this.#maxima, this.#minima);
       obj[twk.param] = value;
-      console.log(`${twk} ${value}`);
     }
 
     // apply the envelopes
