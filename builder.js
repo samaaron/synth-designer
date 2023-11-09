@@ -2196,3 +2196,30 @@ function testExpression(infix, param, minima, maxima) {
   console.log(`infix=${infixResult} postfix=${postfixResult}`);
   console.log("");
 }
+
+/*
+Tremolo = class {
+
+  #in
+  #out
+  #context
+  #lfo
+
+}
+
+function makeLFO(ctx, freqHz, phaseRad) {
+  const real = new Float32Array(2);
+  const imag = new Float32Array(2);
+  real[0] = 0;
+  imag[0] = 0;
+  real[1] = Math.cos(phaseRad);
+  imag[1] = Math.sin(phaseRad);
+  const lfo = ctx.createOscillator();
+  lfo.type = "custom";
+  const wave = ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+  lfo.setPeriodicWave(wave);
+  lfo.frequency.value = freqHz;
+  return lfo;
+}
+
+*/
