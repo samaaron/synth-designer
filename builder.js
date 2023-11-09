@@ -875,7 +875,6 @@ moduleContext.Waveshaper = class {
     //const deg = Math.PI / 180.0;
     for (let i = 0; i < numSamples; i++) {
       const x = (i * 2) / numSamples - 1;
-      // curve[i] = ((3 + n) * x * 20 * deg) / (Math.PI + n * Math.abs(x));
       curve[i] = (Math.PI + n) * x / (Math.PI + n * Math.abs(x));
     }
     return curve;
