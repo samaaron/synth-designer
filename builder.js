@@ -224,24 +224,30 @@ function addListenersToGUI() {
     gui("duration-label").textContent = `duration [${parseFloat(this.value)}]`;
   });
 
-    // midi input selector
-    gui("midi-input").addEventListener("change", () => {
-      midiInputEnabled = false;
-      const index = parseInt(gui("midi-input").value);
-      if (midi != null && index > 0) {
-        let selectedName = midiInputs[index - 1].name;
-        // note that we need to set all callbacks since we might change the midi input while running
-        // and then the previous callback would persist
-        for (let val of midi.inputs.values()) {
-          if (val.name === selectedName)
-            val.onmidimessage = onMIDIMessage;
-          else
-            val.onmidimessage = undefined;
-        }
-        midiInputEnabled = true;
+  // reverb slider
+  gui("reverb").addEventListener("input", function () {
+    gui("reverb-label").textContent = `reverb [${parseFloat(this.value)}]`;
+  });
+
+
+  // midi input selector
+  gui("midi-input").addEventListener("change", () => {
+    midiInputEnabled = false;
+    const index = parseInt(gui("midi-input").value);
+    if (midi != null && index > 0) {
+      let selectedName = midiInputs[index - 1].name;
+      // note that we need to set all callbacks since we might change the midi input while running
+      // and then the previous callback would persist
+      for (let val of midi.inputs.values()) {
+        if (val.name === selectedName)
+          val.onmidimessage = onMIDIMessage;
+        else
+          val.onmidimessage = undefined;
       }
-    });
-  
+      midiInputEnabled = true;
+    }
+  });
+
 }
 
 // ------------------------------------------------------------
@@ -757,7 +763,7 @@ moduleContext.Envelope = class {
     this.#level = v;
   }
 
- releaseOnNoteOff(now) {
+  releaseOnNoteOff(now) {
     let value = this.#controlledParam.value;
     this.#controlledParam.cancelScheduledValues(now);
     this.#controlledParam.setValueAtTime(value, now);
