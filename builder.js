@@ -24,6 +24,10 @@ let midiInputs = null;
 let midiInputEnabled = false;
 let synthForNote = [];
 
+// effects
+
+let reverb;
+
 // gui stuff
 
 const midiDot = gui("dot"); // we need this quickly so cache it
@@ -114,6 +118,17 @@ function init() {
   addListenersToGUI();
   setupMidi();
   makeGrammar();
+  setDefaultValues();
+}
+
+// ------------------------------------------------------------
+// set default parameters
+// ------------------------------------------------------------
+
+function setDefaultValues() {
+  setFloatControl("duration",0.5);
+  setFloatControl("level",0.8);
+  setFloatControl("reverb",0.1);
 }
 
 // ------------------------------------------------------------
@@ -208,7 +223,10 @@ function addListenersToGUI() {
   gui("start-button").onclick = () => {
     context = new AudioContext();
     disableGUI(false);
+    connectEffects(context);
+    initialiseEffects();
   }
+
   // pitch slider
   gui("pitch").addEventListener("input", function () {
     gui("pitch-label").textContent = `pitch [${midiToNoteName(parseInt(this.value))}]`;
@@ -216,19 +234,18 @@ function addListenersToGUI() {
 
   // amplitude slider
   gui("level").addEventListener("input", function () {
-    gui("level-label").textContent = `level [${parseFloat(this.value)}]`;
+    setFloatControl("level",parseFloat(this.value));
   });
 
   // duration slider
   gui("duration").addEventListener("input", function () {
-    gui("duration-label").textContent = `duration [${parseFloat(this.value)}]`;
+    setFloatControl("duration",parseFloat(this.value));
   });
 
   // reverb slider
   gui("reverb").addEventListener("input", function () {
-    gui("reverb-label").textContent = `reverb [${parseFloat(this.value)}]`;
+    setReverb(parseFloat(this.value));
   });
-
 
   // midi input selector
   gui("midi-input").addEventListener("change", () => {
@@ -1356,7 +1373,7 @@ function parseSynthSpec() {
       if (synth.hasWarning) {
         gui("parse-errors").value += "\n" + synth.warningString;
       }
-      synth.out.connect(context.destination);
+      synth.out.connect(reverb.in);
     } catch (error) {
       gui("parse-errors").value = error.message;
     }
@@ -1907,6 +1924,103 @@ class Synth {
 }
 
 // ------------------------------------------------------------
+// make a reverb unit and connect it to the audio output
+// ------------------------------------------------------------
+
+async function connectEffects(ctx) {
+  reverb = new Reverb(ctx);
+  await reverb.load("./impulses/large-hall.wav");
+  reverb.out.connect(ctx.destination);
+}
+
+// ------------------------------------------------------------
+// Convolutional reverb class
+// ------------------------------------------------------------
+
+Reverb = class {
+
+  #in
+  #out
+  #context
+  #isValid
+  #wetLevel
+  #wetGain
+  #dryGain
+  #reverb
+
+  constructor(ctx) {
+    this.#context = ctx;
+    this.#isValid = false;
+    this.#wetLevel = 0.5
+    this.#reverb = this.#context.createConvolver();
+    this.#wetGain = this.#context.createGain();
+    this.#dryGain = this.#context.createGain();
+    this.#in = this.#context.createGain();
+    this.#in.gain.value = 1;
+    this.#out = this.#context.createGain();
+    this.#out.gain.value = 1;
+    this.#wetGain.gain.value = this.#wetLevel;
+    this.#dryGain.gain.value = 1 - this.#wetLevel;
+    // connect everything up
+    this.#in.connect(this.#reverb);
+    this.#reverb.connect(this.#wetGain);
+    this.#in.connect(this.#dryGain);
+    this.#wetGain.connect(this.#out);
+    this.#dryGain.connect(this.#out);
+  }
+
+  async load(filename) {
+    const impulseResponse = await this.getImpulseResponseFromFile(filename);
+    if (this.#isValid) {
+      this.#reverb.buffer = impulseResponse;
+    }
+  }
+
+  async getImpulseResponseFromFile(filename) {
+    try {
+      let reply = await fetch(filename);
+      this.#isValid = true;
+      return this.#context.decodeAudioData(await reply.arrayBuffer());
+    } catch (err) {
+      this.#isValid = false;
+      console.log("unable to load the impulse response file called " + filename);
+    }
+  }
+
+  set wetLevel(level) {
+    this.#wetLevel = clamp(level, 0, 1);
+    this.#wetGain.gain.value = this.#wetLevel;
+    this.#dryGain.gain.value = 1 - this.#wetLevel;
+  }
+
+  get in() {
+    return this.#in
+  }
+
+  get out() {
+    return this.#out;
+  }
+
+}
+
+// ------------------------------------------------------------
+// initialise the effects chain and set default parameters
+// ------------------------------------------------------------
+
+function initialiseEffects() {
+  setReverb(0.1);
+}
+
+// ------------------------------------------------------------
+// Set the reverb to a given level
+// ------------------------------------------------------------
+
+function setReverb(w) {
+  reverb.wetLevel = w;
+  setFloatControl("reverb", w);
+}
+
+// ------------------------------------------------------------
 // Get the document element with a given name
 // ------------------------------------------------------------
 
@@ -1973,6 +2087,24 @@ async function saveAsFile() {
   await writable.close();
   gui("file-label").textContent = "Current file: " + fileHandle.name;
   wasEdited = false;
+}
+
+// ------------------------------------------------------------
+// Clamp a value to a maximum and minimum
+// https://www.youtube.com/watch?v=g2_zb6oyep8
+// ------------------------------------------------------------
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+// ------------------------------------------------------------
+// set control to value
+// ------------------------------------------------------------
+
+function setFloatControl(label, value) {
+  gui(label).value = value;
+  gui(`${label}-label`).textContent = `${label} [${value.toFixed(2)}]`;
 }
 
 // ------------------------------------------------------------

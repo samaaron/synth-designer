@@ -87,7 +87,7 @@ env2.decay = 0.2
 env2.sustain = map(param.pitch,500,1000)
 env2.release = param.release
 
-env3.level = map(param.timbre,0,0.8)
+env3.level = map(param.timbre,0,5)
 env3.attack = 0
 env3.decay = 0.2
 env3.sustain = 0.1
