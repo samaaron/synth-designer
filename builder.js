@@ -1228,17 +1228,19 @@ function makeGrammar() {
     patchoutput(a, b, c) {
       const id = a.interpret();
       const param = c.interpret();
-      if (!modules.has(id))
-        throwError(`a module called "${id}" has not been defined"`, this.source);
-      const type = modules.get(id);
-      if (!validPatchOutputs[type].includes(param))
-        throwError(`cannot patch the parameter "${param}" of module "${id}"`, this.source);
+      if (id != "audio") { // audio out
+        if (!modules.has(id))
+          throwError(`a module called "${id}" has not been defined"`, this.source);
+        const type = modules.get(id);
+        if (!validPatchOutputs[type].includes(param))
+          throwError(`cannot patch the parameter "${param}" of module "${id}"`, this.source);
+      }
       return `{"id":"${id}","param":"${param}"}`;
     },
     patchinput(a, b, c) {
       const id = a.interpret();
       const param = c.interpret();
-      if (id != "audio") {
+      if (id != "audio") { // audio in
         if (!modules.has(id))
           throwError(`a module called "${id}" has not been defined`, this.source);
         const type = modules.get(id);
@@ -1533,7 +1535,7 @@ function parseSynthSpec() {
       gui("parse-errors").value = "OK";
       const adapter = semantics(result);
       const json = adapter.interpret();
-      console.log(json);
+      // console.log(json);
       createControls(json);
       currentJSON = convertToStandardJSON(json);
       synth = new Synth(context, currentJSON);
