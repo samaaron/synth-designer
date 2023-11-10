@@ -1,5 +1,6 @@
 @synth voxhumana
 longname : Vox Humana
+type : synth
 author : Guy Brown
 version : 1.0
 doc : Polymoog Vox Humana patch as used by Gary Numan

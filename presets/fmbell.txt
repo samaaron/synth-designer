@@ -1,5 +1,6 @@
 @synth fmbell
 longname : FM Bell
+type : synth
 author : Guy Brown
 version : 1.0
 doc : Simple example of FM synthesis to make a bell sound

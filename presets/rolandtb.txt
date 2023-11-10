@@ -1,5 +1,6 @@
 @synth rolandtb
 longname: Roland TB303 Bassline
+type : synth
 author: Guy Brown
 version: 1.0
 doc: Simulation of roland TB3030 bassline with distortion

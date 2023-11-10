@@ -1,5 +1,6 @@
 @synth sawlead
 longname : Classic saw lead
+type : synth
 author : Guy Brown
 version : 1.0
 doc : Simple saw lead with two detuned oscillators
@@ -68,12 +69,12 @@ LPF : lowpass
 ADSR : filterenv
 ADSR : ampenv
 VCA : vca
+VCA : wet
 
 saw1.out -> mix.in
 saw2.out -> mix.in
 mix.out -> lowpass.in
 lowpass.out -> vca.in
-vca.out -> audio.in
 
 filterenv.out -> lowpass.cutoffCV
 
@@ -95,6 +96,44 @@ ampenv.release = 0.01
 ampenv.level = param.level*param.volume
 ampenv.decay = 0.1
 ampenv.sustain = param.level*param.volume
+
+# delay effect
+
+DELAY : leftlag
+DELAY : rightlag
+PAN : left
+PAN : right
+VCA : stereomix
+VCA : leftfb
+VCA : rightfb
+
+vca.out -> wet.in
+
+wet.out -> leftlag.in
+leftlag.out -> left.in
+leftlag.out -> leftfb.in
+leftfb.out -> leftlag.in
+left.out -> stereomix.in
+
+wet.out -> rightlag.in
+rightlag.out -> right.in
+rightlag.out -> rightfb.in
+rightfb.out -> rightlag.in
+right.out -> stereomix.in
+
+vca.out -> stereomix.in
+
+left.angle = -1
+right.angle = 1
+
+leftlag.lag = 0.75
+rightlag.lag = 1.25
+
+stereomix.out -> audio.in
+
+wet.level = 0.2
+leftfb.level = 0.3
+rightfb.level = 0.3
 
 # end
 

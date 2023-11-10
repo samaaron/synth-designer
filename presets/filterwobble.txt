@@ -1,5 +1,6 @@
 @synth filterwobble
 longname : Modulated filter
+type : synth
 author : Guy Brown
 version : 1.0
 doc : A demo of how to modulate with a LFO, try this with a high pitch

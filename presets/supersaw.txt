@@ -1,5 +1,6 @@
 @synth supersaw
 longname : Trance supersaw
+type : synth
 author : Guy Brown
 version : 1.0
 doc : Classic Roland trance supersaw

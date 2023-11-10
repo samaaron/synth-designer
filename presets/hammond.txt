@@ -1,5 +1,6 @@
 @synth hammond
 longname: Hammond organ
+type : synth
 author: Guy Brown
 version: 1.0
 doc: Hammond organ with drawbars and percussion

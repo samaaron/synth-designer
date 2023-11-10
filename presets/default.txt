@@ -1,5 +1,6 @@
 @synth default
 longname : Default patch
+type : synth
 author : Guy J Brown
 version : 1.0
 doc : A very simple default patch

@@ -1,5 +1,6 @@
 @synth choir
 longname : choir
+type : synth
 author : Guy Brown
 version : 1.0
 doc : An ahhhh choir sound best in C2-C3 range

@@ -51,6 +51,8 @@ const moduleClasses = {
   "TRI-OSC": "TriOsc",
   "SQR-OSC": "SquareOsc",
   "PULSE-OSC": "PulseOsc",
+  "LFO": "LFO",
+  "PAN": "Panner",
   "NOISE": "Noise",
   "LPF": "LowpassFilter",
   "HPF": "HighpassFilter",
@@ -58,7 +60,8 @@ const moduleClasses = {
   "SHAPER": "Waveshaper",
   "ADSR": "Envelope",
   "DECAY": "Decay",
-  "AUDIO": "Audio"
+  "AUDIO": "Audio",
+  "DELAY": "Delay"
 };
 
 // valid tweaks, used for error checking
@@ -69,12 +72,15 @@ const validTweaks = {
   "SQR-OSC": ["detune", "pitch"],
   "TRI-OSC": ["detune", "pitch"],
   "PULSE-OSC": ["detune", "pitch", "pulsewidth"],
+  "LFO": ["pitch","phase"],
   "LPF": ["cutoff", "resonance"],
   "HPF": ["cutoff", "resonance"],
   "VCA": ["level"],
   "SHAPER": ["fuzz"],
   "ADSR": ["attack", "decay", "sustain", "release", "level"],
   "DECAY": ["attack", "decay", "level"],
+  "PAN": ["angle"],
+  "DELAY": ["lag"]
 };
 
 // valid patch inputs, used for error checking
@@ -90,6 +96,8 @@ const validPatchInputs = {
   "HPF": ["in", "cutoffCV"],
   "VCA": ["in", "levelCV"],
   "SHAPER": ["in"],
+  "PAN": ["in", "angleCV"],
+  "DELAY": ["in","lagCV"]
 };
 
 // valid patch outputs - pointless at the moment but in future modules may have more than one output
@@ -100,6 +108,7 @@ const validPatchOutputs = {
   "SQR-OSC": ["out"],
   "TRI-OSC": ["out"],
   "PULSE-OSC": ["out"],
+  "LFO": ["out"],
   "NOISE": ["out"],
   "LPF": ["out"],
   "HPF": ["out"],
@@ -107,6 +116,8 @@ const validPatchOutputs = {
   "SHAPER": ["out"],
   "ADSR": ["out"],
   "DECAY": ["out"],
+  "PAN": ["out"],
+  "DELAY": ["out"]
 };
 
 // ------------------------------------------------------------
@@ -419,6 +430,148 @@ Oscillator = class {
 
   stop(tim) {
     this.osc.stop(tim);
+  }
+
+}
+
+// ------------------------------------------------------------
+// LFO with adjustable phase
+// ------------------------------------------------------------
+
+moduleContext.LFO = class Oscillator {
+
+  #sinOsc
+  #cosOsc
+  #sinGain
+  #cosGain
+  #mixer
+  #freqHz
+
+  constructor(ctx) {
+    this.#freqHz = 5; // Hz
+
+    this.#sinOsc = ctx.createOscillator();
+    this.#sinOsc.type = "sine";
+    this.#sinOsc.frequency.value = this.#freqHz;
+    this.#sinOsc.onended = () => {
+      this.#sinOsc.disconnect();
+    }
+
+    this.#cosOsc = ctx.createOscillator();
+    this.#cosOsc.type = "sine";
+    this.#cosOsc.frequency.value = this.#freqHz;
+    this.#cosOsc.onended = () => {
+      this.#cosOsc.disconnect();
+    }
+
+    this.#sinGain = ctx.createGain();
+    this.#cosGain = ctx.createGain();
+    this.#mixer = ctx.createGain();
+
+    this.#sinOsc.connect(this.#sinGain);
+    this.#cosOsc.connect(this.#cosGain);
+    this.#sinGain.connect(this.#mixer);
+    this.#cosGain.connect(this.#mixer);
+
+  }
+
+  set phase(p) {
+    this.#sinGain.gain.value = Math.cos(p);
+    this.#cosGain.gain.value = Math.sin(p);
+  }
+
+  get pitch() {
+    return this.#freqHz;
+  }
+
+  set pitch(n) {
+    this.#freqHz = n;
+    this.#sinOsc.frequency.value = this.#freqHz;
+    this.#cosOsc.frequency.value = this.#freqHz;
+  }
+
+  get out() {
+    return this.#mixer;
+  }
+
+  start(tim) {
+    this.#sinOsc.start(tim);
+    this.#cosOsc.start(tim);
+  }
+
+  stop(tim) {
+    this.#sinOsc.stop(tim);
+    this.#cosOsc.stop(tim);
+  }
+
+}
+
+// ------------------------------------------------------------
+// Stereo panner
+// ------------------------------------------------------------
+
+moduleContext.Panner = class {
+
+  #pan
+
+  constructor(ctx) {
+    this.#pan = ctx.createStereoPanner();
+  }
+
+  // stereo position between -1 and 1
+  set angle(p) {
+    this.#pan.pan.value = p;
+  }
+
+ // stereo position between -1 and 1
+  get angle() {
+    return this.#pan.pan.value;
+  }
+
+  get angleCV() {
+    return this.#pan.pan;
+  }
+
+  get in() {
+    return this.#pan;
+  }
+
+  get out() {
+    return this.#pan;
+  }
+
+}
+
+// ------------------------------------------------------------
+// Delay line
+// ------------------------------------------------------------
+
+moduleContext.Delay = class {
+
+  #delay
+
+  constructor(ctx) {
+    this.#delay = ctx.createDelay(10);
+  }
+
+  set lag(t) {
+    this.#delay.delayTime.value = t;
+  }
+
+  get lag() {
+    return this.#delay.delayTime.value;
+  }
+
+  get lagCV() {
+    return this.#delay.delayTime;
+  }
+
+  get in() {
+    return this.#delay;
+  }
+
+  get out() {
+    return this.#delay;
   }
 
 }
@@ -998,8 +1151,8 @@ function makeGrammar() {
       controls = ["pitch", "level"];
       return `{"synth":{${a.interpret()}},"statements":[${"".concat(b.children.map(z => z.interpret()))}]}`;
     },
-    Synthblock(a, b, c, d, e, f, g) {
-      return `${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()}`;
+    Synthblock(a, b, c, d, e, f, g,h) {
+      return `${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()},${g.interpret()}`;
     },
     Parameter(a, b, c, d, e, f, g, h, i) {
       return `{"param":{${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()},${g.interpret()},${h.interpret()}}}`;
@@ -1032,6 +1185,12 @@ function makeGrammar() {
     },
     Longname(a, b, c) {
       return `"longname":${c.interpret()}`;
+    },
+    Type(a,b,c) {
+      return `"type":"${c.interpret()}"`;
+    },
+    Patchtype(a) {
+      return a.sourceString;
     },
     Author(a, b, c) {
       return `"author":${c.interpret()}`;
@@ -1218,7 +1377,7 @@ function getGrammarSource() {
 
   Parameter = "@param" paramname Paramtype Paramstep Minval Maxval Defaultval Docstring "@end"
 
-  Synthblock = "@synth" shortname Longname Author Version Docstring "@end"
+  Synthblock = "@synth" shortname Longname Type Author Version Docstring "@end"
 
   shortname = letter (letter | "-")+
 
@@ -1235,6 +1394,12 @@ function getGrammarSource() {
 
   Longname (a long name)
   = "longname" ":" string
+
+  Type (a patch type)
+  = "type" ":" Patchtype
+
+  Patchtype (a synth or effect type)
+  = "synth" | "effect"
 
   Minval (a minimum value)
   = "min" ":" number
@@ -1275,7 +1440,7 @@ function getGrammarSource() {
 
   patchinput = varname "." inputparam 
 
-  inputparam = "in" | "levelCV" | "pitchCV" | "cutoffCV" | "pulsewidthCV"
+  inputparam = "in" | "levelCV" | "pitchCV" | "cutoffCV" | "pulsewidthCV" | "angleCV" | "lagCV"
 
   outputparam = "out"
 
@@ -1295,6 +1460,7 @@ function getGrammarSource() {
   | "SQR-OSC"
   | "TRI-OSC"
   | "PULSE-OSC"
+  | "LFO"
   | "NOISE"
   | "LPF"
   | "HPF"
@@ -1302,6 +1468,8 @@ function getGrammarSource() {
   | "SHAPER"
   | "ADSR"
   | "DECAY"
+  | "PAN"
+  | "DELAY"
 
   Exp 
     = AddExp
@@ -1335,7 +1503,7 @@ function getGrammarSource() {
   tweakable
   = varname "." parameter
 
-  parameter = "pitch" | "detune" | "level" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release" | "fuzz" | "pulsewidth"
+  parameter = "pitch" | "detune" | "level" | "lag" | "phase" | "angle" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release" | "fuzz" | "pulsewidth"
 
   varname (a module name)
   = lower alnum*
@@ -1365,6 +1533,7 @@ function parseSynthSpec() {
       gui("parse-errors").value = "OK";
       const adapter = semantics(result);
       const json = adapter.interpret();
+      console.log(json);
       createControls(json);
       currentJSON = convertToStandardJSON(json);
       synth = new Synth(context, currentJSON);

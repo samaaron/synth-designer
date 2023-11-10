@@ -1,5 +1,6 @@
 @synth randomblips
 longname : Random Blips
+type : synth
 author : Guy Brown
 version : 1.0
 doc : Simple synth demonstrating the use of random parameter values

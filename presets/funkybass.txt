@@ -1,5 +1,6 @@
 @synth funkybass
 longname : Funky Bass
+type : synth
 author : Guy Brown
 version : 1.0
 doc : Funky bass sound from the 1980s
