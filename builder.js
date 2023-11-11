@@ -351,6 +351,15 @@ function onMIDIMessage(message) {
       // we will stop this note when we get a note off, so play it for an arbitrary duration of 5 minutes
       // if it times out you are not playing nearly fast enough
       // https://www.youtube.com/watch?v=abVhSCzByw8 
+      let nodeGraph = synthForNote[midiNoteNumber];
+      if (nodeGraph!=null) {
+        // remove the previous note
+        let now = context.currentTime;
+        Object.values(nodeGraph).forEach((m) => {
+          m.stop?.(now);
+        });
+        //nodeGraph.disconnect();
+      }
       synthForNote[midiNoteNumber] = synth.play(pitchHz, level, params);
       // turn the dot off after a short time
       setTimeout(() => { midiDot.style.opacity = 0; }, DOT_DURATION_MS);
@@ -362,9 +371,9 @@ function onMIDIMessage(message) {
       // since we need to get the current value of the parameter that the envelope is attached to
       let midiNoteNumber = message.data[1];
       let nodeGraph = synthForNote[midiNoteNumber];
-      let now = context.currentTime;
-      let longestRelease = 0;
       if (nodeGraph) {
+        let now = context.currentTime;
+        let longestRelease = 0;  
         // why check the nodeGraph exists? I noticed that with HOLD on my keyboard and the arpeggiator running 
         // (which is a silly thing to do) note offs don't keep up with note ons. So possibly we could have a case
         // where a note off has been received but there is no nodeGraph from a previous note on
@@ -375,11 +384,13 @@ function onMIDIMessage(message) {
               longestRelease = m.release;
           }
         });
+        /*
         // stop after the longest release time 
         Object.values(nodeGraph).forEach((m) => {
           m.stop?.(now + longestRelease);
         });
         synthForNote[midiNoteNumber] = null;
+        */
       }
     }
   }
