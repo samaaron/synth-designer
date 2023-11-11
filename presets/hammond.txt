@@ -91,6 +91,24 @@ default: 0.8
 doc: master volume
 @end
 
+@param leslie_rate
+type: float
+step: 0.01
+min: 0.5
+max: 7
+default: 6.6
+doc: leslie rotation rate
+@end
+
+@param overdrive
+type: float
+step: 0.01
+min: 0
+max: 1
+default: 0.2
+doc: amount of speaker overdrive
+@end
+
 # oscillators
 
 SIN-OSC : vco1
@@ -141,7 +159,6 @@ percenv.out -> percmix.levelCV
 
 percmix.out -> mix.in
 env.out -> mix.levelCV
-mix.out -> audio.in
 
 # set the gains
 
@@ -188,5 +205,83 @@ env.decay = 0.1
 env.level = param.volume*0.2
 env.sustain = param.volume*0.2
 env.release = 0.01
+
+# oooh lets try and do a leslie speaker
+# two rotating speakers introduce doppler effect and
+# amplitude modulation
+# split at 800 Hz and use delay line for the doppler
+# https://shorturl.at/gknMP
+
+LPF : lowpass
+HPF : highpass
+LFO : highlfo
+LFO : lowlfo
+DELAY : highlag
+DELAY : lowlag
+VCA : stereomix
+VCA : highmod
+VCA : lowmod
+PAN : lowpan
+PAN : highpan
+SHAPER : distort
+
+VCA : lowspread
+VCA : highspread
+
+mix.out -> distort.in
+
+distort.fuzz = map(param.overdrive,0,8)
+
+distort.out -> lowpass.in
+distort.out -> highpass.in
+
+lowpass.out -> lowlag.in
+highpass.out -> highlag.in
+
+lowpass.cutoff = 800
+lowpass.resonance = 0
+highpass.cutoff = 800
+highpass.resonance = 0
+
+highlfo.out -> highmod.in
+highmod.out -> highlag.lagCV
+lowlfo.out -> lowmod.in
+lowmod.out -> lowlag.lagCV
+
+highlfo.out -> highspread.in
+highspread.out -> highpan.angleCV
+lowlfo.out -> lowspread.in
+lowspread.out -> lowpan.angleCV
+
+lowlag.out -> lowpan.in
+highlag.out -> highpan.in
+lowpan.out -> stereomix.in
+highpan.out -> stereomix.in
+stereomix.out -> audio.in
+
+# amount of stereo spread
+
+lowpan.angle = 0
+highpan.angle = 0
+
+lowspread.level = 1
+highspread.level = -1
+
+
+# try around 6.8 for tremolo and 0.6 for chorale
+
+highlfo.pitch = param.leslie_rate
+lowlfo.pitch = param.leslie_rate
+
+highlag.lag = 0.1
+lowlag.lag = 0.1
+highmod.level = 0.00013
+lowmod.level = 0.00013
+
+highlfo.phase = 1.57
+lowlfo.phase = -1.57
+
+
+# doppler
 
 # end of file
