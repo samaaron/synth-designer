@@ -228,7 +228,9 @@ function addListenersToGUI() {
   gui("save-as-button").onclick = async () => { await saveAsFile(); };
 
   // play button 
-  gui("play-button").onclick = () => { playSynth(); };
+  gui("play-button").onmousedown = () => { playSynth(); };
+  gui("play-button").onmouseup = () => { stopSynth(); };
+  gui("play-button").onmouseout = () => { stopSynth(); };
 
   // start button
   gui("start-button").onclick = () => {
@@ -349,7 +351,7 @@ function onMIDIMessage(message) {
       // we will stop this note when we get a note off, so play it for an arbitrary duration of 5 minutes
       // if it times out you are not playing nearly fast enough
       // https://www.youtube.com/watch?v=abVhSCzByw8 
-      synthForNote[midiNoteNumber] = synth.play(pitchHz, level, 300, params);
+      synthForNote[midiNoteNumber] = synth.play(pitchHz, level, params);
       // turn the dot off after a short time
       setTimeout(() => { midiDot.style.opacity = 0; }, DOT_DURATION_MS);
     }
@@ -373,9 +375,9 @@ function onMIDIMessage(message) {
               longestRelease = m.release;
           }
         });
-        // stop after the longest release time plus a safety margin of 0.1 sec
+        // stop after the longest release time 
         Object.values(nodeGraph).forEach((m) => {
-          m.stop?.(now + longestRelease + 0.1);
+          m.stop?.(now + longestRelease);
         });
         synthForNote[midiNoteNumber] = null;
       }
@@ -390,14 +392,12 @@ function onMIDIMessage(message) {
 Oscillator = class {
 
   osc
+  context
 
   constructor(ctx) {
+    this.context = ctx;
     this.osc = ctx.createOscillator(ctx);
     this.osc.frequency.value = MIDDLE_C;
-    // create a callback so the oscillator is garbage collected when it stops playing
-    this.osc.onended = () => {
-      this.osc.disconnect();
-    }
   }
 
   set detune(n) {
@@ -430,6 +430,14 @@ Oscillator = class {
 
   stop(tim) {
     this.osc.stop(tim);
+    let stopTime = tim-this.context.currentTime;
+    if (stopTime<0) stopTime=0;
+    setTimeout(()=>{
+      this.osc.disconnect();
+      this.osc = null;
+      this.context = null;
+      console.log("disposed of oscillator");
+    }, (stopTime+0.1)*1000);
   }
 
 }
@@ -511,8 +519,9 @@ moduleContext.LFO = class {
       this.#sinGain = null;  
       this.#cosGain = null;  
       this.#mixer = null;  
-    },0.1+stopTime*1000);
-
+      this.#context = null;
+      console.log("disposed of LFO");
+    },(stopTime+0.1)*1000);
   }
 
 }
@@ -553,14 +562,13 @@ moduleContext.Panner = class {
     return this.#pan;
   }
 
-  // experimental 
-
   stop(tim) {
     let stopTime = tim-this.#context.currentTime;
     if (stopTime<0) stopTime=0;
     setTimeout(()=>{
       this.#pan.disconnect();
       this.#pan = null;  
+      this.#context = null;
     },0.1+stopTime*1000);
   }
 
@@ -573,8 +581,10 @@ moduleContext.Panner = class {
 moduleContext.Delay = class {
 
   #delay
+  #context
 
   constructor(ctx) {
+    this.#context = ctx;
     this.#delay = ctx.createDelay(10);
   }
 
@@ -596,6 +606,16 @@ moduleContext.Delay = class {
 
   get out() {
     return this.#delay;
+  }
+
+  stop(tim) {
+    let stopTime = tim - this.#context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      this.#delay.disconnect();
+      this.#delay = null;
+      this.#context = null;
+    }, 0.1 + stopTime * 1000);
   }
 
 }
@@ -633,9 +653,6 @@ moduleContext.PulseOsc = class extends Oscillator {
     this.osc2 = ctx.createOscillator();
     this.osc2.frequency.value = 0;
     this.osc2.type = "sawtooth"
-    this.osc2.onended = () => {
-      this.osc2.disconnect();
-    }
 
     // set the initial pulsewidth to 50%
     this.#pulsewidth = 0.5;
@@ -736,8 +753,30 @@ moduleContext.PulseOsc = class extends Oscillator {
     this.osc2.stop(tim);
     this.freqNode.stop(tim);
     this.detuneNode.stop(tim);
+      let stopTime = tim - this.context.currentTime;
+      if (stopTime < 0) stopTime = 0;
+      setTimeout(() => {
+        this.osc.disconnect();
+        this.osc2.disconnect();
+        this.freqNode.disconnect();
+        this.detuneNode.disconnect();
+        this.#out.disconnect();
+        this.delay.disconnect();
+        this.inverter.disconnect();
+        this.pwm.disconnect();
+        this.osc = null;
+        this.osc2 = null;
+        this.freqNode = null;
+        this.detuneNode = null;
+        this.#out = null;
+        this.delay = null;
+        this.inverter = null;
+        this.pwm = null;
+        this.context = null;
+      }, (stopTime+0.1) * 1000);
+    }
+
   }
-}
 
 // ------------------------------------------------------------
 // Saw oscillator class
@@ -793,8 +832,10 @@ moduleContext.SquareOsc = class extends Oscillator {
 moduleContext.Noise = class NoiseGenerator {
 
   #noise
+  #context
 
   constructor(ctx) {
+    this.#context = ctx;
     let bufferSize = 2 * ctx.sampleRate;
     let noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     let data = noiseBuffer.getChannelData(0);
@@ -803,9 +844,6 @@ moduleContext.Noise = class NoiseGenerator {
     this.#noise = ctx.createBufferSource();
     this.#noise.buffer = noiseBuffer;
     this.#noise.loop = true;
-    this.#noise.onended = () => {
-      this.#noise.disconnect();
-    }
   }
 
   get out() {
@@ -818,6 +856,13 @@ moduleContext.Noise = class NoiseGenerator {
 
   stop(tim) {
     this.#noise.stop(tim);
+    let stopTime = tim - this.#context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      this.#noise.disconnect();
+      this.#noise = null;
+      this.#context = null;
+    });
   }
 
 }
@@ -829,8 +874,10 @@ moduleContext.Noise = class NoiseGenerator {
 moduleContext.LowpassFilter = class {
 
   #filter
+  #context
 
   constructor(ctx) {
+    this.#context = ctx;
     this.#filter = ctx.createBiquadFilter();
     this.#filter.frequency.value = 1000;
     this.#filter.Q.value = 1;
@@ -865,6 +912,16 @@ moduleContext.LowpassFilter = class {
     return this.#filter;
   }
 
+  stop(tim) {
+    let stopTime = tim - this.#context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      this.#filter.disconnect();
+      this.#filter = null;
+      this.#context = null;
+    }, 0.1 + stopTime * 1000);
+  }
+
 }
 
 // ------------------------------------------------------------
@@ -874,8 +931,10 @@ moduleContext.LowpassFilter = class {
 moduleContext.HighpassFilter = class {
 
   #filter
+  #context
 
   constructor(ctx) {
+    this.#context = ctx;
     this.#filter = ctx.createBiquadFilter();
     this.#filter.frequency.value = 1000;
     this.#filter.Q.value = 1;
@@ -908,6 +967,16 @@ moduleContext.HighpassFilter = class {
 
   get out() {
     return this.#filter;
+  }
+
+  stop(tim) {
+    let stopTime = tim - this.#context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      this.#filter.disconnect();
+      this.#filter = null;
+      this.#context = null;
+    }, 0.1 + stopTime * 1000);
   }
 
 }
@@ -964,14 +1033,14 @@ moduleContext.Envelope = class {
     this.#controlledParam.linearRampToValueAtTime(0, now + this.#release);
   }
 
-  apply(param, when, durationSec) {
+  apply(param, when) {
     this.#controlledParam = param;
     param.setValueAtTime(0, when);
     param.linearRampToValueAtTime(this.#level, when + this.#attack);
     param.linearRampToValueAtTime(this.#sustain, when + this.#attack + this.#decay);
-    param.linearRampToValueAtTime(this.#sustain, when + durationSec);
-    param.linearRampToValueAtTime(0, when + durationSec + this.#release);
-    return durationSec + this.#release;
+    //param.linearRampToValueAtTime(this.#sustain, when + durationSec);
+    //param.linearRampToValueAtTime(0, when + durationSec + this.#release);
+    //return durationSec + this.#release;
   }
 
 }
@@ -1004,11 +1073,11 @@ moduleContext.Decay = class {
     this.#level = v;
   }
 
-  apply(param, when, durationSec) {
+  apply(param, when) {
     param.setValueAtTime(0, when);
     param.linearRampToValueAtTime(this.#level, when + this.#attack);
     param.exponentialRampToValueAtTime(0.0001, when + this.#attack + this.#decay);
-    return durationSec;
+    //return durationSec;
   }
 
 }
@@ -1020,8 +1089,10 @@ moduleContext.Decay = class {
 moduleContext.Waveshaper = class {
 
   #shaper
+  #context
 
   constructor(ctx) {
+    this.#context = ctx;
     this.#shaper = ctx.createWaveShaper();
     this.#shaper.curve = this.makeDistortionCurve(100);
     this.#shaper.oversample = "4x";
@@ -1057,6 +1128,16 @@ moduleContext.Waveshaper = class {
     return curve;
   }
 
+  stop(tim) {
+    let stopTime = tim - this.#context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      this.#shaper.disconnect();
+      this.#shaper = null;
+      this.#context = null;
+    }, 0.1 + stopTime * 1000);
+  }
+
 }
 
 // ------------------------------------------------------------
@@ -1066,8 +1147,10 @@ moduleContext.Waveshaper = class {
 moduleContext.Amplifier = class {
 
   #gain
+  #context
 
   constructor(ctx) {
+    this.#context = ctx;
     this.#gain = unityGain(ctx);
   }
 
@@ -1091,6 +1174,16 @@ moduleContext.Amplifier = class {
     return this.#gain.gain;
   }
 
+  stop(tim) {
+    let stopTime = tim - this.#context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      this.#gain.disconnect();
+      this.#gain = null;
+      this.#context = null;
+    }, 0.1 + stopTime * 1000);
+  }
+
 }
 
 // ------------------------------------------------------------
@@ -1100,8 +1193,10 @@ moduleContext.Amplifier = class {
 moduleContext.Audio = class {
 
   #gain
+  #context
 
   constructor(ctx) {
+    this.#context = ctx;
     this.#gain = unityGain(ctx);
   }
 
@@ -1113,6 +1208,16 @@ moduleContext.Audio = class {
     return this.#gain;
   }
 
+  stop(tim) {
+    let stopTime = tim - this.#context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      this.#gain.disconnect();
+      this.#gain = null;
+      this.#context = null;
+    }, 0.1 + stopTime * 1000);
+  }
+
 }
 
 // ------------------------------------------------------------
@@ -1121,11 +1226,41 @@ moduleContext.Audio = class {
 
 function playSynth() {
   if (synth != undefined && synth.isValid) {
-    const pitchHz = midiNoteToFreqHz(getFloatParam("pitch"));
+    const midiNoteNumber = getIntParam("pitch");
+    const pitchHz = midiNoteToFreqHz(midiNoteNumber);
     const level = getFloatParam("level");
     const durationSec = getFloatParam("duration");
     const params = getParametersForSynth(synth);
-    synth.play(pitchHz, level, durationSec, params);
+    synthForNote[midiNoteNumber] = synth.play(pitchHz, level, params);
+  }
+}
+
+// ------------------------------------------------------------
+// stop synth
+// this needs to be properly factored into another function
+// ------------------------------------------------------------
+
+function stopSynth() {
+  const midiNoteNumber = getIntParam("pitch");
+  let nodeGraph = synthForNote[midiNoteNumber];
+  if (nodeGraph) {
+    // why check the nodeGraph exists? I noticed that with HOLD on my keyboard and the arpeggiator running 
+    // (which is a silly thing to do) note offs don't keep up with note ons. So possibly we could have a case
+    // where a note off has been received but there is no nodeGraph from a previous note on
+    let now = context.currentTime;
+    let longestRelease = 0;
+    Object.values(nodeGraph).forEach((m) => {
+      if (m.release) {
+        m.releaseOnNoteOff(now);
+        if (m.release > longestRelease)
+          longestRelease = m.release;
+      }
+    });
+    // stop after the longest release time 
+    Object.values(nodeGraph).forEach((m) => {
+      m.stop?.(now + longestRelease);
+    });
+    synthForNote[midiNoteNumber] = null;
   }
 }
 
@@ -1885,7 +2020,7 @@ class Synth {
   // we return a reference to the node graph since we might need to keep track of it
   // if playing via MIDI, since note offs can occur whenever
 
-  play(pitch, level, durationSec, params) {
+  play(pitch, level, params) {
 
     let node = {};
 
@@ -1929,20 +2064,21 @@ class Synth {
     // apply the envelopes
 
     const when = this.#context.currentTime;
-    let maxDurationSec = durationSec;
+    //let maxDurationSec = durationSec;
     for (let i = 0; i < this.#envelopes.length; i++) {
       let e = this.#envelopes[i];
       let env = node[e.from.id];
       let obj = node[e.to.id];
-      const d = env.apply(obj[e.to.param], when, durationSec);
-      if (d > maxDurationSec)
-        maxDurationSec = d;
+      env.apply(obj[e.to.param], when);
+      //const d = env.apply(obj[e.to.param], when, durationSec);
+      //if (d > maxDurationSec)
+      //  maxDurationSec = d;
     }
 
     // start everything that has a start function
     Object.values(node).forEach((m) => {
       m.start?.(when);
-      m.stop?.(when + maxDurationSec);
+      //m.stop?.(when + maxDurationSec);
     });
 
     // return the node in case we need to stop it later, if doing MIDI control
