@@ -42,8 +42,10 @@ function playSynth() {
 
 function stopSynth() {
   osc.stop();
-  //osc.disconnect();
-  //osc = null;
+  osc.disconnect();
+  gain.disconnect();
+  osc = null;
+  gain=null;
 }
 
 function gui(name) {
