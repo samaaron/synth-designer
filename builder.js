@@ -438,7 +438,7 @@ Oscillator = class {
 // LFO with adjustable phase
 // ------------------------------------------------------------
 
-moduleContext.LFO = class Oscillator {
+moduleContext.LFO = class {
 
   #sinOsc
   #cosOsc
@@ -446,23 +446,19 @@ moduleContext.LFO = class Oscillator {
   #cosGain
   #mixer
   #freqHz
+  #context
 
   constructor(ctx) {
+    this.#context = ctx;
     this.#freqHz = 5; // Hz
 
     this.#sinOsc = ctx.createOscillator();
     this.#sinOsc.type = "sine";
     this.#sinOsc.frequency.value = this.#freqHz;
-    this.#sinOsc.onended = () => {
-      this.#sinOsc.disconnect();
-    }
 
     this.#cosOsc = ctx.createOscillator();
     this.#cosOsc.type = "sine";
     this.#cosOsc.frequency.value = this.#freqHz;
-    this.#cosOsc.onended = () => {
-      this.#cosOsc.disconnect();
-    }
 
     this.#sinGain = ctx.createGain();
     this.#cosGain = ctx.createGain();
@@ -502,6 +498,21 @@ moduleContext.LFO = class Oscillator {
   stop(tim) {
     this.#sinOsc.stop(tim);
     this.#cosOsc.stop(tim);
+    let stopTime = tim-this.#context.currentTime;
+    if (stopTime<0) stopTime=0;
+    setTimeout(()=>{
+      this.#sinOsc.disconnect();
+      this.#cosOsc.disconnect();
+      this.#sinGain.disconnect();
+      this.#cosGain.disconnect();
+      this.#mixer.disconnect();
+      this.#sinOsc = null;  
+      this.#cosOsc = null;  
+      this.#sinGain = null;  
+      this.#cosGain = null;  
+      this.#mixer = null;  
+    },0.1+stopTime*1000);
+
   }
 
 }
@@ -513,8 +524,10 @@ moduleContext.LFO = class Oscillator {
 moduleContext.Panner = class {
 
   #pan
+  #context
 
   constructor(ctx) {
+    this.#context = ctx;
     this.#pan = ctx.createStereoPanner();
   }
 
@@ -538,6 +551,17 @@ moduleContext.Panner = class {
 
   get out() {
     return this.#pan;
+  }
+
+  // experimental 
+
+  stop(tim) {
+    let stopTime = tim-this.#context.currentTime;
+    if (stopTime<0) stopTime=0;
+    setTimeout(()=>{
+      this.#pan.disconnect();
+      this.#pan = null;  
+    },0.1+stopTime*1000);
   }
 
 }

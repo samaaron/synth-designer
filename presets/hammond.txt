@@ -273,10 +273,10 @@ highspread.level = -1
 highlfo.pitch = param.leslie_rate
 lowlfo.pitch = param.leslie_rate
 
-highlag.lag = 0.1
-lowlag.lag = 0.1
-highmod.level = 0.00013
-lowmod.level = 0.00013
+highlag.lag = 0.01
+lowlag.lag = 0.01
+highmod.level = 0.0003
+lowmod.level = 0.0003
 
 highlfo.phase = 1.57
 lowlfo.phase = -1.57
