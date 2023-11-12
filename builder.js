@@ -2231,6 +2231,14 @@ class Synth {
     return this.#tweaks[i];
   }
 
+  get maxima() {
+    return this.#maxima;
+  }
+
+  get minima() {
+    return this.#minima;
+  }
+
   get modules() {
     return this.#modules;
   }
@@ -2327,19 +2335,13 @@ BleepPlayer = class {
     // do all the parameter tweaks
     for (let i = 0; i < generator.numTweaks; i++) {
       let t = generator.tweak(i);
+      let obj = this.node[t.id];
+      let value = evaluatePostfix(t.expression, params, generator.maxima, generator.minima);
+      obj[t.param] = value;
     }
     // apply the envelopes
   }
 
-  /*
-  for (let i = 0; i < this.#tweaks.length; i++) {
-    let twk = this.#tweaks[i];
-    let obj = node[twk.id];
-    // need to find maxima and minima before doing this
-    let value = evaluatePostfix(twk.expression, params, this.#maxima, this.#minima);
-    obj[twk.param] = value;
-  }
-*/
   start() {
     console.log("starting");
     let now = this.context.currentTime;
