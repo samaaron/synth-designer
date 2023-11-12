@@ -2285,6 +2285,10 @@ class BleepGenerator {
     return this.#tweaks;
   }
 
+  get envelopes() {
+    return this.#envelopes;
+  }
+
   // get the list of parameters
 
   get parameters() {
@@ -2340,40 +2344,48 @@ BleepPlayer = class {
     // add the pitch and level to the parameters
     params.pitch = pitchHz;
     params.level = level;
+    // create the webaudio network in three steps
+    this.createModules();
+    this.createPatches();
+    this.applyTweaks(params);
+  }
+
+  createModules() {
     // make a webaudio object for each node
-    for (let i = 0; i < generator.numModules; i++) {
-      let m = generator.module(i);
+    this.generator.modules.forEach(m => {
       this.node[m.id] = getModuleInstance(this.context, m.type);
-    }
+    });
     // we always need an audio object for output
     this.node["audio"] = getModuleInstance(this.context, "VCA");
-    // make all the patch connections
-    for (let i = 0; i < generator.numPatches; i++) {
-      let p = generator.patch(i);
-      // connect the audio graph
+  }
+
+  // connect all the patch cables
+  createPatches() {
+    this.generator.patches.forEach(p => {
       let fromModule = this.node[p.from.id];
       let toModule = this.node[p.to.id];
       fromModule[p.from.param].connect(toModule[p.to.param]);
-    }
-    // do all the parameter tweaks
-    for (let i = 0; i < generator.numTweaks; i++) {
-      let t = generator.tweak(i);
+    });
+  }
+
+  // do all the parameter tweaks
+  applyTweaks(params) {
+    this.generator.tweaks.forEach(t => {
       let obj = this.node[t.id];
-      let value = evaluatePostfix(t.expression, params, generator.maxima, generator.minima);
+      let value = evaluatePostfix(t.expression, params, this.generator.maxima, this.generator.minima);
       obj[t.param] = value;
-    }
+    });
   }
 
   start() {
     // assume we are playing from now
     let now = this.context.currentTime;
     // apply the envelopes
-    for (let i = 0; i < this.generator.numEnvelopes; i++) {
-      let e = generator.envelope(i);
+    this.generator.envelopes.forEach(e => {
       let env = this.node[e.from.id];
       let obj = this.node[e.to.id];
       env.apply(obj[e.to.param], now);
-    }
+    });
     // start all the nodes that have a start function
     Object.values(this.node).forEach((m) => {
       m.start?.(now);
