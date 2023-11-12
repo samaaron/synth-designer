@@ -1694,6 +1694,8 @@ function getGrammarSource() {
 // ------------------------------------------------------------
 
 function parseSynthSpec() {
+  console.log("here");
+
   synth = null;
   let result = synthGrammar.match(gui("synth-spec").value + "\n");
   if (result.succeeded()) {
@@ -1704,14 +1706,17 @@ function parseSynthSpec() {
       // console.log(json);
       createControls(json);
       currentJSON = convertToStandardJSON(json);
+
+
       synth = new Synth(context, currentJSON);
 
       let params = synth.defaults;
       console.log(params);
 
-      let player = new BleepPlayer(context,synth,params);
-      console.log(player);
-      player.stop();
+      
+      //let player = new BleepPlayer(context,synth,params);
+      //console.log(player);
+      //player.stop();
 
       // was there a warning?
       if (synth.hasWarning) {
@@ -1719,6 +1724,7 @@ function parseSynthSpec() {
       }
       synth.out.connect(reverb.in);
     } catch (error) {
+      console.log(error);
       gui("parse-errors").value = error.message;
     }
   } else {
@@ -2310,6 +2316,7 @@ BleepPlayer = class {
   context
 
   constructor(ctx, generator,params) {
+    console.log("in BleepPlayer");
     this.context = ctx;
     this.node = {};
     // we need an output node
@@ -2336,6 +2343,8 @@ BleepPlayer = class {
     for (let i = 0; i < generator.numTweaks; i++) {
       let t = generator.tweak(i);
       let obj = this.node[t.id];
+      console.log(generator.maxima);
+      console.log(generator.minima);)
       let value = evaluatePostfix(t.expression, params, generator.maxima, generator.minima);
       obj[t.param] = value;
     }
