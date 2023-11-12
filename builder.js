@@ -22,7 +22,7 @@ const MIDI_NOTE_OFF = 0x80;
 let midi = null;
 let midiInputs = null;
 let midiInputEnabled = false;
-let synthForNote = [];
+let playerForNote = [];
 
 // effects
 
@@ -39,7 +39,7 @@ let synthGrammar;
 let semantics;
 let wasEdited;
 let currentJSON = null;
-let synth = null;
+let generator = null;
 let context = null;
 let moduleContext = {};
 
@@ -137,7 +137,6 @@ function init() {
 // ------------------------------------------------------------
 
 function setDefaultValues() {
-  setFloatControl("duration",0.5);
   setFloatControl("level",0.8);
   setFloatControl("reverb",0.1);
 }
@@ -207,7 +206,7 @@ function addListenersToGUI() {
 
   gui("synth-spec").addEventListener("input", () => {
     if (gui("synth-spec").value.length > 0) {
-      parseSynthSpec();
+      parseGeneratorSpec();
       if (!wasEdited) {
         gui("file-label").textContent += "*";
         wasEdited = true;
@@ -228,9 +227,9 @@ function addListenersToGUI() {
   gui("save-as-button").onclick = async () => { await saveAsFile(); };
 
   // play button 
-  gui("play-button").onmousedown = () => { playSynth(); };
-  gui("play-button").onmouseup = () => { stopSynth(); };
-  gui("play-button").onmouseout = () => { stopSynth(); };
+  gui("play-button").onmousedown = () => { playNote(); };
+  gui("play-button").onmouseup = () => { stopNote(); };
+  gui("play-button").onmouseout = () => { stopNote(); };
 
   // start button
   gui("start-button").onclick = () => {
@@ -248,11 +247,6 @@ function addListenersToGUI() {
   // amplitude slider
   gui("level").addEventListener("input", function () {
     setFloatControl("level",parseFloat(this.value));
-  });
-
-  // duration slider
-  gui("duration").addEventListener("input", function () {
-    setFloatControl("duration",parseFloat(this.value));
   });
 
   // reverb slider
@@ -346,12 +340,12 @@ function onMIDIMessage(message) {
       // convert velocity to level in the range [0,1]
       const level = message.data[2] / 127.0;
       // parameters
-      const params = getParametersForSynth(synth);
+      const params = getParametersForGenerator(synth);
       // play the note 
       // we will stop this note when we get a note off, so play it for an arbitrary duration of 5 minutes
       // if it times out you are not playing nearly fast enough
       // https://www.youtube.com/watch?v=abVhSCzByw8 
-      let nodeGraph = synthForNote[midiNoteNumber];
+      let nodeGraph = playerForNote[midiNoteNumber];
       if (nodeGraph!=null) {
         // remove the previous note
         let now = context.currentTime;
@@ -360,7 +354,7 @@ function onMIDIMessage(message) {
         });
         //nodeGraph.disconnect();
       }
-      synthForNote[midiNoteNumber] = synth.play(pitchHz, level, params);
+      playerForNote[midiNoteNumber] = synth.play(pitchHz, level, params);
       // turn the dot off after a short time
       setTimeout(() => { midiDot.style.opacity = 0; }, DOT_DURATION_MS);
     }
@@ -370,7 +364,7 @@ function onMIDIMessage(message) {
       // to stop a note immediately we need to adjust the envelope release - needs quite some changes
       // since we need to get the current value of the parameter that the envelope is attached to
       let midiNoteNumber = message.data[1];
-      let nodeGraph = synthForNote[midiNoteNumber];
+      let nodeGraph = playerForNote[midiNoteNumber];
       if (nodeGraph) {
         let now = context.currentTime;
         let longestRelease = 0;  
@@ -389,7 +383,7 @@ function onMIDIMessage(message) {
         Object.values(nodeGraph).forEach((m) => {
           m.stop?.(now + longestRelease);
         });
-        synthForNote[midiNoteNumber] = null;
+        playerForNote[midiNoteNumber] = null;
         */
       }
     }
@@ -436,18 +430,20 @@ Oscillator = class {
   }
 
   start(tim) {
+    console.log("starting oscillator");
     this.osc.start(tim);
   }
 
   stop(tim) {
+    console.log("stopping Oscillator");
     this.osc.stop(tim);
     let stopTime = tim-this.context.currentTime;
     if (stopTime<0) stopTime=0;
     setTimeout(()=>{
+      console.log("disconnecting Oscillator");
       this.osc.disconnect();
       this.osc = null;
       this.context = null;
-      console.log("disposed of oscillator");
     }, (stopTime+0.1)*1000);
   }
 
@@ -515,11 +511,13 @@ moduleContext.LFO = class {
   }
 
   stop(tim) {
+    console.log("stopping LFO");
     this.#sinOsc.stop(tim);
     this.#cosOsc.stop(tim);
     let stopTime = tim-this.#context.currentTime;
     if (stopTime<0) stopTime=0;
     setTimeout(()=>{
+      console.log("disconnecting LFO");
       this.#sinOsc.disconnect();
       this.#cosOsc.disconnect();
       this.#sinGain.disconnect();
@@ -531,7 +529,6 @@ moduleContext.LFO = class {
       this.#cosGain = null;  
       this.#mixer = null;  
       this.#context = null;
-      console.log("disposed of LFO");
     },(stopTime+0.1)*1000);
   }
 
@@ -574,9 +571,11 @@ moduleContext.Panner = class {
   }
 
   stop(tim) {
+    console.log("stopping Panner");
     let stopTime = tim-this.#context.currentTime;
     if (stopTime<0) stopTime=0;
     setTimeout(()=>{
+      console.log("disconnecting Panner");
       this.#pan.disconnect();
       this.#pan = null;  
       this.#context = null;
@@ -620,9 +619,11 @@ moduleContext.Delay = class {
   }
 
   stop(tim) {
+    console.log("stopping Delay");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      console.log("disconnecting Delay");
       this.#delay.disconnect();
       this.#delay = null;
       this.#context = null;
@@ -760,34 +761,36 @@ moduleContext.PulseOsc = class extends Oscillator {
 
   // stop everything
   stop(tim) {
+    console.log("stopping Pulse");
     this.osc.stop(tim);
     this.osc2.stop(tim);
     this.freqNode.stop(tim);
     this.detuneNode.stop(tim);
-      let stopTime = tim - this.context.currentTime;
-      if (stopTime < 0) stopTime = 0;
-      setTimeout(() => {
-        this.osc.disconnect();
-        this.osc2.disconnect();
-        this.freqNode.disconnect();
-        this.detuneNode.disconnect();
-        this.#out.disconnect();
-        this.delay.disconnect();
-        this.inverter.disconnect();
-        this.pwm.disconnect();
-        this.osc = null;
-        this.osc2 = null;
-        this.freqNode = null;
-        this.detuneNode = null;
-        this.#out = null;
-        this.delay = null;
-        this.inverter = null;
-        this.pwm = null;
-        this.context = null;
-      }, (stopTime+0.1) * 1000);
-    }
-
+    let stopTime = tim - this.context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      console.log("disconnecting Pulse");
+      this.osc.disconnect();
+      this.osc2.disconnect();
+      this.freqNode.disconnect();
+      this.detuneNode.disconnect();
+      this.#out.disconnect();
+      this.delay.disconnect();
+      this.inverter.disconnect();
+      this.pwm.disconnect();
+      this.osc = null;
+      this.osc2 = null;
+      this.freqNode = null;
+      this.detuneNode = null;
+      this.#out = null;
+      this.delay = null;
+      this.inverter = null;
+      this.pwm = null;
+      this.context = null;
+    }, (stopTime + 0.1) * 1000);
   }
+
+}
 
 // ------------------------------------------------------------
 // Saw oscillator class
@@ -866,10 +869,12 @@ moduleContext.Noise = class NoiseGenerator {
   }
 
   stop(tim) {
+    console.log("stopping Noise");
     this.#noise.stop(tim);
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      console.log("disconnecting Noise");
       this.#noise.disconnect();
       this.#noise = null;
       this.#context = null;
@@ -924,9 +929,11 @@ moduleContext.LowpassFilter = class {
   }
 
   stop(tim) {
+    console.log("stopping LPF");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      console.log("disconnecting LPF");
       this.#filter.disconnect();
       this.#filter = null;
       this.#context = null;
@@ -981,9 +988,11 @@ moduleContext.HighpassFilter = class {
   }
 
   stop(tim) {
+    console.log("stopping HPF");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      console.log("disconnecting HPF");
       this.#filter.disconnect();
       this.#filter = null;
       this.#context = null;
@@ -1136,9 +1145,11 @@ moduleContext.Waveshaper = class {
   }
 
   stop(tim) {
+    console.log("stopping Shaper");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      console.log("disconnecting Shaper");
       this.#shaper.disconnect();
       this.#shaper = null;
       this.#context = null;
@@ -1182,9 +1193,11 @@ moduleContext.Amplifier = class {
   }
 
   stop(tim) {
+    console.log("stopping Amplifier");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      console.log("disconnecting Amplifier");
       this.#gain.disconnect();
       this.#gain = null;
       this.#context = null;
@@ -1216,9 +1229,11 @@ moduleContext.Audio = class {
   }
 
   stop(tim) {
+    console.log("stopping Audio");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      console.log("disconnecting Audio");
       this.#gain.disconnect();
       this.#gain = null;
       this.#context = null;
@@ -1231,14 +1246,23 @@ moduleContext.Audio = class {
 // play synth
 // ------------------------------------------------------------
 
-function playSynth() {
-  if (synth != undefined && synth.isValid) {
+function playNote() {
+  if (generator != undefined && generator.isValid) {
     const midiNoteNumber = getIntParam("pitch");
+    let player = playerForNote[midiNoteNumber];
+    if (player!=null) {
+      player.out.disconnect();
+      player.stop();
+      playerForNote[midiNoteNumber] = null;  
+    }
     const pitchHz = midiNoteToFreqHz(midiNoteNumber);
     const level = getFloatParam("level");
-    const durationSec = getFloatParam("duration");
-    const params = getParametersForSynth(synth);
-    synthForNote[midiNoteNumber] = synth.play(pitchHz, level, params);
+    const params = getParametersForGenerator(generator);
+    player = new BleepPlayer(context,generator,pitchHz,level,params);
+    console.log(player);
+    playerForNote[midiNoteNumber] = player;
+    player.out.connect(reverb.in);
+    player.start();
   }
 }
 
@@ -1247,9 +1271,16 @@ function playSynth() {
 // this needs to be properly factored into another function
 // ------------------------------------------------------------
 
-function stopSynth() {
+function stopNote() {
   const midiNoteNumber = getIntParam("pitch");
-  let nodeGraph = synthForNote[midiNoteNumber];
+  let player = playerForNote[midiNoteNumber];
+  if (player != null) {
+    player.out.disconnect();
+    player.stop();
+    playerForNote[midiNoteNumber] = null;
+  }
+  /*
+  let nodeGraph = playerForNote[midiNoteNumber];
   if (nodeGraph) {
     // why check the nodeGraph exists? I noticed that with HOLD on my keyboard and the arpeggiator running 
     // (which is a silly thing to do) note offs don't keep up with note ons. So possibly we could have a case
@@ -1267,15 +1298,16 @@ function stopSynth() {
     Object.values(nodeGraph).forEach((m) => {
       m.stop?.(now + longestRelease);
     });
-    synthForNote[midiNoteNumber] = null;
+    playerForNote[midiNoteNumber] = null;
   }
+  */
 }
 
 // ------------------------------------------------------------
 // read all the parameters for this synth from the interface
 // ------------------------------------------------------------
 
-function getParametersForSynth(s) {
+function getParametersForGenerator(s) {
   let params = {};
   for (let p of s.parameters) {
     if (p.type === "float") {
@@ -1690,13 +1722,12 @@ function getGrammarSource() {
 }
 
 // ------------------------------------------------------------
-// parse the graph
+// parse the description to make a generator
 // ------------------------------------------------------------
 
-function parseSynthSpec() {
-  console.log("here");
-
-  synth = null;
+function parseGeneratorSpec() {
+  console.log("parsing");
+  generator = null;
   let result = synthGrammar.match(gui("synth-spec").value + "\n");
   if (result.succeeded()) {
     try {
@@ -1706,23 +1737,12 @@ function parseSynthSpec() {
       // console.log(json);
       createControls(json);
       currentJSON = convertToStandardJSON(json);
-
-
-      synth = new Synth(context, currentJSON);
-
-      let params = synth.defaults;
-      console.log(params);
-
-      
-      //let player = new BleepPlayer(context,synth,params);
-      //console.log(player);
-      //player.stop();
-
+      generator = new BleepGenerator(currentJSON);
+      // console.log(generator);
       // was there a warning?
-      if (synth.hasWarning) {
-        gui("parse-errors").value += "\n" + synth.warningString;
+      if (generator.hasWarning) {
+        gui("parse-errors").value += "\n" + generator.warningString;
       }
-      synth.out.connect(reverb.in);
     } catch (error) {
       console.log(error);
       gui("parse-errors").value = error.message;
@@ -1971,7 +1991,7 @@ function getModuleInstance(ctx, type) {
 // Synthesizer class
 // ------------------------------------------------------------
 
-class Synth {
+class BleepGenerator {
 
   #isValid
   #hasWarning
@@ -1990,12 +2010,9 @@ class Synth {
   #defaults
   #errorString
   #warningString
-  #out
-  #context
 
-  constructor(ctx, json) {
+  constructor(json) {
     const tree = JSON.parse(json);
-    this.#context = ctx;
     this.#longname = tree.longname;
     this.#shortname = tree.shortname;
     this.#version = tree.version;
@@ -2006,7 +2023,6 @@ class Synth {
     this.#tweaks = tree.tweaks || [];
     this.#envelopes = tree.envelopes || [];
     this.#parameters = tree.parameters || [];
-    this.#out = unityGain(ctx);
     this.#isValid = true;
     this.#hasWarning = false;
     this.#errorString = "";
@@ -2041,6 +2057,7 @@ class Synth {
   // we return a reference to the node graph since we might need to keep track of it
   // if playing via MIDI, since note offs can occur whenever
 
+  /*
   play(pitch, level, params) {
 
     let node = {};
@@ -2107,6 +2124,7 @@ class Synth {
     return node;
 
   }
+*/
 
   // check the synth for errors
 
@@ -2138,32 +2156,32 @@ class Synth {
     let msg = "";
     for (let param of ["pitch", "level"]) {
       if (!this.hasTweakWithValue(`param.${param}`))
-        msg += `Synth warning: you haven't assigned param.${param} to a control\n`;
+        msg += `BleepGenerator warning: you haven't assigned param.${param} to a control\n`;
     }
     // has something been patched to audio.in?
     if (this.hasPatchTo("audio", "in") == false)
-      msg += `Synth warning: you haven't patched anything to audio.in\n`;
+      msg += `BleepGenerator warning: you haven't patched anything to audio.in\n`;
     // check that parameters have reasonable values
     for (let obj of this.#parameters) {
       if (obj.max < obj.min)
-        msg += `Synth warning: max of parameter ${obj.name} is less than min\n`;
+        msg += `BleepGenerator warning: max of parameter ${obj.name} is less than min\n`;
       if (obj.default < obj.min)
-        msg += `Synth warning: default of parameter ${obj.name} is less than min\n`;
+        msg += `BleepGenerator warning: default of parameter ${obj.name} is less than min\n`;
       if (obj.default > obj.max)
-        msg += `Synth warning: default of parameter ${obj.name} is greater than max\n`;
+        msg += `BleepGenerator warning: default of parameter ${obj.name} is greater than max\n`;
     }
     // throw the warning if we have one
     if (msg.length > 0)
       this.throwWarning(msg);
   }
 
-  // determine if this synth has a patch cable to the given node
+  // determine if this generator has a patch cable to the given node
 
   hasPatchTo(node, param) {
     return this.#patches.some(val => (val.to.id === node && val.to.param === param));
   }
 
-  // determine if this synth has a patch cable from the given node
+  // determine if this generator has a patch cable from the given node
 
   hasPatchFrom(node, param) {
     return this.#patches.some(val => (val.from.id === node && val.from.param === param));
@@ -2181,37 +2199,35 @@ class Synth {
     this.#warningString = msg;
   }
 
-  // get the long name of the synth
+  // get the long name of the generator
 
   get longname() {
     return this.#longname;
   }
 
-  // get the short name of the synth
+  // get the short name of the generator
 
   get shortname() {
     return this.#shortname;
   }
 
-  // get the version of the synth
+  // get the version of the generator
 
   get version() {
     return this.#version;
   }
 
-  // get the author of the synth
+  // get the author of the generator
 
   get author() {
     return this.#author;
   }
 
-  // get the doc string of the synth
+  // get the doc string of the generator
 
   get doc() {
     return this.#doc;
   }
-
-  // get the list of modules, used for drawing
 
   get numModules() {
     return this.#modules.length;
@@ -2225,6 +2241,10 @@ class Synth {
     return this.#tweaks.length;
   }
 
+  getNumEnvelopes() {
+    return this.#envelopes.length;
+  }
+
   module(i) {
     return this.#modules[i];
   }
@@ -2235,6 +2255,10 @@ class Synth {
 
   tweak(i) {
     return this.#tweaks[i];
+  }
+
+  envelope(i) {
+    return this.#envelopes[i];
   }
 
   get maxima() {
@@ -2271,7 +2295,7 @@ class Synth {
     return this.#defaults
   }
 
-  // is the synth valid?
+  // is the generator valid?
 
   get isValid() {
     return this.#isValid;
@@ -2295,32 +2319,27 @@ class Synth {
     return this.#warningString;
   }
 
-  // audio node that this synth will connect to
-  set out(n) {
-    this.#out = n;
-  }
-
-  get out() {
-    return this.#out;
-  }
-
 }
 
 // ------------------------------------------------------------
 // make a reverb unit and connect it to the audio output
 // ------------------------------------------------------------
 
+// bleep generator doesnt need the context
+
 BleepPlayer = class {
 
   node
   context
+  generator
 
-  constructor(ctx, generator,params) {
-    console.log("in BleepPlayer");
+  constructor(ctx, generator, pitchHz, level, params) {
     this.context = ctx;
+    this.generator = generator;
     this.node = {};
-    // we need an output node
-    this.node["out"] = unityGain(this.context);
+    // add the pitch and level to the parameters
+    params.pitch = pitchHz;
+    params.level = level;
     // make a webaudio object for each node
     for (let i = 0; i < generator.numModules; i++) {
       let m = generator.module(i);
@@ -2336,27 +2355,33 @@ BleepPlayer = class {
       let toModule = this.node[p.to.id];
       fromModule[p.from.param].connect(toModule[p.to.param]);
     }
-    // connect the audio output to the destination
-    let audio = this.node["audio"];
-    audio["out"].connect(this.node["out"]);
     // do all the parameter tweaks
     for (let i = 0; i < generator.numTweaks; i++) {
       let t = generator.tweak(i);
       let obj = this.node[t.id];
-      console.log(generator.maxima);
-      console.log(generator.minima);)
       let value = evaluatePostfix(t.expression, params, generator.maxima, generator.minima);
       obj[t.param] = value;
     }
-    // apply the envelopes
   }
 
   start() {
-    console.log("starting");
+    // assume we are playing from now
     let now = this.context.currentTime;
+    // apply the envelopes
+    for (let i = 0; i < this.generator.numEnvelopes; i++) {
+      let e = generator.envelope(i);
+      let env = this.node[e.from.id];
+      let obj = this.node[e.to.id];
+      env.apply(obj[e.to.param], now);
+    }
+    // start all the nodes that have a start function
     Object.values(this.node).forEach((m) => {
       m.start?.(now);
     });
+  }
+
+  release() {
+    console.log("move to envelope release");
   }
 
   stop() {
@@ -2367,6 +2392,9 @@ BleepPlayer = class {
     });
   }
 
+  get out() {
+    return this.node.audio.out;
+  }
 }
 
 // ------------------------------------------------------------
@@ -2502,7 +2530,7 @@ async function loadFile() {
   gui("synth-spec").value = contents;
   gui("file-label").textContent = "Current file: " + fileHandle.name;
   wasEdited = false;
-  parseSynthSpec();
+  parseGeneratorSpec();
 }
 
 // ------------------------------------------------------------
