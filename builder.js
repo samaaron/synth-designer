@@ -1705,6 +1705,14 @@ function parseSynthSpec() {
       createControls(json);
       currentJSON = convertToStandardJSON(json);
       synth = new Synth(context, currentJSON);
+
+      let params = synth.defaults;
+      console.log(params);
+
+      let player = new BleepPlayer(context,synth,params);
+      console.log(player);
+      player.stop();
+
       // was there a warning?
       if (synth.hasWarning) {
         gui("parse-errors").value += "\n" + synth.warningString;
@@ -2199,6 +2207,30 @@ class Synth {
 
   // get the list of modules, used for drawing
 
+  get numModules() {
+    return this.#modules.length;
+  }
+
+  get numPatches() {
+    return this.#patches.length;
+  }
+
+  get numTweaks() {
+    return this.#tweaks.length;
+  }
+
+  module(i) {
+    return this.#modules[i];
+  }
+
+  patch(i) {
+    return this.#patches[i];
+  }
+
+  tweak(i) {
+    return this.#tweaks[i];
+  }
+
   get modules() {
     return this.#modules;
   }
@@ -2256,6 +2288,72 @@ class Synth {
 
   get out() {
     return this.#out;
+  }
+
+}
+
+// ------------------------------------------------------------
+// make a reverb unit and connect it to the audio output
+// ------------------------------------------------------------
+
+BleepPlayer = class {
+
+  node
+  context
+
+  constructor(ctx, generator,params) {
+    this.context = ctx;
+    this.node = {};
+    // we need an output node
+    this.node["out"] = unityGain(this.context);
+    // make a webaudio object for each node
+    for (let i = 0; i < generator.numModules; i++) {
+      let m = generator.module(i);
+      this.node[m.id] = getModuleInstance(this.context, m.type);
+    }
+    // we always need an audio object for output
+    this.node["audio"] = getModuleInstance(this.context, "VCA");
+    // make all the patch connections
+    for (let i = 0; i < generator.numPatches; i++) {
+      let p = generator.patch(i);
+      // connect the audio graph
+      let fromModule = this.node[p.from.id];
+      let toModule = this.node[p.to.id];
+      fromModule[p.from.param].connect(toModule[p.to.param]);
+    }
+    // connect the audio output to the destination
+    let audio = this.node["audio"];
+    audio["out"].connect(this.node["out"]);
+    // do all the parameter tweaks
+    for (let i = 0; i < generator.numTweaks; i++) {
+      let t = generator.tweak(i);
+    }
+    // apply the envelopes
+  }
+
+  /*
+  for (let i = 0; i < this.#tweaks.length; i++) {
+    let twk = this.#tweaks[i];
+    let obj = node[twk.id];
+    // need to find maxima and minima before doing this
+    let value = evaluatePostfix(twk.expression, params, this.#maxima, this.#minima);
+    obj[twk.param] = value;
+  }
+*/
+  start() {
+    console.log("starting");
+    let now = this.context.currentTime;
+    Object.values(this.node).forEach((m) => {
+      m.start?.(now);
+    });
+  }
+
+  stop() {
+    console.log("stopping");
+    let now = this.context.currentTime;
+    Object.values(this.node).forEach((m) => {
+      m.stop?.(now);
+    });
   }
 
 }
