@@ -34,12 +34,10 @@ LPF : f2
 LPF : f1
 VCA : mix
 VCA : vca
-VCA : sub
 ADSR : env
 VCA : pitchmod
 LPF : lowpass
 HPF : highpass
-HPF : noisefilter
 
 lfo.out -> pitchmod.in
 pitchmod.out -> saw.pitchCV
