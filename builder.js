@@ -14,7 +14,7 @@ const MIN_LEVEL = 0;
 // flags
 
 const SHOW_DOC_STRINGS = false;
-const VERBOSE = true;
+const VERBOSE = false;
 
 // midi stuff
 
@@ -183,12 +183,24 @@ function makeSlider(containerName, id, docstring, min, max, val, step) {
   label.textContent = `${id} [${val}]`;
   // add a callback to the slider
   slider.addEventListener("input", function () {
-    gui(label.id).textContent = `${id} [${parseFloat(this.value)}]`;
+    let val = parseFloat(this.value);
+    gui(label.id).textContent = `${id} [${val}]`;
+    makeImmediateTweak(id,val);
   });
   // add to the document
   sliderContainer.appendChild(slider);
   sliderContainer.appendChild(label);
   container.appendChild(sliderContainer);
+}
+
+// ------------------------------------------------------------
+// tweak a parameter in real time, changing it immediately
+// ------------------------------------------------------------
+
+function makeImmediateTweak(param,value) {
+  playerForNote.forEach((player,note) => {
+    player.applyTweakNow(param,value);
+  });
 }
 
 // ------------------------------------------------------------
@@ -1314,11 +1326,14 @@ function makeGrammar() {
     Synthblock(a, b, c, d, e, f, g,h) {
       return `${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()},${g.interpret()}`;
     },
-    Parameter(a, b, c, d, e, f, g, h, i) {
-      return `{"param":{${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()},${g.interpret()},${h.interpret()}}}`;
+    Parameter(a, b, c, d, e, f, g, h, i, j) {
+      return `{"param":{${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()},${g.interpret()},${h.interpret()},${i.interpret()}}}`;
     },
     Paramtype(a, b, c) {
       return `"type":"${c.interpret()}"`;
+    },
+    Mutable(a,b,c) {
+      return `"mutable":"${c.sourceString}"`;
     },
     validtype(a) {
       return a.sourceString;
@@ -1537,13 +1552,18 @@ function getGrammarSource() {
 
   Graph = Synthblock Statement+
 
-  Parameter = "@param" paramname Paramtype Paramstep Minval Maxval Defaultval Docstring "@end"
+  Parameter = "@param" paramname Paramtype Mutable Paramstep Minval Maxval Defaultval Docstring "@end"
 
   Synthblock = "@synth" shortname Longname Type Author Version Docstring "@end"
 
   shortname = letter (letter | "-")+
 
   paramname = letter (alnum | "_")+
+
+  Mutable (a yes or no value)
+  = "mutable" ":" yesno
+  
+  yesno = "yes" | "no"
 
   Paramtype (a parameter type)
   = "type" ":" validtype
@@ -1967,6 +1987,7 @@ class BleepGenerator {
   #maxima
   #minima
   #defaults
+  #mutable
   #errorString
   #warningString
 
@@ -1995,7 +2016,9 @@ class BleepGenerator {
     this.#minima.pitch = MIN_MIDI_FREQ;
     this.#minima.level = MIN_LEVEL;
     this.#defaults = {};
+    this.#mutable = {};
     for (let m of this.#parameters) {
+      this.#mutable[m.name] = (m.mutable==="yes");
       this.#maxima[m.name] = m.max;
       this.#minima[m.name] = m.min;
       this.#defaults[m.name] = m.default;
@@ -2136,6 +2159,10 @@ class BleepGenerator {
     return this.#minima;
   }
 
+  get mutable() {
+    return this.#mutable;
+  }
+
   get modules() {
     return this.#modules;
   }
@@ -2203,10 +2230,12 @@ BleepPlayer = class {
   node
   context
   generator
+  params
 
   constructor(ctx, generator, pitchHz, level, params) {
     this.context = ctx;
     this.generator = generator;
+    this.params = params;
     this.node = {};
     // add the pitch and level to the parameters
     params.pitch = pitchHz;
@@ -2214,7 +2243,7 @@ BleepPlayer = class {
     // create the webaudio network in three steps
     this.createModules();
     this.createPatches();
-    this.applyTweaks(params);
+    this.applyTweaks();
   }
 
   createModules() {
@@ -2236,11 +2265,27 @@ BleepPlayer = class {
   }
 
   // do all the parameter tweaks
-  applyTweaks(params) {
+  applyTweaks() {
     for (let t of this.generator.tweaks) {
       let obj = this.node[t.id];
-      let value = evaluatePostfix(t.expression, params, this.generator.maxima, this.generator.minima);
-      obj[t.param] = value;
+      let val = evaluatePostfix(t.expression, this.params, this.generator.maxima, this.generator.minima);
+      obj[t.param] = val;
+    }
+  }
+
+  applyTweakNow(param, value) {
+    // is the parameter mutable?
+    if (this.generator.mutable[param] === false)
+      return;
+    // update the parameter set with the value
+    this.params[param] = value;
+    // update any expressions that use the tweaked parameter
+    for (let t of this.generator.tweaks) {
+      if (t.expression.includes(`param.${param}`)) {
+        let obj = this.node[t.id];
+        let val = evaluatePostfix(t.expression, this.params, this.generator.maxima, this.generator.minima);
+        obj[t.param] = val;
+      }
     }
   }
 
