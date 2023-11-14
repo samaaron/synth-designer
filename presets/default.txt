@@ -10,6 +10,7 @@ doc : A very simple default patch
 
 @param cutoff
 type : float
+mutable: yes
 step : 0.01
 min : 100
 max : 8000

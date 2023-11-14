@@ -12,6 +12,7 @@ doc: Hammond organ with drawbars and percussion
 
 @param drawbar1
 type: float
+mutable: yes
 step: 0.01
 min: 1
 max: 8
@@ -21,6 +22,7 @@ doc: level of the sub-octave
 
 @param drawbar2
 type: float
+mutable: yes
 step: 0.01
 min: 1
 max: 8
@@ -30,6 +32,7 @@ doc: level of fifth
 
 @param drawbar3
 type: float
+mutable: yes
 step: 0.01
 min: 1
 max: 8
@@ -39,6 +42,7 @@ doc: level of reference pitch
 
 @param drawbar4
 type: float
+mutable: yes
 step: 0.01
 min: 1
 max: 8
@@ -48,6 +52,7 @@ doc: level of octave
 
 @param drawbar5
 type: float
+mutable: yes
 step: 0.01
 min: 1
 max: 8
@@ -57,6 +62,7 @@ doc: level of octave plus fifth
 
 @param percussion
 type: float
+mutable: no
 step: 0.01
 min: 0
 max: 1
@@ -66,6 +72,7 @@ doc: amount of percussion sound
 
 @param decay
 type: float
+mutable: no
 step: 0.01
 min: 0
 max: 1
@@ -75,6 +82,7 @@ doc: decay of the percussion sound
 
 @param quality
 type: float
+mutable: no
 step: 0.01
 min: 0
 max: 1
@@ -84,6 +92,7 @@ doc: quality of percussion sound
 
 @param volume
 type: float
+mutable: no
 step: 0.01
 min: 0
 max: 1
@@ -93,6 +102,7 @@ doc: master volume
 
 @param leslie_rate
 type: float
+mutable: yes
 step: 0.01
 min: 0.5
 max: 7
@@ -102,6 +112,7 @@ doc: leslie rotation rate
 
 @param overdrive
 type: float
+mutable: yes
 step: 0.01
 min: 0
 max: 1
