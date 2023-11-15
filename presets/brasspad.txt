@@ -10,22 +10,12 @@ doc : A brassy pad with added fifth
 
 @param cutoff
 type : float
-mutable: no
+mutable: yes
 step : 0.01
 min : 100
 max : 3000
 default : 1000
 doc : cutoff frequency
-@end
-
-@param modulation
-type : float
-mutable: no
-step : 0.01
-min : 0
-max : 1
-default : 0.5
-doc : filter modulation
 @end
 
 @param volume
@@ -49,16 +39,8 @@ VCA : vca
 VCA : mix
 ADSR : env
 ADSR : filtenv
-LFO : lfo
-VCA : modgain
 
 # patch
-
-lfo.out -> modgain.in
-modgain.out -> lowpass.cutoffCV
-
-lfo.pitch = random(2.5,4)*param.modulation
-modgain.level = 100
 
 env.out -> vca.levelCV
 env.level = param.level*param.volume
