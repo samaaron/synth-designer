@@ -35,6 +35,10 @@ let playerForNote = new Map();
 
 let reverb;
 
+// monitor - keep track of how many notes and nodes we have
+
+let monitor;
+
 // gui stuff
 
 const midiDot = gui("dot"); // we need this quickly so cache it
@@ -79,7 +83,7 @@ const validTweaks = {
   "SQR-OSC": ["detune", "pitch"],
   "TRI-OSC": ["detune", "pitch"],
   "PULSE-OSC": ["detune", "pitch", "pulsewidth"],
-  "LFO": ["pitch","phase"],
+  "LFO": ["pitch", "phase"],
   "LPF": ["cutoff", "resonance"],
   "HPF": ["cutoff", "resonance"],
   "VCA": ["level"],
@@ -104,7 +108,7 @@ const validPatchInputs = {
   "VCA": ["in", "levelCV"],
   "SHAPER": ["in"],
   "PAN": ["in", "angleCV"],
-  "DELAY": ["in","lagCV"]
+  "DELAY": ["in", "lagCV"]
 };
 
 // valid patch outputs - pointless at the moment but in future modules may have more than one output
@@ -128,6 +132,51 @@ const validPatchOutputs = {
 };
 
 // ------------------------------------------------------------
+// monitor structure
+// ------------------------------------------------------------
+
+class Monitor {
+
+  #numNotes
+  #fields
+
+  constructor() {
+    this.#numNotes = 0;
+    this.#fields = {
+      note: 0,
+      osc: 0,
+      amp: 0,
+      lowpass: 0,
+      highpass: 0,
+      lfo: 0,
+      panner: 0,
+      delay: 0,
+      noise: 0,
+      shaper: 0,
+      audio: 0
+    }
+  }
+
+  retain(f) {
+    this.#fields[f]++;
+    this.display();
+  }
+
+  release(f) {
+    this.#fields[f]--;
+    this.display();
+  }
+
+  display() {
+    let str = "";
+    for (const key in this.#fields) {
+      str += `${key} ${this.#fields[key]} : `;
+    }
+    gui("monitor").textContent = str;
+  }
+}
+
+// ------------------------------------------------------------
 // initialise the button callbacks etc
 // ------------------------------------------------------------
 
@@ -137,6 +186,7 @@ function init() {
   setupMidi();
   makeGrammar();
   setDefaultValues();
+  monitor = new Monitor();
 }
 
 // ------------------------------------------------------------
@@ -144,8 +194,8 @@ function init() {
 // ------------------------------------------------------------
 
 function setDefaultValues() {
-  setFloatControl("level",0.8);
-  setFloatControl("reverb",0.1);
+  setFloatControl("level", 0.8);
+  setFloatControl("reverb", 0.1);
 }
 
 // ------------------------------------------------------------
@@ -185,7 +235,7 @@ function makeSlider(containerName, id, docstring, min, max, val, step) {
   slider.addEventListener("input", function () {
     let val = parseFloat(this.value);
     gui(label.id).textContent = `${id} [${val}]`;
-    makeImmediateTweak(id,val);
+    makeImmediateTweak(id, val);
   });
   // add to the document
   sliderContainer.appendChild(slider);
@@ -197,9 +247,9 @@ function makeSlider(containerName, id, docstring, min, max, val, step) {
 // tweak a parameter in real time, changing it immediately
 // ------------------------------------------------------------
 
-function makeImmediateTweak(param,value) {
-  playerForNote.forEach((player,note) => {
-    player.applyTweakNow(param,value);
+function makeImmediateTweak(param, value) {
+  playerForNote.forEach((player, note) => {
+    player.applyTweakNow(param, value);
   });
 }
 
@@ -245,6 +295,9 @@ function addListenersToGUI() {
   // save as button 
   gui("save-as-button").onclick = async () => { await saveAsFile(); };
 
+  // export button 
+  gui("export-button").onclick = async () => { await exportAsJSON(); };
+
   // play button 
   gui("play-button").onmousedown = () => {
     const midiNoteNumber = getIntParam("pitch");
@@ -275,7 +328,7 @@ function addListenersToGUI() {
 
   // amplitude slider
   gui("level").addEventListener("input", function () {
-    setFloatControl("level",parseFloat(this.value));
+    setFloatControl("level", parseFloat(this.value));
   });
 
   // reverb slider
@@ -312,6 +365,7 @@ function disableGUI(b) {
   gui("load-button").disabled = b;
   gui("save-button").disabled = b;
   gui("save-as-button").disabled = b;
+  gui("export-button").disabled = b;
   gui("play-button").disabled = b;
   gui("midi-label").disabled = b;
   gui("midi-input").disabled = b;
@@ -357,7 +411,7 @@ function setupMidi() {
 
 function onMIDIMessage(message) {
   // mask the lowest nibble since we don't care about which MIDI channel we receive from
-  const op = message.data[0] & 0xf0; 
+  const op = message.data[0] & 0xf0;
   // a note on is only a note on if it has a non-zero velocity
   if (op === MIDI_NOTE_ON && message.data[2] != 0) {
     // blip the orange dot
@@ -400,6 +454,7 @@ Oscillator = class {
     this.context = ctx;
     this.osc = ctx.createOscillator(ctx);
     this.osc.frequency.value = MIDDLE_C;
+    monitor.retain("osc");
   }
 
   set detune(n) {
@@ -434,14 +489,15 @@ Oscillator = class {
   stop(tim) {
     if (VERBOSE) console.log("stopping Oscillator");
     this.osc.stop(tim);
-    let stopTime = tim-this.context.currentTime;
-    if (stopTime<0) stopTime=0;
-    setTimeout(()=>{
+    let stopTime = tim - this.context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
       if (VERBOSE) console.log("disconnecting Oscillator");
       this.osc.disconnect();
       this.osc = null;
       this.context = null;
-    }, (stopTime+0.1)*1000);
+      monitor.release("osc");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -481,6 +537,8 @@ moduleContext.LFO = class {
     this.#sinGain.connect(this.#mixer);
     this.#cosGain.connect(this.#mixer);
 
+    monitor.retain("lfo");
+
   }
 
   set phase(p) {
@@ -511,22 +569,23 @@ moduleContext.LFO = class {
     if (VERBOSE) console.log("stopping LFO");
     this.#sinOsc.stop(tim);
     this.#cosOsc.stop(tim);
-    let stopTime = tim-this.#context.currentTime;
-    if (stopTime<0) stopTime=0;
-    setTimeout(()=>{
+    let stopTime = tim - this.#context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
       if (VERBOSE) console.log("disconnecting LFO");
       this.#sinOsc.disconnect();
       this.#cosOsc.disconnect();
       this.#sinGain.disconnect();
       this.#cosGain.disconnect();
       this.#mixer.disconnect();
-      this.#sinOsc = null;  
-      this.#cosOsc = null;  
-      this.#sinGain = null;  
-      this.#cosGain = null;  
-      this.#mixer = null;  
+      this.#sinOsc = null;
+      this.#cosOsc = null;
+      this.#sinGain = null;
+      this.#cosGain = null;
+      this.#mixer = null;
       this.#context = null;
-    },(stopTime+0.1)*1000);
+      monitor.release("lfo");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -543,6 +602,7 @@ moduleContext.Panner = class {
   constructor(ctx) {
     this.#context = ctx;
     this.#pan = ctx.createStereoPanner();
+    monitor.retain("panner");
   }
 
   // stereo position between -1 and 1
@@ -550,7 +610,7 @@ moduleContext.Panner = class {
     this.#pan.pan.value = p;
   }
 
- // stereo position between -1 and 1
+  // stereo position between -1 and 1
   get angle() {
     return this.#pan.pan.value;
   }
@@ -569,14 +629,15 @@ moduleContext.Panner = class {
 
   stop(tim) {
     if (VERBOSE) console.log("stopping Panner");
-    let stopTime = tim-this.#context.currentTime;
-    if (stopTime<0) stopTime=0;
-    setTimeout(()=>{
+    let stopTime = tim - this.#context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
       if (VERBOSE) console.log("disconnecting Panner");
       this.#pan.disconnect();
-      this.#pan = null;  
+      this.#pan = null;
       this.#context = null;
-    }, (stopTime+0.1)*1000);
+      monitor.release("panner");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -593,6 +654,7 @@ moduleContext.Delay = class {
   constructor(ctx) {
     this.#context = ctx;
     this.#delay = ctx.createDelay(10);
+    monitor.retain("delay");
   }
 
   set lag(t) {
@@ -624,7 +686,8 @@ moduleContext.Delay = class {
       this.#delay.disconnect();
       this.#delay = null;
       this.#context = null;
-    }, (stopTime+0.1) * 1000);
+      monitor.release("delay");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -784,6 +847,7 @@ moduleContext.PulseOsc = class extends Oscillator {
       this.inverter = null;
       this.pwm = null;
       this.context = null;
+      monitor.release("osc");
     }, (stopTime + 0.1) * 1000);
   }
 
@@ -857,6 +921,7 @@ moduleContext.Noise = class NoiseGenerator {
     this.#noise = ctx.createBufferSource();
     this.#noise.buffer = noiseBuffer;
     this.#noise.loop = true;
+    monitor.retain("noise");
   }
 
   get out() {
@@ -877,6 +942,7 @@ moduleContext.Noise = class NoiseGenerator {
       this.#noise.disconnect();
       this.#noise = null;
       this.#context = null;
+      monitor.release("noise");
     }, (stopTime + 0.1) * 1000);
   }
 
@@ -897,6 +963,7 @@ moduleContext.LowpassFilter = class {
     this.#filter.frequency.value = 1000;
     this.#filter.Q.value = 1;
     this.#filter.type = "lowpass";
+    monitor.retain("lowpass");
   }
 
   get cutoff() {
@@ -936,7 +1003,8 @@ moduleContext.LowpassFilter = class {
       this.#filter.disconnect();
       this.#filter = null;
       this.#context = null;
-    }, (stopTime+0.1) * 1000);
+      monitor.release("lowpass");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -956,6 +1024,7 @@ moduleContext.HighpassFilter = class {
     this.#filter.frequency.value = 1000;
     this.#filter.Q.value = 1;
     this.#filter.type = "highpass";
+    monitor.retain("highpass");
   }
 
   get cutoff() {
@@ -995,7 +1064,8 @@ moduleContext.HighpassFilter = class {
       this.#filter.disconnect();
       this.#filter = null;
       this.#context = null;
-    }, (stopTime+0.1) * 1000);
+      monitor.release("highpass");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -1111,6 +1181,7 @@ moduleContext.Waveshaper = class {
     this.#shaper = ctx.createWaveShaper();
     this.#shaper.curve = this.makeDistortionCurve(100);
     this.#shaper.oversample = "4x";
+    monitor.retain("shaper");
   }
 
   get in() {
@@ -1152,7 +1223,8 @@ moduleContext.Waveshaper = class {
       this.#shaper.disconnect();
       this.#shaper = null;
       this.#context = null;
-    }, (stopTime+0.1) * 1000);
+      monitor.release("shaper");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -1169,6 +1241,7 @@ moduleContext.Amplifier = class {
   constructor(ctx) {
     this.#context = ctx;
     this.#gain = unityGain(ctx);
+    monitor.retain("amp");
   }
 
   get in() {
@@ -1200,7 +1273,8 @@ moduleContext.Amplifier = class {
       this.#gain.disconnect();
       this.#gain = null;
       this.#context = null;
-    }, (stopTime+0.1) * 1000);
+      monitor.release("amp");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -1209,6 +1283,7 @@ moduleContext.Amplifier = class {
 // Audio class - the endpoint for audio connections
 // ------------------------------------------------------------
 
+/*
 moduleContext.Audio = class {
 
   #gain
@@ -1217,6 +1292,7 @@ moduleContext.Audio = class {
   constructor(ctx) {
     this.#context = ctx;
     this.#gain = unityGain(ctx);
+    monitor.retain("audio");
   }
 
   get in() {
@@ -1236,16 +1312,18 @@ moduleContext.Audio = class {
       this.#gain.disconnect();
       this.#gain = null;
       this.#context = null;
+      monitor.release("audio");
     }, (stopTime+0.1) * 1000);
   }
 
 }
+*/
 
 // ------------------------------------------------------------
 // play a note
 // ------------------------------------------------------------
 
-function playNote(midiNoteNumber,velocity) {
+function playNote(midiNoteNumber, velocity) {
   if (generator != undefined && generator.isValid) {
     let player = playerForNote.get(midiNoteNumber);
     // possibly we triggered the same note during the release phase of an existing note
@@ -1253,6 +1331,7 @@ function playNote(midiNoteNumber,velocity) {
     if (player != undefined) {
       player.stopAfterRelease(context.currentTime);
       playerForNote.delete(midiNoteNumber);
+      monitor.release("note");
     }
     // get the pitch and parameters
     const pitchHz = midiNoteToFreqHz(midiNoteNumber);
@@ -1263,6 +1342,7 @@ function playNote(midiNoteNumber,velocity) {
     playerForNote.set(midiNoteNumber, player);
     player.out.connect(reverb.in);
     player.start(context.currentTime);
+    monitor.retain("note");
   }
 }
 
@@ -1275,6 +1355,7 @@ function stopNote(midiNoteNumber) {
   if (player != undefined) {
     player.stopAfterRelease(context.currentTime);
     playerForNote.delete(midiNoteNumber);
+    monitor.release("note");
   }
 }
 
@@ -1323,7 +1404,7 @@ function makeGrammar() {
       controls = ["pitch", "level"];
       return `{"synth":{${a.interpret()}},"statements":[${"".concat(b.children.map(z => z.interpret()))}]}`;
     },
-    Synthblock(a, b, c, d, e, f, g,h) {
+    Synthblock(a, b, c, d, e, f, g, h) {
       return `${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()},${g.interpret()}`;
     },
     Parameter(a, b, c, d, e, f, g, h, i, j) {
@@ -1332,7 +1413,7 @@ function makeGrammar() {
     Paramtype(a, b, c) {
       return `"type":"${c.interpret()}"`;
     },
-    Mutable(a,b,c) {
+    Mutable(a, b, c) {
       return `"mutable":"${c.sourceString}"`;
     },
     validtype(a) {
@@ -1361,7 +1442,7 @@ function makeGrammar() {
     Longname(a, b, c) {
       return `"longname":${c.interpret()}`;
     },
-    Type(a,b,c) {
+    Type(a, b, c) {
       return `"type":"${c.interpret()}"`;
     },
     Patchtype(a) {
@@ -1901,62 +1982,6 @@ function isIdentifier(t) {
 }
 
 // ------------------------------------------------------------
-// evaluate a postfix expression
-// ------------------------------------------------------------
-
-function evaluatePostfix(expression, param, maxima, minima) {
-  let stack = [];
-  const popOperand = function () {
-    let op = stack.pop();
-    if (isIdentifier(op)) {
-      op = param[op.replace("param.", "")];
-    }
-    return op;
-  }
-  for (let t of expression) {
-    if (isNumber(t)) {
-      stack.push(parseFloat(t));
-    } else if (isIdentifier(t)) {
-      stack.push(t);
-    } else if (t === "*" || t === "/" || t === "+" || t == "-") {
-      let op2 = popOperand();
-      let op1 = popOperand();
-      switch (t) {
-        case "*": stack.push(op1 * op2); break;
-        case "/": stack.push(op1 / op2); break;
-        case "+": stack.push(op1 + op2); break;
-        case "-": stack.push(op1 - op2); break;
-      }
-    } else if (t === "log") {
-      let op = popOperand();
-      stack.push(Math.log(op));
-    } else if (t === "exp") {
-      let op = popOperand();
-      stack.push(Math.exp(op));
-    } else if (t === "random") {
-      let op1 = stack.pop();
-      let op2 = stack.pop();
-      let r = randomBetween(op2, op1);
-      stack.push(r);
-    } else if (t === "map") {
-      let op1 = stack.pop();
-      let op2 = stack.pop();
-      let op3 = stack.pop();
-      let control = op3.replace("param.", "");
-      let minval = minima[control];
-      let maxval = maxima[control];
-      let s = scaleValue(minval, maxval, op2, op1, param[control]);
-      stack.push(s);
-    }
-  }
-  let result = stack[0];
-  if (isIdentifier(result))
-    return param[result.replace("param.", "")];
-  else
-    return result;
-}
-
-// ------------------------------------------------------------
 // helper function to get a module instance
 // neat trick for dynamic object creation from string name:
 // https://stackoverflow.com/questions/1366127/how-do-i-make-javascript-object-using-a-variable-string-to-define-the-class-name
@@ -2018,7 +2043,7 @@ class BleepGenerator {
     this.#defaults = {};
     this.#mutable = {};
     for (let m of this.#parameters) {
-      this.#mutable[m.name] = (m.mutable==="yes");
+      this.#mutable[m.name] = (m.mutable === "yes");
       this.#maxima[m.name] = m.max;
       this.#minima[m.name] = m.min;
       this.#defaults[m.name] = m.default;
@@ -2268,7 +2293,7 @@ BleepPlayer = class {
   applyTweaks() {
     for (let t of this.generator.tweaks) {
       let obj = this.node[t.id];
-      let val = evaluatePostfix(t.expression, this.params, this.generator.maxima, this.generator.minima);
+      let val = this.evaluatePostfix(t.expression);
       obj[t.param] = val;
     }
   }
@@ -2285,7 +2310,7 @@ BleepPlayer = class {
     for (let t of this.generator.tweaks) {
       if (t.expression.includes(`param.${param}`)) {
         let obj = this.node[t.id];
-        let val = evaluatePostfix(t.expression, this.params, this.generator.maxima, this.generator.minima);
+        let val = this.evaluatePostfix(t.expression);
         obj[t.param] = val;
       }
     }
@@ -2333,6 +2358,60 @@ BleepPlayer = class {
   get out() {
     return this.node.audio.out;
   }
+
+  // evaluate a parameter expression in postfix form
+  evaluatePostfix(expression) {
+    let stack = [];
+    const popOperand = () => {
+      let op = stack.pop();
+      if (isIdentifier(op)) {
+        op = this.params[op.replace("param.", "")];
+      }
+      return op;
+    }
+    for (let t of expression) {
+      if (isNumber(t)) {
+        stack.push(parseFloat(t));
+      } else if (isIdentifier(t)) {
+        stack.push(t);
+      } else if (t === "*" || t === "/" || t === "+" || t == "-") {
+        let op2 = popOperand();
+        let op1 = popOperand();
+        switch (t) {
+          case "*": stack.push(op1 * op2); break;
+          case "/": stack.push(op1 / op2); break;
+          case "+": stack.push(op1 + op2); break;
+          case "-": stack.push(op1 - op2); break;
+        }
+      } else if (t === "log") {
+        let op = popOperand();
+        stack.push(Math.log(op));
+      } else if (t === "exp") {
+        let op = popOperand();
+        stack.push(Math.exp(op));
+      } else if (t === "random") {
+        let op1 = stack.pop();
+        let op2 = stack.pop();
+        let r = randomBetween(op2, op1);
+        stack.push(r);
+      } else if (t === "map") {
+        let op1 = stack.pop();
+        let op2 = stack.pop();
+        let op3 = stack.pop();
+        let control = op3.replace("param.", "");
+        let minval = this.generator.minima[control];
+        let maxval = this.generator.maxima[control];
+        let s = scaleValue(minval, maxval, op2, op1, this.params[control]);
+        stack.push(s);
+      }
+    }
+    let result = stack[0];
+    if (isIdentifier(result))
+      return this.params[result.replace("param.", "")];
+    else
+      return result;
+  }
+
 }
 
 // ------------------------------------------------------------
@@ -2493,12 +2572,33 @@ async function saveFile() {
 // ------------------------------------------------------------
 
 async function saveAsFile() {
-  fileHandle = await window.showSaveFilePicker();
+  let opts = {};
+  if (generator.shortname.length > 0) {
+    opts.suggestedName = generator.shortname + ".txt";
+  }
+  fileHandle = await window.showSaveFilePicker(opts);
   const writable = await fileHandle.createWritable();
   await writable.write(gui("synth-spec").value);
   await writable.close();
   gui("file-label").textContent = "Current file: " + fileHandle.name;
   wasEdited = false;
+}
+
+// ------------------------------------------------------------
+// export as JSON
+// https://developer.chrome.com/articles/file-system-access/
+// ------------------------------------------------------------
+
+async function exportAsJSON() {
+  if (generator != undefined && generator.isValid) {
+    const opts = {
+      suggestedName: generator.shortname + ".json"
+    };
+    fileHandle = await window.showSaveFilePicker(opts);
+    const writable = await fileHandle.createWritable();
+    await writable.write(currentJSON);
+    await writable.close();
+  }
 }
 
 // ------------------------------------------------------------
