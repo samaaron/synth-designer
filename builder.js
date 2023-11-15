@@ -2273,6 +2273,8 @@ BleepPlayer = class {
     }
   }
 
+  // apply one tweak now as an instantaneous change
+  // you can only do this to parameters that have been identified as mutable
   applyTweakNow(param, value) {
     // is the parameter mutable?
     if (this.generator.mutable[param] === false)
