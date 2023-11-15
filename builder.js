@@ -1,5 +1,7 @@
-
 // TODO add crossfade node
+// TODO the noise node is really inefficient - generates 2 seconds of noise for every note
+// TODO audio node is no longer used, remove it
+// TODO add a formant filter
 
 window.addEventListener('DOMContentLoaded', init);
 
