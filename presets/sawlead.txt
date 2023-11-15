@@ -8,7 +8,7 @@ doc : Simple saw lead with two detuned oscillators
 
 @param cutoff
 type : float
-mutable: no
+mutable: yes
 step : 0.01
 min : 0
 max : 1

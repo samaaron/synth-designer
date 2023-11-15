@@ -1082,8 +1082,10 @@ moduleContext.Envelope = class {
   #release
   #level
   #controlledParam
+  #context
 
   constructor(ctx) {
+    this.#context = ctx;
     this.#attack = 0.1;
     this.#decay = 0.5;
     this.#sustain = 0.5;
@@ -1113,6 +1115,9 @@ moduleContext.Envelope = class {
 
   set level(v) {
     this.#level = v;
+    // this next bit only takes effect when the audio network is connected and playing
+    if (this.#controlledParam != undefined)
+      this.#controlledParam.setValueAtTime(v, this.#context.currentTime);
   }
 
   releaseOnNoteOff(when) {
