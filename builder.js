@@ -1,5 +1,7 @@
-
 // TODO add crossfade node
+// TODO the noise node is really inefficient - generates 2 seconds of noise for every note
+// TODO audio node is no longer used, remove it
+// TODO add a formant filter
 
 window.addEventListener('DOMContentLoaded', init);
 
@@ -10,7 +12,11 @@ const MAX_MIDI_FREQ = 4186; // C8
 const MIN_MIDI_FREQ = 27.5;  // A0
 const MAX_LEVEL = 1;
 const MIN_LEVEL = 0;
+
+// flags
+
 const SHOW_DOC_STRINGS = false;
+const VERBOSE = false;
 
 // midi stuff
 
@@ -22,11 +28,18 @@ const MIDI_NOTE_OFF = 0x80;
 let midi = null;
 let midiInputs = null;
 let midiInputEnabled = false;
-let synthForNote = [];
+
+// this is a map from midi note -> player
+
+let playerForNote = new Map();
 
 // effects
 
 let reverb;
+
+// monitor - keep track of how many notes and nodes we have
+
+let monitor;
 
 // gui stuff
 
@@ -39,7 +52,7 @@ let synthGrammar;
 let semantics;
 let wasEdited;
 let currentJSON = null;
-let synth = null;
+let generator = null;
 let context = null;
 let moduleContext = {};
 
@@ -72,7 +85,7 @@ const validTweaks = {
   "SQR-OSC": ["detune", "pitch"],
   "TRI-OSC": ["detune", "pitch"],
   "PULSE-OSC": ["detune", "pitch", "pulsewidth"],
-  "LFO": ["pitch","phase"],
+  "LFO": ["pitch", "phase"],
   "LPF": ["cutoff", "resonance"],
   "HPF": ["cutoff", "resonance"],
   "VCA": ["level"],
@@ -97,7 +110,7 @@ const validPatchInputs = {
   "VCA": ["in", "levelCV"],
   "SHAPER": ["in"],
   "PAN": ["in", "angleCV"],
-  "DELAY": ["in","lagCV"]
+  "DELAY": ["in", "lagCV"]
 };
 
 // valid patch outputs - pointless at the moment but in future modules may have more than one output
@@ -121,6 +134,51 @@ const validPatchOutputs = {
 };
 
 // ------------------------------------------------------------
+// monitor structure
+// ------------------------------------------------------------
+
+class Monitor {
+
+  #numNotes
+  #fields
+
+  constructor() {
+    this.#numNotes = 0;
+    this.#fields = {
+      note: 0,
+      osc: 0,
+      amp: 0,
+      lowpass: 0,
+      highpass: 0,
+      lfo: 0,
+      panner: 0,
+      delay: 0,
+      noise: 0,
+      shaper: 0,
+      audio: 0
+    }
+  }
+
+  retain(f) {
+    this.#fields[f]++;
+    this.display();
+  }
+
+  release(f) {
+    this.#fields[f]--;
+    this.display();
+  }
+
+  display() {
+    let str = "";
+    for (const key in this.#fields) {
+      str += `${key} ${this.#fields[key]} : `;
+    }
+    gui("monitor").textContent = str;
+  }
+}
+
+// ------------------------------------------------------------
 // initialise the button callbacks etc
 // ------------------------------------------------------------
 
@@ -130,6 +188,7 @@ function init() {
   setupMidi();
   makeGrammar();
   setDefaultValues();
+  monitor = new Monitor();
 }
 
 // ------------------------------------------------------------
@@ -137,9 +196,8 @@ function init() {
 // ------------------------------------------------------------
 
 function setDefaultValues() {
-  setFloatControl("duration",0.5);
-  setFloatControl("level",0.8);
-  setFloatControl("reverb",0.1);
+  setFloatControl("level", 0.8);
+  setFloatControl("reverb", 0.1);
 }
 
 // ------------------------------------------------------------
@@ -177,12 +235,24 @@ function makeSlider(containerName, id, docstring, min, max, val, step) {
   label.textContent = `${id} [${val}]`;
   // add a callback to the slider
   slider.addEventListener("input", function () {
-    gui(label.id).textContent = `${id} [${parseFloat(this.value)}]`;
+    let val = parseFloat(this.value);
+    gui(label.id).textContent = `${id} [${val}]`;
+    makeImmediateTweak(id, val);
   });
   // add to the document
   sliderContainer.appendChild(slider);
   sliderContainer.appendChild(label);
   container.appendChild(sliderContainer);
+}
+
+// ------------------------------------------------------------
+// tweak a parameter in real time, changing it immediately
+// ------------------------------------------------------------
+
+function makeImmediateTweak(param, value) {
+  playerForNote.forEach((player, note) => {
+    player.applyTweakNow(param, value);
+  });
 }
 
 // ------------------------------------------------------------
@@ -207,7 +277,7 @@ function addListenersToGUI() {
 
   gui("synth-spec").addEventListener("input", () => {
     if (gui("synth-spec").value.length > 0) {
-      parseSynthSpec();
+      parseGeneratorSpec();
       if (!wasEdited) {
         gui("file-label").textContent += "*";
         wasEdited = true;
@@ -227,10 +297,23 @@ function addListenersToGUI() {
   // save as button 
   gui("save-as-button").onclick = async () => { await saveAsFile(); };
 
+  // export button 
+  gui("export-button").onclick = async () => { await exportAsJSON(); };
+
   // play button 
-  gui("play-button").onmousedown = () => { playSynth(); };
-  gui("play-button").onmouseup = () => { stopSynth(); };
-  gui("play-button").onmouseout = () => { stopSynth(); };
+  gui("play-button").onmousedown = () => {
+    const midiNoteNumber = getIntParam("pitch");
+    const velocity = getFloatParam("level");
+    playNote(midiNoteNumber, velocity);
+  };
+  gui("play-button").onmouseup = () => {
+    const midiNoteNumber = getIntParam("pitch");
+    stopNote(midiNoteNumber);
+  };
+  gui("play-button").onmouseout = () => {
+    const midiNoteNumber = getIntParam("pitch");
+    stopNote(midiNoteNumber);
+  };
 
   // start button
   gui("start-button").onclick = () => {
@@ -247,12 +330,7 @@ function addListenersToGUI() {
 
   // amplitude slider
   gui("level").addEventListener("input", function () {
-    setFloatControl("level",parseFloat(this.value));
-  });
-
-  // duration slider
-  gui("duration").addEventListener("input", function () {
-    setFloatControl("duration",parseFloat(this.value));
+    setFloatControl("level", parseFloat(this.value));
   });
 
   // reverb slider
@@ -289,6 +367,7 @@ function disableGUI(b) {
   gui("load-button").disabled = b;
   gui("save-button").disabled = b;
   gui("save-as-button").disabled = b;
+  gui("export-button").disabled = b;
   gui("play-button").disabled = b;
   gui("midi-label").disabled = b;
   gui("midi-input").disabled = b;
@@ -333,67 +412,35 @@ function setupMidi() {
 // ------------------------------------------------------------
 
 function onMIDIMessage(message) {
-  if (synth != undefined && synth.isValid) {
-    var op = message.data[0] & 0xf0; // mask the lowest nibble since we don't care about which MIDI channel we receive from
-    // a note on is only a note on if it has a non-zero velocity
-    if (op === MIDI_NOTE_ON && message.data[2] != 0) {
-      // blip the orange dot
-      midiDot.style.opacity = 1;
-      // note number
-      let midiNoteNumber = message.data[1];
-      // convert note number to freq in Hz
-      const pitchHz = midiNoteToFreqHz(midiNoteNumber);
-      // convert velocity to level in the range [0,1]
-      const level = message.data[2] / 127.0;
-      // parameters
-      const params = getParametersForSynth(synth);
-      // play the note 
-      // we will stop this note when we get a note off, so play it for an arbitrary duration of 5 minutes
-      // if it times out you are not playing nearly fast enough
-      // https://www.youtube.com/watch?v=abVhSCzByw8 
-      let nodeGraph = synthForNote[midiNoteNumber];
-      if (nodeGraph!=null) {
-        // remove the previous note
-        let now = context.currentTime;
-        Object.values(nodeGraph).forEach((m) => {
-          m.stop?.(now);
-        });
-        //nodeGraph.disconnect();
-      }
-      synthForNote[midiNoteNumber] = synth.play(pitchHz, level, params);
-      // turn the dot off after a short time
-      setTimeout(() => { midiDot.style.opacity = 0; }, DOT_DURATION_MS);
-    }
-    // a note off is a note off, or a note on with zero velocity
-    if (op === MIDI_NOTE_OFF || (op === MIDI_NOTE_ON && message.data[2] === 0)) {
-      // this is horrible and not good at all
-      // to stop a note immediately we need to adjust the envelope release - needs quite some changes
-      // since we need to get the current value of the parameter that the envelope is attached to
-      let midiNoteNumber = message.data[1];
-      let nodeGraph = synthForNote[midiNoteNumber];
-      if (nodeGraph) {
-        let now = context.currentTime;
-        let longestRelease = 0;  
-        // why check the nodeGraph exists? I noticed that with HOLD on my keyboard and the arpeggiator running 
-        // (which is a silly thing to do) note offs don't keep up with note ons. So possibly we could have a case
-        // where a note off has been received but there is no nodeGraph from a previous note on
-        Object.values(nodeGraph).forEach((m) => {
-          if (m.release) {
-            m.releaseOnNoteOff(now);
-            if (m.release > longestRelease)
-              longestRelease = m.release;
-          }
-        });
-        /*
-        // stop after the longest release time 
-        Object.values(nodeGraph).forEach((m) => {
-          m.stop?.(now + longestRelease);
-        });
-        synthForNote[midiNoteNumber] = null;
-        */
-      }
-    }
+  // mask the lowest nibble since we don't care about which MIDI channel we receive from
+  const op = message.data[0] & 0xf0;
+  // a note on is only a note on if it has a non-zero velocity
+  if (op === MIDI_NOTE_ON && message.data[2] != 0) {
+    // blip the orange dot
+    blipDot();
+    // note number
+    const midiNoteNumber = message.data[1];
+    // convert velocity to the range [0,1]
+    const velocity = message.data[2] / 127.0;
+    // play the note
+    playNote(midiNoteNumber, velocity);
   }
+  // a note off is a note off, or a note on with zero velocity
+  if (op === MIDI_NOTE_OFF || (op === MIDI_NOTE_ON && message.data[2] === 0)) {
+    const midiNoteNumber = message.data[1];
+    stopNote(midiNoteNumber);
+  }
+}
+
+// ------------------------------------------------------------
+// Blip the orange dot for a short time
+// ------------------------------------------------------------
+
+function blipDot() {
+  midiDot.style.opacity = 1;
+  setTimeout(() => {
+    midiDot.style.opacity = 0;
+  }, DOT_DURATION_MS);
 }
 
 // ------------------------------------------------------------
@@ -409,6 +456,7 @@ Oscillator = class {
     this.context = ctx;
     this.osc = ctx.createOscillator(ctx);
     this.osc.frequency.value = MIDDLE_C;
+    monitor.retain("osc");
   }
 
   set detune(n) {
@@ -436,19 +484,22 @@ Oscillator = class {
   }
 
   start(tim) {
+    if (VERBOSE) console.log("starting oscillator");
     this.osc.start(tim);
   }
 
   stop(tim) {
+    if (VERBOSE) console.log("stopping Oscillator");
     this.osc.stop(tim);
-    let stopTime = tim-this.context.currentTime;
-    if (stopTime<0) stopTime=0;
-    setTimeout(()=>{
+    let stopTime = tim - this.context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      if (VERBOSE) console.log("disconnecting Oscillator");
       this.osc.disconnect();
       this.osc = null;
       this.context = null;
-      console.log("disposed of oscillator");
-    }, (stopTime+0.1)*1000);
+      monitor.release("osc");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -488,6 +539,8 @@ moduleContext.LFO = class {
     this.#sinGain.connect(this.#mixer);
     this.#cosGain.connect(this.#mixer);
 
+    monitor.retain("lfo");
+
   }
 
   set phase(p) {
@@ -515,24 +568,26 @@ moduleContext.LFO = class {
   }
 
   stop(tim) {
+    if (VERBOSE) console.log("stopping LFO");
     this.#sinOsc.stop(tim);
     this.#cosOsc.stop(tim);
-    let stopTime = tim-this.#context.currentTime;
-    if (stopTime<0) stopTime=0;
-    setTimeout(()=>{
+    let stopTime = tim - this.#context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      if (VERBOSE) console.log("disconnecting LFO");
       this.#sinOsc.disconnect();
       this.#cosOsc.disconnect();
       this.#sinGain.disconnect();
       this.#cosGain.disconnect();
       this.#mixer.disconnect();
-      this.#sinOsc = null;  
-      this.#cosOsc = null;  
-      this.#sinGain = null;  
-      this.#cosGain = null;  
-      this.#mixer = null;  
+      this.#sinOsc = null;
+      this.#cosOsc = null;
+      this.#sinGain = null;
+      this.#cosGain = null;
+      this.#mixer = null;
       this.#context = null;
-      console.log("disposed of LFO");
-    },(stopTime+0.1)*1000);
+      monitor.release("lfo");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -549,6 +604,7 @@ moduleContext.Panner = class {
   constructor(ctx) {
     this.#context = ctx;
     this.#pan = ctx.createStereoPanner();
+    monitor.retain("panner");
   }
 
   // stereo position between -1 and 1
@@ -556,7 +612,7 @@ moduleContext.Panner = class {
     this.#pan.pan.value = p;
   }
 
- // stereo position between -1 and 1
+  // stereo position between -1 and 1
   get angle() {
     return this.#pan.pan.value;
   }
@@ -574,13 +630,16 @@ moduleContext.Panner = class {
   }
 
   stop(tim) {
-    let stopTime = tim-this.#context.currentTime;
-    if (stopTime<0) stopTime=0;
-    setTimeout(()=>{
+    if (VERBOSE) console.log("stopping Panner");
+    let stopTime = tim - this.#context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      if (VERBOSE) console.log("disconnecting Panner");
       this.#pan.disconnect();
-      this.#pan = null;  
+      this.#pan = null;
       this.#context = null;
-    }, (stopTime+0.1)*1000);
+      monitor.release("panner");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -597,6 +656,7 @@ moduleContext.Delay = class {
   constructor(ctx) {
     this.#context = ctx;
     this.#delay = ctx.createDelay(10);
+    monitor.retain("delay");
   }
 
   set lag(t) {
@@ -620,13 +680,16 @@ moduleContext.Delay = class {
   }
 
   stop(tim) {
+    if (VERBOSE) console.log("stopping Delay");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      if (VERBOSE) console.log("disconnecting Delay");
       this.#delay.disconnect();
       this.#delay = null;
       this.#context = null;
-    }, (stopTime+0.1) * 1000);
+      monitor.release("delay");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -760,34 +823,37 @@ moduleContext.PulseOsc = class extends Oscillator {
 
   // stop everything
   stop(tim) {
+    if (VERBOSE) console.log("stopping Pulse");
     this.osc.stop(tim);
     this.osc2.stop(tim);
     this.freqNode.stop(tim);
     this.detuneNode.stop(tim);
-      let stopTime = tim - this.context.currentTime;
-      if (stopTime < 0) stopTime = 0;
-      setTimeout(() => {
-        this.osc.disconnect();
-        this.osc2.disconnect();
-        this.freqNode.disconnect();
-        this.detuneNode.disconnect();
-        this.#out.disconnect();
-        this.delay.disconnect();
-        this.inverter.disconnect();
-        this.pwm.disconnect();
-        this.osc = null;
-        this.osc2 = null;
-        this.freqNode = null;
-        this.detuneNode = null;
-        this.#out = null;
-        this.delay = null;
-        this.inverter = null;
-        this.pwm = null;
-        this.context = null;
-      }, (stopTime+0.1) * 1000);
-    }
-
+    let stopTime = tim - this.context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      if (VERBOSE) console.log("disconnecting Pulse");
+      this.osc.disconnect();
+      this.osc2.disconnect();
+      this.freqNode.disconnect();
+      this.detuneNode.disconnect();
+      this.#out.disconnect();
+      this.delay.disconnect();
+      this.inverter.disconnect();
+      this.pwm.disconnect();
+      this.osc = null;
+      this.osc2 = null;
+      this.freqNode = null;
+      this.detuneNode = null;
+      this.#out = null;
+      this.delay = null;
+      this.inverter = null;
+      this.pwm = null;
+      this.context = null;
+      monitor.release("osc");
+    }, (stopTime + 0.1) * 1000);
   }
+
+}
 
 // ------------------------------------------------------------
 // Saw oscillator class
@@ -838,6 +904,8 @@ moduleContext.SquareOsc = class extends Oscillator {
 // for reasons of efficiency we loop a 2-second buffer of noise rather than generating 
 // random numbers for every sample
 // https://noisehack.com/generate-noise-web-audio-api/
+// TODO actually this is still very inefficient - we should share a noise generator across
+// all players
 // ------------------------------------------------------------
 
 moduleContext.Noise = class NoiseGenerator {
@@ -855,6 +923,7 @@ moduleContext.Noise = class NoiseGenerator {
     this.#noise = ctx.createBufferSource();
     this.#noise.buffer = noiseBuffer;
     this.#noise.loop = true;
+    monitor.retain("noise");
   }
 
   get out() {
@@ -866,13 +935,16 @@ moduleContext.Noise = class NoiseGenerator {
   }
 
   stop(tim) {
+    if (VERBOSE) console.log("stopping Noise");
     this.#noise.stop(tim);
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      if (VERBOSE) console.log("disconnecting Noise");
       this.#noise.disconnect();
       this.#noise = null;
       this.#context = null;
+      monitor.release("noise");
     }, (stopTime + 0.1) * 1000);
   }
 
@@ -893,6 +965,7 @@ moduleContext.LowpassFilter = class {
     this.#filter.frequency.value = 1000;
     this.#filter.Q.value = 1;
     this.#filter.type = "lowpass";
+    monitor.retain("lowpass");
   }
 
   get cutoff() {
@@ -924,13 +997,16 @@ moduleContext.LowpassFilter = class {
   }
 
   stop(tim) {
+    if (VERBOSE) console.log("stopping LPF");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      if (VERBOSE) console.log("disconnecting LPF");
       this.#filter.disconnect();
       this.#filter = null;
       this.#context = null;
-    }, (stopTime+0.1) * 1000);
+      monitor.release("lowpass");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -950,6 +1026,7 @@ moduleContext.HighpassFilter = class {
     this.#filter.frequency.value = 1000;
     this.#filter.Q.value = 1;
     this.#filter.type = "highpass";
+    monitor.retain("highpass");
   }
 
   get cutoff() {
@@ -981,13 +1058,16 @@ moduleContext.HighpassFilter = class {
   }
 
   stop(tim) {
+    if (VERBOSE) console.log("stopping HPF");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      if (VERBOSE) console.log("disconnecting HPF");
       this.#filter.disconnect();
       this.#filter = null;
       this.#context = null;
-    }, (stopTime+0.1) * 1000);
+      monitor.release("highpass");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -1004,8 +1084,10 @@ moduleContext.Envelope = class {
   #release
   #level
   #controlledParam
+  #context
 
   constructor(ctx) {
+    this.#context = ctx;
     this.#attack = 0.1;
     this.#decay = 0.5;
     this.#sustain = 0.5;
@@ -1035,13 +1117,16 @@ moduleContext.Envelope = class {
 
   set level(v) {
     this.#level = v;
+    // this next bit only takes effect when the audio network is connected and playing
+    if (this.#controlledParam != undefined)
+      this.#controlledParam.setValueAtTime(v, this.#context.currentTime);
   }
 
-  releaseOnNoteOff(now) {
+  releaseOnNoteOff(when) {
     let value = this.#controlledParam.value;
-    this.#controlledParam.cancelScheduledValues(now);
-    this.#controlledParam.setValueAtTime(value, now);
-    this.#controlledParam.linearRampToValueAtTime(0, now + this.#release);
+    this.#controlledParam.cancelScheduledValues(when);
+    this.#controlledParam.setValueAtTime(value, when);
+    this.#controlledParam.linearRampToValueAtTime(0, when + this.#release);
   }
 
   apply(param, when) {
@@ -1103,6 +1188,7 @@ moduleContext.Waveshaper = class {
     this.#shaper = ctx.createWaveShaper();
     this.#shaper.curve = this.makeDistortionCurve(100);
     this.#shaper.oversample = "4x";
+    monitor.retain("shaper");
   }
 
   get in() {
@@ -1136,13 +1222,16 @@ moduleContext.Waveshaper = class {
   }
 
   stop(tim) {
+    if (VERBOSE) console.log("stopping Shaper");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      if (VERBOSE) console.log("disconnecting Shaper");
       this.#shaper.disconnect();
       this.#shaper = null;
       this.#context = null;
-    }, (stopTime+0.1) * 1000);
+      monitor.release("shaper");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -1159,6 +1248,7 @@ moduleContext.Amplifier = class {
   constructor(ctx) {
     this.#context = ctx;
     this.#gain = unityGain(ctx);
+    monitor.retain("amp");
   }
 
   get in() {
@@ -1182,13 +1272,16 @@ moduleContext.Amplifier = class {
   }
 
   stop(tim) {
+    if (VERBOSE) console.log("stopping Amplifier");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      if (VERBOSE) console.log("disconnecting Amplifier");
       this.#gain.disconnect();
       this.#gain = null;
       this.#context = null;
-    }, (stopTime+0.1) * 1000);
+      monitor.release("amp");
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -1197,6 +1290,7 @@ moduleContext.Amplifier = class {
 // Audio class - the endpoint for audio connections
 // ------------------------------------------------------------
 
+/*
 moduleContext.Audio = class {
 
   #gain
@@ -1205,6 +1299,7 @@ moduleContext.Audio = class {
   constructor(ctx) {
     this.#context = ctx;
     this.#gain = unityGain(ctx);
+    monitor.retain("audio");
   }
 
   get in() {
@@ -1216,58 +1311,58 @@ moduleContext.Audio = class {
   }
 
   stop(tim) {
+    if (VERBOSE) console.log("stopping Audio");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
+      if (VERBOSE) console.log("disconnecting Audio");
       this.#gain.disconnect();
       this.#gain = null;
       this.#context = null;
+      monitor.release("audio");
     }, (stopTime+0.1) * 1000);
   }
 
 }
+*/
 
 // ------------------------------------------------------------
-// play synth
+// play a note
 // ------------------------------------------------------------
 
-function playSynth() {
-  if (synth != undefined && synth.isValid) {
-    const midiNoteNumber = getIntParam("pitch");
+function playNote(midiNoteNumber, velocity) {
+  if (generator != undefined && generator.isValid) {
+    let player = playerForNote.get(midiNoteNumber);
+    // possibly we triggered the same note during the release phase of an existing note
+    // in which case we must stop it and release the object
+    if (player != undefined) {
+      player.stopAfterRelease(context.currentTime);
+      playerForNote.delete(midiNoteNumber);
+      monitor.release("note");
+    }
+    // get the pitch and parameters
     const pitchHz = midiNoteToFreqHz(midiNoteNumber);
-    const level = getFloatParam("level");
-    const durationSec = getFloatParam("duration");
-    const params = getParametersForSynth(synth);
-    synthForNote[midiNoteNumber] = synth.play(pitchHz, level, params);
+    const params = getParametersForGenerator(generator);
+    // make a player and store a reference to it so we can stop it later
+    player = new BleepPlayer(context, generator, pitchHz, velocity, params);
+    if (VERBOSE) console.log(player);
+    playerForNote.set(midiNoteNumber, player);
+    player.out.connect(reverb.in);
+    player.start(context.currentTime);
+    monitor.retain("note");
   }
 }
 
 // ------------------------------------------------------------
-// stop synth
-// this needs to be properly factored into another function
+// stop a note
 // ------------------------------------------------------------
 
-function stopSynth() {
-  const midiNoteNumber = getIntParam("pitch");
-  let nodeGraph = synthForNote[midiNoteNumber];
-  if (nodeGraph) {
-    // why check the nodeGraph exists? I noticed that with HOLD on my keyboard and the arpeggiator running 
-    // (which is a silly thing to do) note offs don't keep up with note ons. So possibly we could have a case
-    // where a note off has been received but there is no nodeGraph from a previous note on
-    let now = context.currentTime;
-    let longestRelease = 0;
-    Object.values(nodeGraph).forEach((m) => {
-      if (m.release) {
-        m.releaseOnNoteOff(now);
-        if (m.release > longestRelease)
-          longestRelease = m.release;
-      }
-    });
-    // stop after the longest release time 
-    Object.values(nodeGraph).forEach((m) => {
-      m.stop?.(now + longestRelease);
-    });
-    synthForNote[midiNoteNumber] = null;
+function stopNote(midiNoteNumber) {
+  let player = playerForNote.get(midiNoteNumber);
+  if (player != undefined) {
+    player.stopAfterRelease(context.currentTime);
+    playerForNote.delete(midiNoteNumber);
+    monitor.release("note");
   }
 }
 
@@ -1275,7 +1370,7 @@ function stopSynth() {
 // read all the parameters for this synth from the interface
 // ------------------------------------------------------------
 
-function getParametersForSynth(s) {
+function getParametersForGenerator(s) {
   let params = {};
   for (let p of s.parameters) {
     if (p.type === "float") {
@@ -1300,7 +1395,6 @@ function makeGrammar() {
   let patches;
   let tweaks;
   let controls;
-  let controlNumber = 1;
 
   // make the grammar
   synthGrammar = ohm.grammar(source);
@@ -1317,14 +1411,17 @@ function makeGrammar() {
       controls = ["pitch", "level"];
       return `{"synth":{${a.interpret()}},"statements":[${"".concat(b.children.map(z => z.interpret()))}]}`;
     },
-    Synthblock(a, b, c, d, e, f, g,h) {
+    Synthblock(a, b, c, d, e, f, g, h) {
       return `${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()},${g.interpret()}`;
     },
-    Parameter(a, b, c, d, e, f, g, h, i) {
-      return `{"param":{${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()},${g.interpret()},${h.interpret()}}}`;
+    Parameter(a, b, c, d, e, f, g, h, i, j) {
+      return `{"param":{${b.interpret()},${c.interpret()},${d.interpret()},${e.interpret()},${f.interpret()},${g.interpret()},${h.interpret()},${i.interpret()}}}`;
     },
     Paramtype(a, b, c) {
       return `"type":"${c.interpret()}"`;
+    },
+    Mutable(a, b, c) {
+      return `"mutable":"${c.sourceString}"`;
     },
     validtype(a) {
       return a.sourceString;
@@ -1352,7 +1449,7 @@ function makeGrammar() {
     Longname(a, b, c) {
       return `"longname":${c.interpret()}`;
     },
-    Type(a,b,c) {
+    Type(a, b, c) {
       return `"type":"${c.interpret()}"`;
     },
     Patchtype(a) {
@@ -1543,13 +1640,18 @@ function getGrammarSource() {
 
   Graph = Synthblock Statement+
 
-  Parameter = "@param" paramname Paramtype Paramstep Minval Maxval Defaultval Docstring "@end"
+  Parameter = "@param" paramname Paramtype Mutable Paramstep Minval Maxval Defaultval Docstring "@end"
 
   Synthblock = "@synth" shortname Longname Type Author Version Docstring "@end"
 
   shortname = letter (letter | "-")+
 
   paramname = letter (alnum | "_")+
+
+  Mutable (a yes or no value)
+  = "mutable" ":" yesno
+  
+  yesno = "yes" | "no"
 
   Paramtype (a parameter type)
   = "type" ":" validtype
@@ -1690,26 +1792,25 @@ function getGrammarSource() {
 }
 
 // ------------------------------------------------------------
-// parse the graph
+// parse the description to make a generator
 // ------------------------------------------------------------
 
-function parseSynthSpec() {
-  synth = null;
+function parseGeneratorSpec() {
+  if (VERBOSE) console.log("parsing");
+  generator = null;
   let result = synthGrammar.match(gui("synth-spec").value + "\n");
   if (result.succeeded()) {
     try {
       gui("parse-errors").value = "OK";
       const adapter = semantics(result);
       const json = adapter.interpret();
-      // console.log(json);
       createControls(json);
       currentJSON = convertToStandardJSON(json);
-      synth = new Synth(context, currentJSON);
+      generator = new BleepGenerator(currentJSON);
       // was there a warning?
-      if (synth.hasWarning) {
-        gui("parse-errors").value += "\n" + synth.warningString;
+      if (generator.hasWarning) {
+        gui("parse-errors").value += "\n" + generator.warningString;
       }
-      synth.out.connect(reverb.in);
     } catch (error) {
       gui("parse-errors").value = error.message;
     }
@@ -1888,62 +1989,6 @@ function isIdentifier(t) {
 }
 
 // ------------------------------------------------------------
-// evaluate a postfix expression
-// ------------------------------------------------------------
-
-function evaluatePostfix(expression, param, maxima, minima) {
-  let stack = [];
-  const popOperand = function () {
-    let op = stack.pop();
-    if (isIdentifier(op)) {
-      op = param[op.replace("param.", "")];
-    }
-    return op;
-  }
-  for (let t of expression) {
-    if (isNumber(t)) {
-      stack.push(parseFloat(t));
-    } else if (isIdentifier(t)) {
-      stack.push(t);
-    } else if (t === "*" || t === "/" || t === "+" || t == "-") {
-      let op2 = popOperand();
-      let op1 = popOperand();
-      switch (t) {
-        case "*": stack.push(op1 * op2); break;
-        case "/": stack.push(op1 / op2); break;
-        case "+": stack.push(op1 + op2); break;
-        case "-": stack.push(op1 - op2); break;
-      }
-    } else if (t === "log") {
-      let op = popOperand();
-      stack.push(Math.log(op));
-    } else if (t === "exp") {
-      let op = popOperand();
-      stack.push(Math.exp(op));
-    } else if (t === "random") {
-      let op1 = stack.pop();
-      let op2 = stack.pop();
-      let r = randomBetween(op2, op1);
-      stack.push(r);
-    } else if (t === "map") {
-      let op1 = stack.pop();
-      let op2 = stack.pop();
-      let op3 = stack.pop();
-      let control = op3.replace("param.", "");
-      let minval = minima[control];
-      let maxval = maxima[control];
-      let s = scaleValue(minval, maxval, op2, op1, param[control]);
-      stack.push(s);
-    }
-  }
-  let result = stack[0];
-  if (isIdentifier(result))
-    return param[result.replace("param.", "")];
-  else
-    return result;
-}
-
-// ------------------------------------------------------------
 // helper function to get a module instance
 // neat trick for dynamic object creation from string name:
 // https://stackoverflow.com/questions/1366127/how-do-i-make-javascript-object-using-a-variable-string-to-define-the-class-name
@@ -1954,10 +1999,10 @@ function getModuleInstance(ctx, type) {
 }
 
 // ------------------------------------------------------------
-// Synthesizer class
+// Bleep Generator class
 // ------------------------------------------------------------
 
-class Synth {
+class BleepGenerator {
 
   #isValid
   #hasWarning
@@ -1974,14 +2019,12 @@ class Synth {
   #maxima
   #minima
   #defaults
+  #mutable
   #errorString
   #warningString
-  #out
-  #context
 
-  constructor(ctx, json) {
+  constructor(json) {
     const tree = JSON.parse(json);
-    this.#context = ctx;
     this.#longname = tree.longname;
     this.#shortname = tree.shortname;
     this.#version = tree.version;
@@ -1992,7 +2035,6 @@ class Synth {
     this.#tweaks = tree.tweaks || [];
     this.#envelopes = tree.envelopes || [];
     this.#parameters = tree.parameters || [];
-    this.#out = unityGain(ctx);
     this.#isValid = true;
     this.#hasWarning = false;
     this.#errorString = "";
@@ -2006,7 +2048,9 @@ class Synth {
     this.#minima.pitch = MIN_MIDI_FREQ;
     this.#minima.level = MIN_LEVEL;
     this.#defaults = {};
+    this.#mutable = {};
     for (let m of this.#parameters) {
+      this.#mutable[m.name] = (m.mutable === "yes");
       this.#maxima[m.name] = m.max;
       this.#minima[m.name] = m.min;
       this.#defaults[m.name] = m.default;
@@ -2020,92 +2064,18 @@ class Synth {
     this.checkForWarnings();
   }
 
-  // make the web audio graph and play the note
-  // destination is the audio node we are connecting to
-  // this could be context.destination or it would be an fx unit
-
-  // we return a reference to the node graph since we might need to keep track of it
-  // if playing via MIDI, since note offs can occur whenever
-
-  play(pitch, level, params) {
-
-    let node = {};
-
-    // store the pitch and level as parameters
-
-    params.pitch = pitch;
-    params.level = level;
-
-    // make a webaudio object for each node
-    for (let i = 0; i < this.#modules.length; i++) {
-      let m = this.#modules[i];
-      node[m.id] = getModuleInstance(this.#context, m.type);
-    }
-
-    // we always need an audio object for output
-    node["audio"] = getModuleInstance(this.#context, "VCA");
-
-    // make all the patch connections
-    for (let i = 0; i < this.#patches.length; i++) {
-      let p = this.#patches[i];
-      // connect the audio graph
-      let fromModule = node[p.from.id];
-      let toModule = node[p.to.id];
-      fromModule[p.from.param].connect(toModule[p.to.param]);
-    }
-
-    // connect the audio output to the destination
-    let audio = node["audio"];
-    audio["out"].connect(this.#out);
-
-    // do all the parameter tweaks
-
-    for (let i = 0; i < this.#tweaks.length; i++) {
-      let twk = this.#tweaks[i];
-      let obj = node[twk.id];
-      // need to find maxima and minima before doing this
-      let value = evaluatePostfix(twk.expression, params, this.#maxima, this.#minima);
-      obj[twk.param] = value;
-    }
-
-    // apply the envelopes
-
-    const when = this.#context.currentTime;
-    //let maxDurationSec = durationSec;
-    for (let i = 0; i < this.#envelopes.length; i++) {
-      let e = this.#envelopes[i];
-      let env = node[e.from.id];
-      let obj = node[e.to.id];
-      env.apply(obj[e.to.param], when);
-      //const d = env.apply(obj[e.to.param], when, durationSec);
-      //if (d > maxDurationSec)
-      //  maxDurationSec = d;
-    }
-
-    // start everything that has a start function
-    Object.values(node).forEach((m) => {
-      m.start?.(when);
-      //m.stop?.(when + maxDurationSec);
-    });
-
-    // return the node in case we need to stop it later, if doing MIDI control
-
-    return node;
-
-  }
-
-  // check the synth for errors
+  // check for errors
 
   checkForErrors() {
     // nothing is patched
     if (this.#patches.length == 0)
-      throw new Error("Synth error: nothing is patched");
+      throw new Error("BleepGenerator error: nothing is patched");
     // no modules have been added
     if (this.#modules.length == 0)
-      throw new Error("Synth error: no modules have been added");
+      throw new Error("BleepGenerator error: no modules have been added");
     // nothing is patched to audio in
     if (!this.hasPatchTo("audio", "in"))
-      throw new Error("Synth error: nothing is patched to audio.in");
+      throw new Error("BleepGenerator error: nothing is patched to audio.in");
   }
 
   // find the module type for a given ID
@@ -2113,7 +2083,7 @@ class Synth {
   findModuleForID(id) {
     let m = this.#modules.find(val => (val.id === id));
     if (m === undefined)
-      throw new Error(`Synth error: trying to set unknown control "${id}"`);
+      throw new Error(`BleepGenerator error: trying to set unknown control "${id}"`);
     return m.type;
   }
 
@@ -2124,32 +2094,32 @@ class Synth {
     let msg = "";
     for (let param of ["pitch", "level"]) {
       if (!this.hasTweakWithValue(`param.${param}`))
-        msg += `Synth warning: you haven't assigned param.${param} to a control\n`;
+        msg += `BleepGenerator warning: you haven't assigned param.${param} to a control\n`;
     }
     // has something been patched to audio.in?
     if (this.hasPatchTo("audio", "in") == false)
-      msg += `Synth warning: you haven't patched anything to audio.in\n`;
+      msg += `BleepGenerator warning: you haven't patched anything to audio.in\n`;
     // check that parameters have reasonable values
     for (let obj of this.#parameters) {
       if (obj.max < obj.min)
-        msg += `Synth warning: max of parameter ${obj.name} is less than min\n`;
+        msg += `BleepGenerator warning: max of parameter ${obj.name} is less than min\n`;
       if (obj.default < obj.min)
-        msg += `Synth warning: default of parameter ${obj.name} is less than min\n`;
+        msg += `BleepGenerator warning: default of parameter ${obj.name} is less than min\n`;
       if (obj.default > obj.max)
-        msg += `Synth warning: default of parameter ${obj.name} is greater than max\n`;
+        msg += `BleepGenerator warning: default of parameter ${obj.name} is greater than max\n`;
     }
     // throw the warning if we have one
     if (msg.length > 0)
       this.throwWarning(msg);
   }
 
-  // determine if this synth has a patch cable to the given node
+  // determine if this generator has a patch cable to the given node
 
   hasPatchTo(node, param) {
     return this.#patches.some(val => (val.to.id === node && val.to.param === param));
   }
 
-  // determine if this synth has a patch cable from the given node
+  // determine if this generator has a patch cable from the given node
 
   hasPatchFrom(node, param) {
     return this.#patches.some(val => (val.from.id === node && val.from.param === param));
@@ -2167,37 +2137,63 @@ class Synth {
     this.#warningString = msg;
   }
 
-  // get the long name of the synth
+  // get the long name of the generator
 
   get longname() {
     return this.#longname;
   }
 
-  // get the short name of the synth
+  // get the short name of the generator
 
   get shortname() {
     return this.#shortname;
   }
 
-  // get the version of the synth
+  // get the version of the generator
 
   get version() {
     return this.#version;
   }
 
-  // get the author of the synth
+  // get the author of the generator
 
   get author() {
     return this.#author;
   }
 
-  // get the doc string of the synth
+  // get the doc string of the generator
 
   get doc() {
     return this.#doc;
   }
 
-  // get the list of modules, used for drawing
+  module(i) {
+    return this.#modules[i];
+  }
+
+  patch(i) {
+    return this.#patches[i];
+  }
+
+  tweak(i) {
+    return this.#tweaks[i];
+  }
+
+  envelope(i) {
+    return this.#envelopes[i];
+  }
+
+  get maxima() {
+    return this.#maxima;
+  }
+
+  get minima() {
+    return this.#minima;
+  }
+
+  get mutable() {
+    return this.#mutable;
+  }
 
   get modules() {
     return this.#modules;
@@ -2215,6 +2211,10 @@ class Synth {
     return this.#tweaks;
   }
 
+  get envelopes() {
+    return this.#envelopes;
+  }
+
   // get the list of parameters
 
   get parameters() {
@@ -2225,7 +2225,7 @@ class Synth {
     return this.#defaults
   }
 
-  // is the synth valid?
+  // is the generator valid?
 
   get isValid() {
     return this.#isValid;
@@ -2249,13 +2249,174 @@ class Synth {
     return this.#warningString;
   }
 
-  // audio node that this synth will connect to
-  set out(n) {
-    this.#out = n;
+}
+
+// ------------------------------------------------------------
+// make a reverb unit and connect it to the audio output
+// ------------------------------------------------------------
+
+// bleep generator doesnt need the context
+
+BleepPlayer = class {
+
+  node
+  context
+  generator
+  params
+
+  constructor(ctx, generator, pitchHz, level, params) {
+    this.context = ctx;
+    this.generator = generator;
+    this.params = params;
+    this.node = {};
+    // add the pitch and level to the parameters
+    params.pitch = pitchHz;
+    params.level = level;
+    // create the webaudio network in three steps
+    this.createModules();
+    this.createPatches();
+    this.applyTweaks();
+  }
+
+  createModules() {
+    // make a webaudio object for each node
+    for (let m of this.generator.modules) {
+      this.node[m.id] = getModuleInstance(this.context, m.type);
+    }
+    // we always need an audio object for output
+    this.node["audio"] = getModuleInstance(this.context, "VCA");
+  }
+
+  // connect all the patch cables
+  createPatches() {
+    for (let p of this.generator.patches) {
+      let fromModule = this.node[p.from.id];
+      let toModule = this.node[p.to.id];
+      fromModule[p.from.param].connect(toModule[p.to.param]);
+    }
+  }
+
+  // do all the parameter tweaks
+  applyTweaks() {
+    for (let t of this.generator.tweaks) {
+      let obj = this.node[t.id];
+      let val = this.evaluatePostfix(t.expression);
+      obj[t.param] = val;
+    }
+  }
+
+  // apply one tweak now as an instantaneous change
+  // you can only do this to parameters that have been identified as mutable
+  applyTweakNow(param, value) {
+    // is the parameter mutable?
+    if (this.generator.mutable[param] === false)
+      return;
+    // update the parameter set with the value
+    this.params[param] = value;
+    // update any expressions that use the tweaked parameter
+    for (let t of this.generator.tweaks) {
+      if (t.expression.includes(`param.${param}`)) {
+        let obj = this.node[t.id];
+        let val = this.evaluatePostfix(t.expression);
+        obj[t.param] = val;
+      }
+    }
+  }
+
+  start(when) {
+    // apply the envelopes
+    for (let e of this.generator.envelopes) {
+      let env = this.node[e.from.id];
+      let obj = this.node[e.to.id];
+      env.apply(obj[e.to.param], when);
+    }
+    // start all the nodes that have a start function
+    Object.values(this.node).forEach((m) => {
+      m.start?.(when);
+    });
+  }
+
+  // stop the webaudio network right now
+  stopImmediately() {
+    if (VERBOSE) console.log("stopping immediately");
+    let now = context.currentTime;
+    Object.values(this.node).forEach((m) => {
+      m.stop?.(now);
+    });
+  }
+
+  // stop the webaudio network only after the release phase of envelopes has completed
+  stopAfterRelease(when) {
+    if (VERBOSE) console.log("stopping after release");
+    let longestRelease = 0;
+    Object.values(this.node).forEach((m) => {
+      if (m.release) {
+        m.releaseOnNoteOff(when);
+        if (m.release > longestRelease)
+          longestRelease = m.release;
+      }
+    });
+    // stop after the longest release time 
+    Object.values(this.node).forEach((m) => {
+      m.stop?.(when + longestRelease);
+    });
   }
 
   get out() {
-    return this.#out;
+    return this.node.audio.out;
+  }
+
+  // evaluate a parameter expression in postfix form
+  evaluatePostfix(expression) {
+    let stack = [];
+    const popOperand = () => {
+      let op = stack.pop();
+      if (isIdentifier(op)) {
+        op = this.params[op.replace("param.", "")];
+      }
+      return op;
+    }
+    for (let t of expression) {
+      if (isNumber(t)) {
+        stack.push(parseFloat(t));
+      } else if (isIdentifier(t)) {
+        stack.push(t);
+      } else if (t === "*" || t === "/" || t === "+" || t == "-") {
+        let op2 = popOperand();
+        let op1 = popOperand();
+        switch (t) {
+          case "*": stack.push(op1 * op2); break;
+          case "/": stack.push(op1 / op2); break;
+          case "+": stack.push(op1 + op2); break;
+          case "-": stack.push(op1 - op2); break;
+        }
+      } else if (t === "log") {
+        let op = popOperand();
+        stack.push(Math.log(op));
+      } else if (t === "exp") {
+        let op = popOperand();
+        stack.push(Math.exp(op));
+      } else if (t === "random") {
+        let op1 = stack.pop();
+        let op2 = stack.pop();
+        let r = randomBetween(op2, op1);
+        stack.push(r);
+      } else if (t === "map") {
+        let op1 = stack.pop();
+        let op2 = stack.pop();
+        let op3 = stack.pop();
+        let control = op3.replace("param.", "");
+        let minval = this.generator.minima[control];
+        let maxval = this.generator.maxima[control];
+        let s = scaleValue(minval, maxval, op2, op1, this.params[control]);
+        stack.push(s);
+      }
+    }
+    let result = stack[0];
+    if (isIdentifier(result))
+      return this.params[result.replace("param.", "")];
+    else
+      return result;
   }
 
 }
@@ -2393,7 +2554,7 @@ async function loadFile() {
   gui("synth-spec").value = contents;
   gui("file-label").textContent = "Current file: " + fileHandle.name;
   wasEdited = false;
-  parseSynthSpec();
+  parseGeneratorSpec();
 }
 
 // ------------------------------------------------------------
@@ -2418,12 +2579,33 @@ async function saveFile() {
 // ------------------------------------------------------------
 
 async function saveAsFile() {
-  fileHandle = await window.showSaveFilePicker();
+  let opts = {};
+  if (generator.shortname.length > 0) {
+    opts.suggestedName = generator.shortname + ".txt";
+  }
+  fileHandle = await window.showSaveFilePicker(opts);
   const writable = await fileHandle.createWritable();
   await writable.write(gui("synth-spec").value);
   await writable.close();
   gui("file-label").textContent = "Current file: " + fileHandle.name;
   wasEdited = false;
+}
+
+// ------------------------------------------------------------
+// export as JSON
+// https://developer.chrome.com/articles/file-system-access/
+// ------------------------------------------------------------
+
+async function exportAsJSON() {
+  if (generator != undefined && generator.isValid) {
+    const opts = {
+      suggestedName: generator.shortname + ".json"
+    };
+    fileHandle = await window.showSaveFilePicker(opts);
+    const writable = await fileHandle.createWritable();
+    await writable.write(currentJSON);
+    await writable.close();
+  }
 }
 
 // ------------------------------------------------------------

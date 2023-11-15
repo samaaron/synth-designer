@@ -10,6 +10,7 @@ doc: Simulation of roland TB3030 bassline with distortion
 
 @param cutoff
 type: float
+mutable: yes
 step: 0.01
 min: 0
 max: 1
@@ -19,6 +20,7 @@ doc : filter cutoff
 
 @param resonance
 type: float
+mutable: yes
 step: 0.01
 min: 0
 max: 1
@@ -28,6 +30,7 @@ doc : filter resonance
 
 @param distortion
 type: float
+mutable: yes
 step: 0.01
 min: 0
 max: 1
@@ -37,6 +40,7 @@ doc : distortion amount
 
 @param env_mod
 type: float
+mutable: no
 step: 0.01
 min: 0
 max: 1
@@ -46,6 +50,7 @@ doc : envelope mod amount
 
 @param decay
 type: float
+mutable: no
 step: 0.01
 min: 0
 max: 1
@@ -55,6 +60,7 @@ doc : filter decay
 
 @param volume
 type: float
+mutable: no
 step: 0.01
 min: 0
 max: 1

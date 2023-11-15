@@ -8,6 +8,7 @@ doc : Simple synth demonstrating the use of random parameter values
 
 @param cutoff
 type: float
+mutable: yes
 step: 0.01
 min: 0
 max: 1
@@ -17,6 +18,7 @@ doc : controls the brightness of the sound
 
 @param decay
 type: float
+mutable: no
 step: 0.01
 min: 0
 max: 1
@@ -26,6 +28,7 @@ doc : controls the decay time of the envelope
 
 @param randomness
 type: float
+mutable: no
 step: 0.01
 min: 0
 max: 1
@@ -35,6 +38,7 @@ doc : the amount of randomness
 
 @param sub_level
 type: float
+mutable: yes
 step: 0.01
 min: 0
 max: 1
@@ -44,6 +48,7 @@ doc : controls the level of the sub oscillator an octave below the note you play
 
 @param volume
 type: float
+mutable: yes
 step: 0.01
 min: 0
 max: 1

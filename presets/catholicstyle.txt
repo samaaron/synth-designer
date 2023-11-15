@@ -8,6 +8,7 @@ doc : Hollow synth reminiscent of the lead in King in a Catholic Style by China 
 
 @param cutoff
 type: float
+mutable: yes
 step: 0.01
 min: 0
 max: 1
@@ -17,6 +18,7 @@ doc: filter cutoff
 
 @param resonance
 type: float
+mutable: yes
 step: 0.01
 min: 0
 max: 1
@@ -26,6 +28,7 @@ doc: filter resonance
 
 @param noise
 type: float
+mutable: no
 step: 0.01
 min: 0
 max: 1

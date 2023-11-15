@@ -5,6 +5,12 @@ background-color: #2d2d2d;
 color:#ffffff;
 }
 
+.monitor {
+  font-size:10pt;
+  color:#999999;
+  padding: 0px;
+}
+
 .slider-container {
   display: flex; /* Use flexbox for layout */
   align-items: center; /* Center elements vertically */

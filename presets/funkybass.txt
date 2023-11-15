@@ -8,6 +8,7 @@ doc : Funky bass sound from the 1980s
 
 @param cutoff
 type: float
+mutable: no
 step: 0.01
 min: 0
 max: 1
@@ -17,6 +18,7 @@ doc : controls the brightness
 
 @param noise
 type: float
+mutable: yes
 step: 0.01
 min: 0
 max: 1
@@ -26,6 +28,7 @@ doc : controls the amount of noise
 
 @param resonance
 type: float
+mutable: yes
 step: 0.01
 min: 0
 max: 1
@@ -35,6 +38,7 @@ doc : controls the resonance of the filter
 
 @param accent
 type: float
+mutable: no
 step: 0.01
 min: 0
 max: 1
@@ -44,6 +48,7 @@ doc : controls the level of the attack transient
 
 @param volume
 type: float
+mutable: no
 step: 0.01
 min: 0
 max: 1

@@ -9,13 +9,16 @@
 
 <body>
 
-  <h2>Synth Builder<span id="dot" style="color:#e6983f; opacity:0;">&nbsp;&#x25C9;</span></h2>
+  <h2><img width=100px src="bleep-white.png" style="object-fit: contain;"> <span style="vertical-align: 10px;"> Builder<span id="dot" style="color:#e6983f; opacity:0;">&nbsp;&#x25C9;</span></span></h2>
+
+  <div class="monitor" id="monitor">idle</div>
 
   <p>
     <button class="orangebutton" id="start-button">Start</button>
     <button class="greybutton" id="load-button">Load</button>
     <button class="greybutton" id="save-button">Save</button>
     <button class="greybutton" id="save-as-button">Save As</button>
+    <button class="greybutton" id="export-button">Export As JSON</button>
     <span id="midi-label">&nbsp;Midi input:&nbsp;</span><select class="midiinput" id="midi-input"></select>
   </p>
 
@@ -41,11 +44,6 @@
         <div class="slider-container">
           <input class="slider" type="range" id="level" min="0" max="1" value="1" step="0.01">
           <label id="level-label" for="level">level [1]</label>
-        </div>
-
-        <div class="slider-container">
-          <input class="slider" type="range" id="duration" min="0.1" max="5" value="1" step="0.1">
-          <label id="duration-label" for="duration">duration [1]</label>
         </div>
 
         <div class="slider-container">
