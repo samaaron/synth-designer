@@ -66,36 +66,30 @@ function init() {
       formant.resonance(parseFloat(this.value));
   });
 
-  gui("leak").addEventListener("input", function () {
-    if (formant != undefined)
-      formant.leak = parseFloat(this.value);
-  });
-
 }
 
 class FormantFilter {
 
   #context
-  filter1
-  filter2
-  filter3
-  gain1
-  gain2
-  gain3
-  #leak
-  mix
-  osc
-  phone
-  q
+  #filter1
+  #filter2
+  #filter3
+  #mix
+  #osc
+  #phone
+  #q
 
+  // first formant 
   static f1 = new PiecewiseLinear([800, 350, 270, 450, 325]);
   static a1 = new PiecewiseLinear([0, 0, 0, 0, 0]);
   static b1 = new PiecewiseLinear([80, 60, 60, 70, 50]);
 
+  // second formant
   static f2 = new PiecewiseLinear([1150, 2000, 2140, 800, 700]);
   static a2 = new PiecewiseLinear([-6, -20, -12, -11, -16]);
   static b2 = new PiecewiseLinear([90, 100, 90, 80, 60]);
 
+  // third formant
   static f3 = new PiecewiseLinear([2900, 2800, 2950, 2830, 2700]);
   static a3 = new PiecewiseLinear([-32, -15, -26, -22, -35]);
   static b3 = new PiecewiseLinear([120, 120, 100, 100, 170]);
@@ -103,82 +97,89 @@ class FormantFilter {
   constructor(ctx) {
     this.#context = ctx;
 
-    this.phone = 0;
-    this.q = 0;
+    this.#phone = 0.5;
+    this.#q = 0.25;
 
-    this.osc = ctx.createOscillator();
-    this.osc.type = "sawtooth";
-    this.osc.frequency.value = 60;
+    // oscillator
+    this.#osc = ctx.createOscillator();
+    this.#osc.type = "sawtooth";
+    this.#osc.frequency.value = 60;
 
-    this.mix = ctx.createGain();
-    this.#leak = ctx.createGain();
+    // gain stage
+    this.#mix = ctx.createGain();
 
-    this.filter1 = ctx.createBiquadFilter();
-    this.filter1.type = "bandpass"
+    // formant filters
+    this.#filter1 = ctx.createBiquadFilter();
+    this.#filter1.type = "bandpass"
 
-    this.filter2 = ctx.createBiquadFilter();
-    this.filter2.type = "bandpass"
+    this.#filter2 = ctx.createBiquadFilter();
+    this.#filter2.type = "bandpass"
 
-    this.filter3 = ctx.createBiquadFilter();
-    this.filter3.type = "bandpass"
+    this.#filter3 = ctx.createBiquadFilter();
+    this.#filter3.type = "bandpass"
 
-    this.osc.connect(this.filter1);
-    this.osc.connect(this.filter2);
-    this.osc.connect(this.filter3);
+    // connect input to filters
+    this.#osc.connect(this.#filter1);
+    this.#osc.connect(this.#filter2);
+    this.#osc.connect(this.#filter3);
 
-    this.filter1.connect(this.mix);
-    this.filter2.connect(this.mix);
-    this.filter3.connect(this.mix);
+    // connect filters to mixer
+    this.#filter1.connect(this.#mix);
+    this.#filter2.connect(this.#mix);
+    this.#filter3.connect(this.#mix);
 
-    this.#leak.gain.value = 0.1;
-    this.osc.connect(this.#leak);
-    this.#leak.connect(this.mix);
+    // final connections
+    this.#mix.gain.value = 0.3;
+    this.#mix.connect(ctx.destination);
 
-    this.mix.gain.value = 0.3;
-
-    this.mix.connect(ctx.destination);
+    this.setFormants();
+    this.setGains();
+    this.setBandwidths();
 
   }
 
+  // set the formant frequencies
   setFormants() {
-    this.filter1.frequency.value = FormantFilter.f1.interpolate(this.phone);
-    this.filter2.frequency.value = FormantFilter.f2.interpolate(this.phone);
-    this.filter3.frequency.value = FormantFilter.f3.interpolate(this.phone);
+    this.#filter1.frequency.value = FormantFilter.f1.interpolate(this.#phone);
+    this.#filter2.frequency.value = FormantFilter.f2.interpolate(this.#phone);
+    this.#filter3.frequency.value = FormantFilter.f3.interpolate(this.#phone);
   }
 
+  // set the formant gains
   setGains() {
-    this.filter1.gain.value = FormantFilter.a1.interpolate(this.phone);
-    this.filter2.gain.value = FormantFilter.a2.interpolate(this.phone);
-    this.filter3.gain.value = FormantFilter.a3.interpolate(this.phone);
+    this.#filter1.gain.value = FormantFilter.a1.interpolate(this.#phone);
+    this.#filter2.gain.value = FormantFilter.a2.interpolate(this.#phone);
+    this.#filter3.gain.value = FormantFilter.a3.interpolate(this.#phone);
   }
 
+  // set the formant bandwidths
   setBandwidths() {
-    this.filter1.Q.value = FormantFilter.b1.interpolate(this.phone) * this.q;
-    this.filter2.Q.value = FormantFilter.b2.interpolate(this.phone) * this.q;
-    this.filter3.Q.value = FormantFilter.b3.interpolate(this.phone) * this.q;
+    this.#filter1.Q.value = FormantFilter.b1.interpolate(this.#phone) * this.#q;
+    this.#filter2.Q.value = FormantFilter.b2.interpolate(this.#phone) * this.#q;
+    this.#filter3.Q.value = FormantFilter.b3.interpolate(this.#phone) * this.#q;
   }
 
+  // set the vowel quality
   vowel(p) {
-    this.phone = p;
+    this.#phone = p;
     this.setFormants();
     this.setGains();
   }
 
+  // set the resonance
   resonance(q) {
-    this.q = q;
+    this.#q = q;
     this.setBandwidths();
   }
 
-  set leak(v) {
-    this.#leak.gain.value = v;
-  }
-
+  // start the oscillator
   start() {
-    this.osc.start();
+    this.#osc.start();
   }
 
+  // stop the oscillator
   stop() {
-    this.osc.stop();
+    this.#osc.stop();
   }
 
 }
