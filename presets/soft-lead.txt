@@ -1,0 +1,61 @@
+@synth default
+longname : Default patch
+type : synth
+author : Guy J Brown
+version : 1.0
+doc : A very simple default patch
+@end
+
+# parameters
+
+@param cutoff
+type : float
+mutable: yes
+step : 0.01
+min : 100
+max : 3000
+default : 1000
+doc : cutoff frequency
+@end
+
+# modules
+
+SAW-OSC : osc
+TRI-OSC : lfo1
+TRI-OSC : lfo2
+LPF : lowpass
+VCA : vca
+VCA : pitchmod
+VCA : filtermod
+ADSR : env
+
+# patch
+
+osc.out -> lowpass.in
+lowpass.out -> vca.in
+vca.out -> audio.in
+
+lfo1.out -> pitchmod.in
+pitchmod.out -> osc.pitchCV
+lfo1.pitch = 3.8
+pitchmod.level = 1.4
+
+lfo2.out -> filtermod.in
+filtermod.out -> lowpass.cutoffCV
+lfo2.pitch = 5
+filtermod.level = 240
+
+env.out -> vca.levelCV
+
+# tweak
+
+env.level = param.level
+env.attack = 0.1
+env.release = 0.1
+env.decay = 0.5
+env.sustain = param.level*0.9
+
+osc.pitch = param.pitch
+lowpass.cutoff = param.cutoff
+
+# end
