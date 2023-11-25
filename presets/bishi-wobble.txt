@@ -26,6 +26,16 @@ default: 1
 doc : Controls the overall volume
 @end
 
+@param detune
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 15
+default: 5
+doc : Controls the detune amount
+@end
+
 # lots of oscillators
 
 SQR-OSC : vco1
@@ -54,11 +64,11 @@ ampenv.out -> vca.levelCV
 
 vco1.pitch = param.pitch
 vco2.pitch = param.pitch
-vco1.detune = -5
-vco2.detune = 5
+vco1.detune = -1*param.detune
+vco2.detune = param.detune
 volume.level = param.volume
 lowpass.cutoff = param.cutoff
-lfo.pitch = 2.7
+lfo.pitch = 2.67
 
 ampenv.level = 1
 ampenv.attack = 0.1
@@ -67,7 +77,7 @@ ampenv.sustain = 0
 ampenv.release = 0.5
 
 modgain.level = 400
-mix.level = 0.7
+mix.level = 0.5
 
 # end
 
