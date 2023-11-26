@@ -38,7 +38,7 @@ doc : Controls the detune amount
 
 # lots of oscillators
 
-SQR-OSC : vco1
+PULSE-OSC : vco1
 SQR-OSC : vco2
 SIN-OSC : lfo
 VCA : mix
@@ -47,6 +47,8 @@ VCA : vca
 VCA : volume
 LPF : lowpass
 ADSR : ampenv
+
+vco1.pulsewidth = 0.2
 
 # connect them
 
