@@ -38,7 +38,7 @@ doc : Controls the sharpness of the filter usually set low for this sound
 
 @param detune
 type: float
-mutable: no
+mutable: yes
 step: 0.001
 min: 0
 max: 0.03
