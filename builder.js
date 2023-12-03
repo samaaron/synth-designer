@@ -2721,6 +2721,12 @@ function testExpression(infix, param, minima, maxima) {
   console.log("");
 }
 
+
+// ------------------------------------------------------------
+// PHASERRRRRRRRR
+// ------------------------------------------------------------
+
+
 class Phaser {
 
   NUM_STAGES = 12;
@@ -2729,14 +2735,9 @@ class Phaser {
   #monitor
   #in
   #out
-  #mix
-  #notch
-  #lfo
-  #modgain
-  #dryGain
-  #wetGain
-  #sampleDelay
-  #feedback
+ #sampleDelay
+ #lfo
+ #lfogain
 
   constructor(ctx, monitor) {
     console.log("making a Phaser");
@@ -2746,74 +2747,20 @@ class Phaser {
 
     this.#sampleDelay = new AudioWorkletNode(this.#context,"sample-delay");
 
-    this.#makeGains();
+    // LFO
 
-    this.#notch = [];
-    for (let i = 0; i < this.NUM_STAGES; i++) {
-      const notch = this.#context.createBiquadFilter();
-      notch.type = "allpass";
-      notch.frequency.value = 160+160*i;
-      notch.Q.value =50;
-      this.#notch.push(notch);
-    }
-
-    console.log(this.#notch);
-
-    this.#modgain = this.#context.createGain();
-    this.#modgain.gain.value = 100;
-
-    this.#makeLFO();
-    this.#makeConnections();
-
-this.#lfo.connect(this.#modgain);
-
-for (let i = 0; i < this.NUM_STAGES; i++) {
-this.#modgain.connect(this.#notch[i].frequency);
-}
-
-this.#in.connect(this.#dryGain);
-this.#in.connect(this.#mix);
-
-this.#mix.connect(this.#notch[0]);
-for (let i=0; i<this.NUM_STAGES-1; i++) {
-  this.#notch[i].connect(this.#notch[i+1]);
-}
-this.#notch[this.NUM_STAGES-1].connect(this.#wetGain);
-
-this.#dryGain.connect(this.#out);
-this.#wetGain.connect(this.#out);
-this.#notch[this.NUM_STAGES-1].connect(this.#sampleDelay);
-this.#sampleDelay.connect(this.#feedback);
-this.#feedback.connect(this.#mix);
-
-this.#lfo.start();
-
-  }
-
-  #makeLFO() {
     this.#lfo = this.#context.createOscillator();
     this.#lfo.type = "triangle";
-    this.#lfo.frequency.value = 0.1;
-  }
+    this.#lfo.frequency.value = 0.2; // Hz
+    this.#lfogain = this.#context.createGain();
+    this.#lfogain.gain.value = 1341;
+    // need to set frequency at 1439 Hz
 
-  #makeGains() {
-    this.#in = this.#context.createGain();
-    this.#in.gain.value = 1;
-    this.#out = this.#context.createGain();
-    this.#out.gain.value = 1;
-    this.#dryGain = this.#context.createGain();
-    this.#dryGain.gain.value = 0.5;
-    this.#wetGain = this.#context.createGain();
-    this.#wetGain.gain.value = 0.5;
-    this.#mix = this.#context.createGain();
-    this.#mix.gain.value = 1;
-    this.#feedback = this.#context.createGain();
-    this.#feedback.gain.value = 0.5;
+// prefilter
 
-  }
 
-  #makeConnections() {
-  }
+
+
 
   get out() {
     return this.#out;
@@ -2826,6 +2773,7 @@ this.#lfo.start();
   stop() {
     //this.#monitor.release("phaser");
   }
+
 }
 
 
