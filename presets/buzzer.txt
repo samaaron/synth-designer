@@ -21,7 +21,7 @@ vca.out -> audio.in
 # tweak
 
 osc.pitch = param.pitch
-vca.level = param.level
+vca.level = param.level*0.5
 lowpass.cutoff = 1000
 
 # end
