@@ -54,123 +54,142 @@ class Synth {
 class Phaser {
 
   #context
-  #lfo
-  #notch
-  #modwidth
-  #hpf
-  #delay
-  #feedback
-  #input
-  #wet
-  #dry
-  #output
-  #inverter
-  #ingain
+  #in
+  #out
+  #leftChannel
+  #rightChannel
+  #leftPan
+  #rightPan
 
   constructor(ctx) {
     this.#context = ctx;
 
-    this.#input = ctx.createGain();
-    this.#input.gain.value = 1;
+    this.#in = ctx.createGain();
+    this.#in.gain.value = 1;
 
-    this.#ingain = ctx.createGain();
-    this.#ingain.gain.value = 1;
+    this.#out = ctx.createGain();
+    this.#out.gain.value = 1;
 
-    this.#inverter = ctx.createGain();
-    this.#inverter.gain.value = -1;
+    this.#leftPan = ctx.createStereoPanner();
+    this.#leftPan.pan.value = -0.95;
 
-    this.#output = ctx.createGain();
-    this.#output.gain.value = 1;
+    this.#rightPan = ctx.createStereoPanner();
+    this.#rightPan.pan.value = 0.95;
 
-    this.#wet = ctx.createGain();
-    this.#wet.gain.value = 1;
+    this.#leftChannel = new PhaserChannel(ctx);
+    this.#in.connect(this.#leftChannel.in);
+    this.#leftChannel.out.connect(this.#leftPan);
+    this.#leftPan.connect(this.#out);
 
-    this.#dry = ctx.createGain();
-    this.#dry.gain.value = 1;
+    this.#rightChannel = new PhaserChannel(ctx);
+    this.#in.connect(this.#rightChannel.in);
+    this.#rightChannel.out.connect(this.#rightPan);
+    this.#rightPan.connect(this.#out);
 
-    this.#hpf = ctx.createBiquadFilter();
-    this.#hpf.type = "highpass";
-    this.#hpf.frequency.value = 230;
-    this.#hpf.Q.value = 0;
+  }
 
-    this.#input.connect(this.#ingain);
-    this.#ingain.connect(this.#hpf);
+  set frequency(f) {
+    this.#leftChannel.frequency = f;
+    this.#rightChannel.frequency = f*1.1;
+  }
 
-    this.#ingain.gain.value = 0.75;
+  set resonance(q) {
+    this.#leftChannel.resonance = q;
+    this.#rightChannel.resonance = q;
+  }
 
-    this.#lfo = ctx.createOscillator();
-    this.#lfo.frequency.value = 0.5;
-    this.#lfo.type = "sine";
-    this.#notch = ctx.createBiquadFilter();
-    this.#notch.type = "notch";
-    this.#notch.Q.value = 1;
-    this.#notch.frequency.value = 3000;
-    this.#modwidth = ctx.createGain();
-    this.#modwidth.gain.value = 2500;
-
-    this.#feedback = ctx.createGain();
-
-    this.#delay = ctx.createDelay();
-    this.#delay.delayTime.value = 1/44100.0;
-
-    this.#hpf.connect(this.#notch);
-    this.#lfo.connect(this.#modwidth);
-    this.#modwidth.connect(this.#notch.frequency);
-
-    this.#notch.connect(this.#delay);
-    this.#delay.connect(this.#feedback);
-    this.#feedback.connect(this.#input);
-
-
-    this.#feedback.connect(this.#inverter);
-    this.#inverter.connect(this.#notch);
-
-    this.#notch.connect(this.#wet);
-    this.#input.connect(this.#dry);
-
-    this.#wet.connect(this.#output);
-    this.#dry.connect(this.#output);
-
-    this.#feedback.gain.value = 0.4;
-
-    this.#wet.gain.value = 0.5;
-    this.#dry.gain.value = 0.5;
-
+  set feedback(k) {
+    this.#leftChannel.feedback = k;
+    this.#rightChannel.feedback = k;
   }
 
   get in() {
-return this.#input;
+    return this.#in;
   }
 
   get out() {
-return this.#output;
-  }
-
-  set feedback(f) {
-    this.#feedback.gain.value = f;
-  }
-
-  set wet(w) {
-    this.#wet.gain.value = w;
-    this.#dry.gain.value = 1-w;
-  }
-
-  set rate(f) {
-    this.#lfo.frequency.value = f;
-  }
-
-  // start the phaser
-  start() {
-    this.#lfo.start();
-  }
-
-  // stop the phaser
-  stop() {
-    this.#lfo.stop();
+    return this.#out;
   }
 
 }
 
+class PhaserChannel {
+
+  NUM_STAGES = 4;
+  DEFAULT_FEEDBACK = 0.4;
+  DEFAULT_RESONANCE = 0.65;
+
+  #context
+  #in
+  #out
+  #notch
+  #wetgain
+  #drygain
+  #feedback
+
+  constructor(ctx) {
+    this.#context = ctx;
+    // gains
+    this.#in = this.#context.createGain();
+    this.#in.gain.value = 1;
+    this.#out = this.#context.createGain();
+    this.#out.gain.value = 1;
+    // wet gain
+    this.#wetgain = ctx.createGain();
+    this.#wetgain.gain.value = 0.5;
+    // dry gain
+    this.#drygain = ctx.createGain();
+    this.#drygain.gain.value = 0.5;
+    // feedback
+    this.#feedback = ctx.createGain();
+    // filters
+    this.#notch = [];
+    for (let i = 0; i < this.NUM_STAGES; i++) {
+      const n = ctx.createBiquadFilter();
+      n.frequency.value = 80 * (i + 1);
+      n.type = "allpass";
+      n.Q.value = this.DEFAULT_RESONANCE;
+      this.#notch.push(n);
+    }
+    // connect
+    this.#in.connect(this.#drygain);
+    this.#in.connect(this.#notch[0]);
+    for (let i = 0; i < this.NUM_STAGES - 1; i++) {
+      this.#notch[i].connect(this.#notch[i + 1]);
+    }
+    this.#notch[this.NUM_STAGES - 1].connect(this.#wetgain);
+    this.#notch[this.NUM_STAGES - 1].connect(this.#feedback);
+    this.#feedback.connect(this.#notch[0]);
+    this.#feedback.gain.value = this.DEFAULT_FEEDBACK;
+    this.#drygain.connect(this.#out);
+    this.#wetgain.connect(this.#out);
+  }
+
+  set frequency(f) {
+    for (let i = 0; i < this.NUM_STAGES; i++) {
+      this.#notch[i].frequency.value = f * (i + 1);
+    }
+  }
+
+  set resonance(q) {
+    for (let i = 0; i < this.NUM_STAGES; i++) {
+      this.#notch[i].Q.value = q;
+    }
+  }
+
+  set feedback(k) {
+    this.#feedback.gain.value = k;
+  }
+
+  get in() {
+    return this.#in;
+  }
+
+  get out() {
+    return this.#out;
+  }
+
+}
 
 function startTest() {
   synth = new Synth(context);
@@ -206,24 +225,50 @@ function init() {
       synth.pitch = midiNoteToFreqHz(parseInt(this.value));
   });
 
-  gui("rate").addEventListener("input", function () {
-    if (phaser != undefined)
-      phaser.rate = parseFloat(this.value);
-  });
-
-  gui("feedback").addEventListener("input", function () {
-    if (phaser != undefined)
-      phaser.feedback = parseFloat(this.value);
-  });
-
-  gui("wet").addEventListener("input", function () {
-    if (phaser != undefined)
-      phaser.wet = parseFloat(this.value);
-  });
-
   gui("volume").addEventListener("input", function () {
     if (synth != undefined)
       synth.volume = parseFloat(this.value);
   });
 
+  gui("frequency").addEventListener("input", function () {
+    if (phaser != undefined)
+      phaser.frequency = parseFloat(this.value);
+  });
+
+  gui("resonance").addEventListener("input", function () {
+    if (phaser != undefined) {
+      const p = parseFloat(this.value);
+      console.log(p);
+      phaser.resonance = p;
+    }
+  });
+
+  gui("feedback").addEventListener("input", function () {
+    if (phaser != undefined) {
+      const f = parseFloat(this.value);
+      phaser.feedback = f;
+    }
+  });
+
+
+}
+
+// ------------------------------------------------------------
+// makes a sine wave LFO with a given frequency (Hz) and phase shift (radians)
+// we can't shift the phase of a WebAudio oscillator so have to use Euler identity
+// to define a periodic wave (e^jθ = cosθ+jsinθ)
+// ------------------------------------------------------------
+
+function makeLFO(ctx, freqHz, phaseRad) {
+  const real = new Float32Array(2);
+  const imag = new Float32Array(2);
+  real[0] = 0;
+  imag[0] = 0;
+  real[1] = Math.cos(phaseRad);
+  imag[1] = Math.sin(phaseRad);
+  const lfo = ctx.createOscillator();
+  const wave = ctx.createPeriodicWave(real, imag, { disableNormalization: true });
+  lfo.setPeriodicWave(wave);
+  lfo.frequency.value = freqHz;
+  return lfo;
 }
