@@ -76,12 +76,12 @@ class Phaser {
     this.#rightPan = ctx.createStereoPanner();
     this.#rightPan.pan.value = 0.95;
 
-    this.#leftChannel = new PhaserChannel(ctx);
+    this.#leftChannel = new PhaserChannel(ctx,0.05);
     this.#in.connect(this.#leftChannel.in);
     this.#leftChannel.out.connect(this.#leftPan);
     this.#leftPan.connect(this.#out);
 
-    this.#rightChannel = new PhaserChannel(ctx);
+    this.#rightChannel = new PhaserChannel(ctx,-0.05);
     this.#in.connect(this.#rightChannel.in);
     this.#rightChannel.out.connect(this.#rightPan);
     this.#rightPan.connect(this.#out);
@@ -111,6 +111,9 @@ class Phaser {
     return this.#out;
   }
 
+  start() {
+    console.log("starting the phaser");
+  }
 }
 
 class PhaserChannel {
@@ -127,19 +130,17 @@ class PhaserChannel {
   #drygain
   #feedback
   #lfo
-  #lfoGain
+  #lfogain
 
-  constructor(ctx) {
+  constructor(ctx,phase) {
     this.#context = ctx;
     // lfo
-    this.#lfo = new LFO(ctx);
+    this.#lfo = new OffsetLFO(ctx,80,2400,0.2,phase);
     // gains
     this.#in = this.#context.createGain();
     this.#in.gain.value = 1;
     this.#out = this.#context.createGain();
     this.#out.gain.value = 1;
-    this.#lfoGain = this.#context.createGain();
-    this.#lfoGain.gain.value = 1341;
     // wet gain
     this.#wetgain = ctx.createGain();
     this.#wetgain.gain.value = 0.5;
@@ -150,12 +151,18 @@ class PhaserChannel {
     this.#feedback = ctx.createGain();
     // filters
     this.#notch = [];
+    this.#lfogain = [];
     for (let i = 0; i < this.NUM_STAGES; i++) {
       const n = ctx.createBiquadFilter();
-      n.frequency.value = 80 * (i + 1);
+      //n.frequency.value = 80 * (i + 1);
+      n.frequency.value = 0; // always set by the lfo
       n.type = "allpass";
       n.Q.value = this.DEFAULT_RESONANCE;
       this.#notch.push(n);
+      // lfo gains
+      const g = ctx.createGain();
+      g.gain.value = i+1; // harmonic number
+      this.#lfogain.push(g);
     }
     // connect
     this.#in.connect(this.#drygain);
@@ -164,9 +171,13 @@ class PhaserChannel {
       this.#notch[i].connect(this.#notch[i + 1]);
     }
     // connect LFOs
+    // each stage runs through gain 1, 2, 3, 4... to get frequencies
+    // that move in a harmonic relationship
     for (let i = 0; i < this.NUM_STAGES; i++) {
-      this.#lfo.out.connect(this.#notch[i].frequency);
+      this.#lfo.out.connect(this.#lfogain[i]);
+      this.#lfogain[i].connect(this.#notch[i].frequency);
     }
+    
     this.#notch[this.NUM_STAGES - 1].connect(this.#wetgain);
     this.#notch[this.NUM_STAGES - 1].connect(this.#feedback);
     this.#feedback.connect(this.#notch[0]);
@@ -175,9 +186,9 @@ class PhaserChannel {
     this.#wetgain.connect(this.#out);
   }
 
-  set rate(r) [
+  set rate(r) {
     this.#lfo.pitch = r;
-  ]
+  }
 
   set phase(p) {
     this.#lfo.phase = p;
@@ -270,6 +281,57 @@ function init() {
 
 
 }
+
+class OffsetLFO {
+
+  #osc
+  #gain
+  #offset
+  #context
+  #out
+
+  constructor(ctx,minVal,maxVal,rate,phase) {
+    this.#context = ctx;
+    //this.#osc = ctx.createOscillator();
+    this.#osc = new LFO(ctx);
+    this.#osc.pitch = rate;
+    this.#osc.phase = phase;
+    const f = (maxVal-minVal);
+    const m = f/2;
+    //this.#osc.type = "sine";
+    //this.#osc.frequency.value = rate;
+    this.#gain = ctx.createGain();
+    this.#gain.gain.value = m;
+    this.#out = ctx.createGain();
+    this.#out.gain.value = 1;
+    this.#offset = ctx.createConstantSource();
+    this.#offset.offset.value = minVal+m;
+    //this.#osc.connect(this.#gain);
+  this.#osc.out.connect(this.#gain);
+    this.#gain.connect(this.#out);
+    this.#offset.connect(this.#out);
+    // start
+    //this.#osc.start();
+    this.#osc.start(ctx.currentTime);
+    this.#offset.start();
+  }
+
+  set rate(f) {
+    this.#osc.frequency.value = f;
+  }
+
+  get out() {
+    return this.#out;
+  }
+
+  stop() {
+    this.#osc.stop();
+    this.#offset.stop();
+  }
+
+}
+
+
 
 // ------------------------------------------------------------
 // LFO with adjustable phase
