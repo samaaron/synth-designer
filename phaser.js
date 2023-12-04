@@ -126,14 +126,20 @@ class PhaserChannel {
   #wetgain
   #drygain
   #feedback
+  #lfo
+  #lfoGain
 
   constructor(ctx) {
     this.#context = ctx;
+    // lfo
+    this.#lfo = new LFO(ctx);
     // gains
     this.#in = this.#context.createGain();
     this.#in.gain.value = 1;
     this.#out = this.#context.createGain();
     this.#out.gain.value = 1;
+    this.#lfoGain = this.#context.createGain();
+    this.#lfoGain.gain.value = 1341;
     // wet gain
     this.#wetgain = ctx.createGain();
     this.#wetgain.gain.value = 0.5;
@@ -157,12 +163,24 @@ class PhaserChannel {
     for (let i = 0; i < this.NUM_STAGES - 1; i++) {
       this.#notch[i].connect(this.#notch[i + 1]);
     }
+    // connect LFOs
+    for (let i = 0; i < this.NUM_STAGES; i++) {
+      this.#lfo.out.connect(this.#notch[i].frequency);
+    }
     this.#notch[this.NUM_STAGES - 1].connect(this.#wetgain);
     this.#notch[this.NUM_STAGES - 1].connect(this.#feedback);
     this.#feedback.connect(this.#notch[0]);
     this.#feedback.gain.value = this.DEFAULT_FEEDBACK;
     this.#drygain.connect(this.#out);
     this.#wetgain.connect(this.#out);
+  }
+
+  set rate(r) [
+    this.#lfo.pitch = r;
+  ]
+
+  set phase(p) {
+    this.#lfo.phase = p;
   }
 
   set frequency(f) {
@@ -254,21 +272,87 @@ function init() {
 }
 
 // ------------------------------------------------------------
-// makes a sine wave LFO with a given frequency (Hz) and phase shift (radians)
-// we can't shift the phase of a WebAudio oscillator so have to use Euler identity
-// to define a periodic wave (e^jθ = cosθ+jsinθ)
+// LFO with adjustable phase
 // ------------------------------------------------------------
 
-function makeLFO(ctx, freqHz, phaseRad) {
-  const real = new Float32Array(2);
-  const imag = new Float32Array(2);
-  real[0] = 0;
-  imag[0] = 0;
-  real[1] = Math.cos(phaseRad);
-  imag[1] = Math.sin(phaseRad);
-  const lfo = ctx.createOscillator();
-  const wave = ctx.createPeriodicWave(real, imag, { disableNormalization: true });
-  lfo.setPeriodicWave(wave);
-  lfo.frequency.value = freqHz;
-  return lfo;
+class LFO {
+
+  #sinOsc
+  #cosOsc
+  #sinGain
+  #cosGain
+  #mixer
+  #freqHz
+  #context
+
+  constructor(ctx) {
+    this.#context = ctx;
+    this.#freqHz = 5; // Hz
+
+    this.#sinOsc = ctx.createOscillator();
+    this.#sinOsc.type = "sine";
+    this.#sinOsc.frequency.value = this.#freqHz;
+
+    this.#cosOsc = ctx.createOscillator();
+    this.#cosOsc.type = "sine";
+    this.#cosOsc.frequency.value = this.#freqHz;
+
+    this.#sinGain = ctx.createGain();
+    this.#cosGain = ctx.createGain();
+    this.#mixer = ctx.createGain();
+
+    this.#sinOsc.connect(this.#sinGain);
+    this.#cosOsc.connect(this.#cosGain);
+    this.#sinGain.connect(this.#mixer);
+    this.#cosGain.connect(this.#mixer);
+
+
+  }
+
+  set phase(p) {
+    this.#sinGain.gain.value = Math.cos(p);
+    this.#cosGain.gain.value = Math.sin(p);
+  }
+
+  get pitch() {
+    return this.#freqHz;
+  }
+
+  set pitch(n) {
+    this.#freqHz = n;
+    this.#sinOsc.frequency.value = this.#freqHz;
+    this.#cosOsc.frequency.value = this.#freqHz;
+  }
+
+  get out() {
+    return this.#mixer;
+  }
+
+  start(tim) {
+    this.#sinOsc.start(tim);
+    this.#cosOsc.start(tim);
+  }
+
+  stop(tim) {
+    if (VERBOSE) console.log("stopping LFO");
+    this.#sinOsc.stop(tim);
+    this.#cosOsc.stop(tim);
+    let stopTime = tim - this.#context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      if (VERBOSE) console.log("disconnecting LFO");
+      this.#sinOsc.disconnect();
+      this.#cosOsc.disconnect();
+      this.#sinGain.disconnect();
+      this.#cosGain.disconnect();
+      this.#mixer.disconnect();
+      this.#sinOsc = null;
+      this.#cosOsc = null;
+      this.#sinGain = null;
+      this.#cosGain = null;
+      this.#mixer = null;
+      this.#context = null;
+    }, (stopTime + 0.1) * 1000);
+  }
+
 }
