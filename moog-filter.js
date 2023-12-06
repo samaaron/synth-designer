@@ -1,5 +1,16 @@
-// adapted from https://github.com/ddiakopoulos/MoogLadders/blob/master/src/ImprovedModel.h
-// Copyright 2012 Stefano D'Angelo <zanga.mail@gmail.com>
+/*
+adapted from https://github.com/ddiakopoulos/MoogLadders/blob/master/src/ImprovedModel.h
+Copyright 2012 Stefano D'Angelo <zanga.mail@gmail.com>
+
+This model is based on a reference implementation of an algorithm developed by
+Stefano D'Angelo and Vesa Valimaki, presented in a paper published at ICASSP in 2013.
+This improved model is based on a circuit analysis and compared against a reference
+Ngspice simulation. In the paper, it is noted that this particular model is
+more accurate in preserving the self-oscillating nature of the real filter.
+
+References: "An Improved Virtual Analog Model of the Moog Ladder Filter"
+Original Implementation: D'Angelo, Valimaki
+*/
 
 class MoogFilter extends AudioWorkletProcessor {
 
