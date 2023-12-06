@@ -4,6 +4,7 @@
 class MoogFilter extends AudioWorkletProcessor {
 
     VT = 0.312 // thermal voltage
+    MAX_CHANNEL = 2
 
     V
     dV
@@ -11,15 +12,20 @@ class MoogFilter extends AudioWorkletProcessor {
 
     constructor() {
         super();
-        this.V = new Array(4).fill(0);
-        this.dV = new Array(4).fill(0);
-        this.tV = new Array(4).fill(0);
+        this.V = [];
+        this.dV = [];
+        this.tV = [];
+        for (let chan = 0; chan < this.MAX_CHANNEL; chan++) {
+            this.V[chan] = new Array(4).fill(0);
+            this.dV[chan] = new Array(4).fill(0);
+            this.tV[chan] = new Array(4).fill(0);
+        }
     }
 
     static get parameterDescriptors() {
         return [
             { name: 'cutoff', defaultValue: 500, minValue: 50, maxValue: 8000, automationRate: "k-rate" },
-            { name: 'resonance', defaultValue: 0.1, minValue: 0, maxValue: 4, automationRate: "k-rate" },
+            { name: 'resonance', defaultValue: 0.1, minValue: 0, maxValue: 2, automationRate: "k-rate" },
             { name: 'drive', defaultValue: 1, minValue: 0, maxValue: 2, automationRate: "k-rate" }
         ];
     }
@@ -36,37 +42,36 @@ class MoogFilter extends AudioWorkletProcessor {
         let x = (Math.PI * cutoff) / sampleRate;
         let g = 4 * Math.PI * this.VT * cutoff * (1 - x) / (1 + x);
 
-        for (let channel = 0; channel < input.length; channel++) {
-            const inputChannel = input[channel];
-            const outputChannel = output[channel];
+        for (let chan = 0; chan < input.length; chan++) {
+            const inputChannel = input[chan];
+            const outputChannel = output[chan];
 
             if (inputChannel && outputChannel) {
 
                 for (let i = 0; i < inputChannel.length; i++) {
             
-                    let dV0 = -g * (Math.tanh((drive * inputChannel[i] + resonance * this.V[3]) / (2 * this.VT)) + this.tV[0]);
-                    this.V[0] += (dV0 + this.dV[0]) / (2 * sampleRate);
-                    this.dV[0] = dV0;
-                    this.tV[0] = Math.tanh(this.V[0] / (2 * this.VT));
+                    let dV0 = -g * (Math.tanh((drive * inputChannel[i] + resonance * this.V[chan][3]) / (2 * this.VT)) + this.tV[chan][0]);
+                    this.V[chan][0] += (dV0 + this.dV[chan][0]) / (2 * sampleRate);
+                    this.dV[chan][0] = dV0;
+                    this.tV[chan][0] = Math.tanh(this.V[chan][0] / (2 * this.VT));
 
-                    let dV1 = g * (this.tV[0] - this.tV[1]);
-                    this.V[1] += (dV1 + this.dV[1]) / (2 * sampleRate);
-                    this.dV[1] = dV1;
-                    this.tV[1] = Math.tanh(this.V[1] / (2 * this.VT));
+                    let dV1 = g * (this.tV[chan][0] - this.tV[chan][1]);
+                    this.V[chan][1] += (dV1 + this.dV[chan][1]) / (2 * sampleRate);
+                    this.dV[chan][1] = dV1;
+                    this.tV[chan][1] = Math.tanh(this.V[chan][1] / (2 * this.VT));
 
-                    let dV2 = g * (this.tV[1] - this.tV[2]);
-                    this.V[2] += (dV2 + this.dV[2]) / (2 * sampleRate);
-                    this.dV[2] = dV2;
-                    this.tV[2] = Math.tanh(this.V[2] / (2 * this.VT));
+                    let dV2 = g * (this.tV[chan][1] - this.tV[chan][2]);
+                    this.V[chan][2] += (dV2 + this.dV[chan][2]) / (2 * sampleRate);
+                    this.dV[chan][2] = dV2;
+                    this.tV[chan][2] = Math.tanh(this.V[chan][2] / (2 * this.VT));
 
-                    let dV3 = g * (this.tV[2] - this.tV[3]);
-                    this.V[3] += (dV3 + this.dV[3]) / (2 * sampleRate);
-                    this.dV[3] = dV3;
-                    this.tV[3] = Math.tanh(this.V[3] / (2 * this.VT));
+                    let dV3 = g * (this.tV[chan][2] - this.tV[chan][3]);
+                    this.V[chan][3] += (dV3 + this.dV[chan][3]) / (2 * sampleRate);
+                    this.dV[chan][3] = dV3;
+                    this.tV[chan][3] = Math.tanh(this.V[chan][3] / (2 * this.VT));
 
-                    outputChannel[i] = this.V[3];
+                    outputChannel[i] = this.V[chan][3];
 
-                    //console.log(outputChannel[i]);
                 }
 
             }
