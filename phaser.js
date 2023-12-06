@@ -76,12 +76,12 @@ class Phaser {
     this.#rightPan = ctx.createStereoPanner();
     this.#rightPan.pan.value = 0.95;
 
-    this.#leftChannel = new PhaserChannel(ctx,0.05);
+    this.#leftChannel = new PhaserChannel(ctx,-0.8); // parameterise
     this.#in.connect(this.#leftChannel.in);
     this.#leftChannel.out.connect(this.#leftPan);
     this.#leftPan.connect(this.#out);
 
-    this.#rightChannel = new PhaserChannel(ctx,-0.05);
+    this.#rightChannel = new PhaserChannel(ctx,0.8);
     this.#in.connect(this.#rightChannel.in);
     this.#rightChannel.out.connect(this.#rightPan);
     this.#rightPan.connect(this.#out);
@@ -118,7 +118,7 @@ class Phaser {
 
 class PhaserChannel {
 
-  NUM_STAGES = 4;
+  NUM_STAGES = 1;
   DEFAULT_FEEDBACK = 0.4;
   DEFAULT_RESONANCE = 0.65;
 
@@ -161,7 +161,7 @@ class PhaserChannel {
       this.#notch.push(n);
       // lfo gains
       const g = ctx.createGain();
-      g.gain.value = i+1; // harmonic number
+      g.gain.value = (i+1); // harmonic number
       this.#lfogain.push(g);
     }
     // connect
