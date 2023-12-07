@@ -19,6 +19,7 @@ class MoogFilter extends AudioWorkletProcessor {
 
     VT = 0.312 // thermal voltage
     MAX_CHANNEL = 2
+    MOOG_PI = 3.14159265358979323846264338327950288
 
     V
     dV
@@ -38,8 +39,8 @@ class MoogFilter extends AudioWorkletProcessor {
 
     static get parameterDescriptors() {
         return [
-            { name: 'cutoff', defaultValue: 500, minValue: 50, maxValue: 10000, automationRate: "k-rate" },
-            { name: 'resonance', defaultValue: 0.1, minValue: 0, maxValue: 2, automationRate: "k-rate" },
+            { name: 'cutoff', defaultValue: 500, minValue: 50, maxValue: 7000, automationRate: "k-rate" },
+            { name: 'resonance', defaultValue: 0.1, minValue: 0, maxValue: 4, automationRate: "k-rate" },
             { name: 'drive', defaultValue: 1, minValue: 0, maxValue: 2, automationRate: "k-rate" }
         ];
     }
@@ -51,12 +52,10 @@ class MoogFilter extends AudioWorkletProcessor {
 
         const resonance = parameters.resonance;
         const cutoff = parameters.cutoff;
-        let drive = parameters.drive;
+        const drive = parameters.drive;
 
-        drive = 1;
-
-        let x = Math.PI * cutoff / sampleRate;
-        let g = 4* Math.PI * this.VT * cutoff * (1 - x) / (1 + x); // this needs properly tuning
+        let x = this.MOOG_PI * cutoff / sampleRate;
+        let g = 4* this.MOOG_PI * this.VT * cutoff * (1 - x) / (1 + x); // this needs properly tuning
 
         for (let chan = 0; chan < input.length; chan++) {
             const inputChannel = input[chan];
