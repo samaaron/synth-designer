@@ -1,5 +1,8 @@
 window.addEventListener('DOMContentLoaded', init);
 
+const FILTER_VERSION = "stilson-filter";
+// const FILTER_VERSION = "moog-filter";
+
 let context;
 let moog;
 let synth;
@@ -69,7 +72,7 @@ function init() {
 
   gui("start-button").onclick = async () => {
     context = new AudioContext();
-    await context.audioWorklet.addModule("moog-filter.js");
+    await context.audioWorklet.addModule(FILTER_VERSION+".js");
     let view = new ScopeViewLine(gui("scope-canvas"));
     scope = new Scope(context, view);
   }
@@ -118,7 +121,7 @@ class Moog {
 
   constructor(ctx) {
     this.#context = ctx;
-    this.#moog = new AudioWorkletNode(this.#context,"moog-filter");
+    this.#moog = new AudioWorkletNode(this.#context,FILTER_VERSION);
     this.#moog.parameters.get("cutoff").value = 500;
     this.#moog.parameters.get("resonance").value = 0.1;
     this.#moog.parameters.get("drive").value = 1;
