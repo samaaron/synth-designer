@@ -4,6 +4,7 @@ let context;
 let phaser;
 let synth;
 let osc;
+let scope;
 
 function gui(name) {
   return document.getElementById(name);
@@ -76,12 +77,12 @@ class Phaser {
     this.#rightPan = ctx.createStereoPanner();
     this.#rightPan.pan.value = 0.95;
 
-    this.#leftChannel = new PhaserChannel(ctx,-0.8); // parameterise
+    this.#leftChannel = new PhaserChannel(ctx,-0.2); // parameterise
     this.#in.connect(this.#leftChannel.in);
     this.#leftChannel.out.connect(this.#leftPan);
     this.#leftPan.connect(this.#out);
 
-    this.#rightChannel = new PhaserChannel(ctx,0.8);
+    this.#rightChannel = new PhaserChannel(ctx,0.2);
     this.#in.connect(this.#rightChannel.in);
     this.#rightChannel.out.connect(this.#rightPan);
     this.#rightPan.connect(this.#out);
@@ -118,8 +119,8 @@ class Phaser {
 
 class PhaserChannel {
 
-  NUM_STAGES = 1;
-  DEFAULT_FEEDBACK = 0.4;
+  NUM_STAGES = 2;
+  DEFAULT_FEEDBACK = 0;
   DEFAULT_RESONANCE = 0.65;
 
   #context
@@ -135,7 +136,7 @@ class PhaserChannel {
   constructor(ctx,phase) {
     this.#context = ctx;
     // lfo
-    this.#lfo = new OffsetLFO(ctx,80,2400,0.2,phase);
+    this.#lfo = new OffsetLFO(ctx,400,4000,0.2,phase);
     // gains
     this.#in = this.#context.createGain();
     this.#in.gain.value = 1;
@@ -225,20 +226,26 @@ function startTest() {
   phaser = new Phaser(context);
   synth.out.connect(phaser.in);
   phaser.out.connect(context.destination);
+  phaser.out.connect(scope.in);
   synth.start();
   phaser.start();
+  scope.draw();
 }
 
 function stopTest() {
   synth.stop();
   phaser.stop();
+  scope.disconnect();
+  synth = null;
+  phaser = null;
 }
 
 function init() {
 
   gui("start-button").onclick = () => {
     context = new AudioContext();
-    // formant = new FormantFilter(context);
+    let view = new ScopeViewLine(gui("scope-canvas"));
+    scope = new Scope(context, view);
   }
 
   gui("play-button").onclick = () => {
@@ -250,8 +257,11 @@ function init() {
   }
 
   gui("pitch").addEventListener("input", function () {
-    if (synth != undefined)
-      synth.pitch = midiNoteToFreqHz(parseInt(this.value));
+    if (synth != undefined) {
+      let freq = midiNoteToFreqHz(parseInt(this.value));
+      console.log(freq);
+      synth.pitch = freq;
+    }
   });
 
   gui("volume").addEventListener("input", function () {
@@ -415,6 +425,81 @@ class LFO {
       this.#mixer = null;
       this.#context = null;
     }, (stopTime + 0.1) * 1000);
+  }
+
+}
+
+
+
+// ------------------------------------------------------------
+// Scope view for line plots
+// ------------------------------------------------------------
+
+class ScopeViewLine {
+
+  #context
+  #width
+  #height
+
+  constructor(canvas) {
+    this.#context = canvas.getContext("2d");
+    this.#width = canvas.width;
+    this.#height = canvas.height;
+    this.#context.fillStyle = "rgb(30,30,30)";
+    this.#context.lineWidth = 2;
+    this.#context.strokeStyle = "rgb(200,200,200)";
+  }
+
+  draw(data) {
+    const stepSize = this.#width / (data.length/2);
+    this.#context.fillRect(0, 0, this.#width, this.#height);
+    let x = 0;
+    this.#context.beginPath();
+    let y = data[0] * this.#height / 256;
+    this.#context.moveTo(x, this.#height-y);
+    for (let i = 1; i < data.length/2; i++) {
+      y = data[i] * this.#height / 256;
+      this.#context.lineTo(x,this.#height-y);
+      x += stepSize;
+    }
+    this.#context.lineTo(this.#width, this.#height);
+    this.#context.stroke();
+  }
+}
+
+// ------------------------------------------------------------
+// Scope model-controler
+// ------------------------------------------------------------
+
+class Scope {
+
+  #analyser
+  #dataArray
+  #view
+
+  constructor(ctx, view) {
+    this.#view = view;
+    this.#analyser = ctx.createAnalyser();
+    this.#analyser.fftSize = 2048;
+    const bufferLength = this.#analyser.fftSize;
+    this.#dataArray = new Uint8Array(bufferLength);
+  }
+
+  get frame() {
+    return this.#dataArray;
+  }
+
+  // because we need to refer to this.draw when we request the animation
+  // frame, must use an arrow function which retains the surrounding context
+
+  draw = () => {
+    this.#analyser.getByteFrequencyData(this.#dataArray);
+    this.#view.draw(this.#dataArray);
+    requestAnimationFrame(this.draw);
+  }
+
+  get in() {
+    return this.#analyser;
   }
 
 }

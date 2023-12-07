@@ -38,9 +38,13 @@
   </div>
 
   <div class="slider-container">
-    <input class="slider" type="range" id="feedback" min="0" max="1" value="0.4" step="0.01">
+    <input class="slider" type="range" id="feedback" min="0" max="1" value="0" step="0.01">
     <label id="feedback-label" for="feedback">feedback</label>
   </div>
+
+  <p><canvas id="scope-canvas" width="400" height="100" style="border:1px solid #000000;">
+    Your browser does not support the HTML5 canvas tag.
+  </canvas></p>
 
   <script src="phaser.js"></script>
 

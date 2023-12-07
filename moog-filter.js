@@ -10,6 +10,9 @@ more accurate in preserving the self-oscillating nature of the real filter.
 
 References: "An Improved Virtual Analog Model of the Moog Ladder Filter"
 Original Implementation: D'Angelo, Valimaki
+
+There are some mistakes in the original paper see errata here
+http://research.spa.aalto.fi/publications/papers/icassp13-moog/Errata-ICASSP13-Moog.pdf
 */
 
 class MoogFilter extends AudioWorkletProcessor {
@@ -35,7 +38,7 @@ class MoogFilter extends AudioWorkletProcessor {
 
     static get parameterDescriptors() {
         return [
-            { name: 'cutoff', defaultValue: 500, minValue: 50, maxValue: 8000, automationRate: "k-rate" },
+            { name: 'cutoff', defaultValue: 500, minValue: 50, maxValue: 10000, automationRate: "k-rate" },
             { name: 'resonance', defaultValue: 0.1, minValue: 0, maxValue: 2, automationRate: "k-rate" },
             { name: 'drive', defaultValue: 1, minValue: 0, maxValue: 2, automationRate: "k-rate" }
         ];
@@ -48,10 +51,12 @@ class MoogFilter extends AudioWorkletProcessor {
 
         const resonance = parameters.resonance;
         const cutoff = parameters.cutoff;
-        const drive = parameters.drive;
+        let drive = parameters.drive;
 
-        let x = (Math.PI * cutoff) / sampleRate;
-        let g = 4 * Math.PI * this.VT * cutoff * (1 - x) / (1 + x);
+        drive = 1;
+
+        let x = Math.PI * cutoff / sampleRate;
+        let g = 4* Math.PI * this.VT * cutoff * (1 - x) / (1 + x); // this needs properly tuning
 
         for (let chan = 0; chan < input.length; chan++) {
             const inputChannel = input[chan];
