@@ -16,6 +16,12 @@ function midiNoteToFreqHz(m) {
   return 440 * Math.pow(2, (m - 69) / 12.0);
 }
 
+function disableGUI(b) {
+  gui("start-button").disabled = !b;
+  gui("play-button").disabled = b;
+  gui("stop-button").disabled = b;
+}
+
 class Synth {
 
   #context
@@ -70,7 +76,10 @@ function stopTest() {
 
 function init() {
 
+  disableGUI(true);
+  
   gui("start-button").onclick = async () => {
+    disableGUI(false);
     context = new AudioContext();
     await context.audioWorklet.addModule(FILTER_VERSION+".js");
     let view = new ScopeViewLine(gui("scope-canvas"));

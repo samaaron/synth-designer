@@ -14,6 +14,12 @@ function midiNoteToFreqHz(m) {
   return 440 * Math.pow(2, (m - 69) / 12.0);
 }
 
+function disableGUI(b) {
+  gui("start-button").disabled = !b;
+  gui("play-button").disabled = b;
+  gui("stop-button").disabled = b;
+}
+
 class Synth {
 
   #context
@@ -242,7 +248,10 @@ function stopTest() {
 
 function init() {
 
+  disableGUI(true);
+
   gui("start-button").onclick = () => {
+    disableGUI(false);
     context = new AudioContext();
     let view = new ScopeViewLine(gui("scope-canvas"));
     scope = new Scope(context, view);
@@ -259,7 +268,6 @@ function init() {
   gui("pitch").addEventListener("input", function () {
     if (synth != undefined) {
       let freq = midiNoteToFreqHz(parseInt(this.value));
-      console.log(freq);
       synth.pitch = freq;
     }
   });
