@@ -1,0 +1,84 @@
+@synth twoopfm
+longname : Two operator FM
+type : synth
+author : Guy J Brown
+version : 1.0
+doc : Two operator FM with carrier, modulator and feedback
+@end
+
+# parameters
+
+@param cutoff
+type : float
+mutable: yes
+step : 0.01
+min : 100
+max : 10000
+default : 2000
+doc : cutoff frequency
+@end
+
+@param fm
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 500
+default : 0
+doc : fm
+@end
+
+@param fback
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1000
+default : 0
+doc : feedback
+@end
+
+# modules
+
+SIN-OSC : carrier
+SIN-OSC : modulator
+LPF : lowpass
+VCA : vca
+VCA : mix
+VCA : feedback
+VCA : gain
+DECAY : env
+DECAY : modenv
+
+# patch
+
+carrier.out -> lowpass.in
+lowpass.out -> vca.in
+vca.out -> audio.in
+
+modulator.out -> gain.in
+gain.out -> mix.in
+mix.out -> carrier.pitchCV
+carrier.out -> feedback.in
+feedback.out -> mix.in
+
+# tweak
+
+carrier.pitch = param.pitch
+modulator.pitch = param.pitch*6
+vca.level = param.level
+lowpass.cutoff = param.cutoff
+feedback.level = param.fback
+
+env.out -> vca.levelCV
+env.level = param.level
+env.decay = 2
+env.attack = 0.01
+
+modenv.out -> gain.levelCV
+modenv.level = param.fm
+modenv.decay = 4
+modenv.attack = 0.01
+
+
+# end

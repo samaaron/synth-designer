@@ -36,7 +36,6 @@ let playerForNote = new Map();
 // effects
 
 let reverb;
-let phaser;
 
 // monitor - keep track of how many notes and nodes we have
 
@@ -319,7 +318,6 @@ function addListenersToGUI() {
   // start button
   gui("start-button").onclick = async () => {
     context = new AudioContext();
-    await context.audioWorklet.addModule("sample-delay.js");
     disableGUI(false);
     connectEffects(context);
     initialiseEffects();
@@ -1349,7 +1347,7 @@ function playNote(midiNoteNumber, velocity) {
     player = new BleepPlayer(context, generator, pitchHz, velocity, params);
     if (VERBOSE) console.log(player);
     playerForNote.set(midiNoteNumber, player);
-    player.out.connect(phaser.in);
+    player.out.connect(reverb.in);
     player.start(context.currentTime);
     monitor.retain("note");
   }
@@ -2428,10 +2426,8 @@ BleepPlayer = class {
 // ------------------------------------------------------------
 
 async function connectEffects(ctx) {
-  phaser = new Phaser(ctx,null);
   reverb = new Reverb(ctx);
   await reverb.load("./impulses/large-hall.wav");
-  phaser.out.connect(reverb.in);
   reverb.out.connect(ctx.destination);
 }
 
@@ -2720,115 +2716,3 @@ function testExpression(infix, param, minima, maxima) {
   console.log(`infix=${infixResult} postfix=${postfixResult}`);
   console.log("");
 }
-
-
-// ------------------------------------------------------------
-// PHASERRRRRRRRR
-// ------------------------------------------------------------
-
-
-class Phaser {
-
-  NUM_STAGES = 12;
-
-  #context
-  #monitor
-  #in
-  #out
- #sampleDelay
- #lfo
- #lfogain
-
-  constructor(ctx, monitor) {
-    console.log("making a Phaser");
-    this.#context = ctx;
-    this.#monitor = monitor;
-    //this.#monitor.retain("phaser");
-
-    this.#sampleDelay = new AudioWorkletNode(this.#context,"sample-delay");
-
-    // LFO
-
-    this.#lfo = this.#context.createOscillator();
-    this.#lfo.type = "triangle";
-    this.#lfo.frequency.value = 0.2; // Hz
-    this.#lfogain = this.#context.createGain();
-    this.#lfogain.gain.value = 1341;
-    // need to set frequency at 1439 Hz
-
-// prefilter
-
-
-
-
-
-  get out() {
-    return this.#out;
-  }
-
-  get in() {
-    return this.#in;
-  }
-
-  stop() {
-    //this.#monitor.release("phaser");
-  }
-
-}
-
-
-/*
-
-class AnalogPhaser {
-  constructor(audioContext) {
-    console.log("making an AnalogPhaser");
-    this.audioContext = audioContext;
-    this.in = audioContext.createGain();
-    this.out = audioContext.createGain();
-    this.lfo = audioContext.createOscillator();
-    this.lfo.frequency.value = 0.1; // The rate of LFO can be configured
-    this.lfo.type = "triangle";
-    this.lfo.start();
-    this.depth = audioContext.createGain();
-    this.depth.gain.value = 0.5; // Depth of modulation
-
-    // Phaser stages based on schematic - assuming 4 stages for simplification
-    this.stages = [];
-    for (let i = 0; i < 4; i++) {
-      let apf = audioContext.createBiquadFilter();
-      apf.type = 'allpass';
-      apf.Q.value = 8;
-      this.stages.push(apf);
-    }
-
-    // Connect stages in series
-    this.stages.reduce((prev, curr) => {
-      prev.connect(curr);
-      return curr;
-    }, this.in);
-
-    // Feedback path
-    this.feedback = audioContext.createGain();
-    this.feedback.gain.value = 0.65; // Feedback level, could be made adjustable
-    this.stages[this.stages.length - 1].connect(this.feedback);
-    this.feedback.connect(this.stages[0]);
-
-    // LFO modulation of all-pass filter frequencies
-    this.stages.forEach((stage, i) => {
-      stage.frequency.value = 400*(i+1);
-      let lfoGain = audioContext.createGain();
-
-      // Configuring the LFO modulation depth based on stage
-      lfoGain.gain.value = 300; // 100 is a placeholder, should be calibrated
-      this.lfo.connect(lfoGain);
-      lfoGain.connect(stage.frequency);
-    });
-
-    // Output of last stage to the main output
-    this.stages[this.stages.length - 1].connect(this.out);
-  }
-
-  // Additional methods to control parameters like LFO rate, depth, feedback, etc.
-}
-
-*/
