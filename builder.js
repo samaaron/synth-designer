@@ -1147,6 +1147,7 @@ moduleContext.Decay = class {
   #attack
   #decay
   #level
+  #param
 
   constructor(ctx) {
     this.#attack = 0.1;
@@ -1167,9 +1168,24 @@ moduleContext.Decay = class {
   }
 
   apply(param, when) {
+    this.#param = param;
     param.setValueAtTime(0, when);
     param.linearRampToValueAtTime(this.#level, when + this.#attack);
-    param.exponentialRampToValueAtTime(0.0001, when + this.#attack + this.#decay);
+    param.exponentialRampToValueAtTime(0.01, when + this.#attack + this.#decay);
+  }
+
+  releaseOnNoteOff() {
+    // dummy function - messy
+  }
+
+  get release() {
+    const currentLevel = this.#param.value;
+    if (currentLevel>0) {
+      const k = -Math.log(0.01/this.#level)/this.#decay;
+      return -Math.log(0.01/currentLevel)/k;
+    } else {
+      return 0.01;
+    }
   }
 
 }
