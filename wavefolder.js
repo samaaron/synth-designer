@@ -281,41 +281,54 @@ class NewWavefolder {
   #out
   #symmetry
   #mix
+  #numFolds
 
-  constructor(ctx,numFolds) {
-    if (numFolds<1) {
+  constructor(ctx, numFolds) {
+    if (numFolds < 1) {
       throw new Error("NewWaveFolder: cannot have less than one folding stage");
     }
     console.log("making a folder");
     this.#context = ctx;
+    this.#numFolds = numFolds;
+    this.#makeGains();
+    this.#makeFolders();
+    this.#makeSymmetry();
+    this.#makeConnections();
+  }
+
+  #makeFolders() {
     this.#folders = [];
-    for (let i = 0; i < numFolds; i++) {
-      let f = ctx.createWaveShaper()
-      f.curve = this.createFoldingCurve(1024);
-      f.oversample = "4x";
-      this.#folders.push(f);
+    for (let i = 0; i < this.#numFolds; i++) {
+      let fold = this.#context.createWaveShaper()
+      fold.curve = this.createFoldingCurve(1024);
+      fold.oversample = "2x";
+      this.#folders.push(fold);
     }
-    this.#in = ctx.createGain();
+  }
+
+  #makeGains() {
+    this.#in = this.#context.createGain();
     this.#in.gain.value = 1;
-    this.#out = ctx.createGain();
+    this.#out = this.#context.createGain();
     this.#out.gain.value = 1;
-    this.#mix = ctx.createGain();
+    this.#mix = this.#context.createGain();
     this.#mix.gain.value = 1;
+  }
 
-    this.#in.connect(this.#mix);
-    this.#mix.connect(this.#folders[0]);
-
-    this.#symmetry = ctx.createConstantSource();
+  #makeSymmetry() {
+    this.#symmetry = this.#context.createConstantSource();
     this.#symmetry.offset.value = 0;
     this.#symmetry.connect(this.#mix);
     this.#symmetry.start();
+  }
 
-    for (let i=0; i<numFolds-1; i++) {
+  #makeConnections() {
+    this.#in.connect(this.#mix);
+    this.#mix.connect(this.#folders[0]);
+    for (let i=0; i<this.#numFolds-1; i++) {
       this.#folders[i].connect(this.#folders[i+1]);
     }
-
-    this.#folders[numFolds-1].connect(this.#out);
-
+    this.#folders[this.#numFolds-1].connect(this.#out);
   }
 
   get in() {
@@ -337,7 +350,7 @@ class NewWavefolder {
   createFoldingCurve(length) {
     const curve = new Float32Array(length);
     for (let i = 0; i < length; i++) {
-    curve[i] = Math.sin(2*Math.PI*i/(length-1));
+      curve[i] = Math.sin(2 * Math.PI * i / (length - 1));
     }
     /*
     for (let i = 0; i < length; i++) {
