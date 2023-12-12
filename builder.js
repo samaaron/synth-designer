@@ -74,7 +74,8 @@ const moduleClasses = {
   "ADSR": "Envelope",
   "DECAY": "Decay",
   "AUDIO": "Audio",
-  "DELAY": "Delay"
+  "DELAY": "Delay",
+  "FOLDER": "Wavefolder"
 };
 
 // valid tweaks, used for error checking
@@ -93,7 +94,8 @@ const validTweaks = {
   "ADSR": ["attack", "decay", "sustain", "release", "level"],
   "DECAY": ["attack", "decay", "level"],
   "PAN": ["angle"],
-  "DELAY": ["lag"]
+  "DELAY": ["lag"],
+  "FOLDER": ["threshold","symmetry","gain","level","stages"]
 };
 
 // valid patch inputs, used for error checking
@@ -110,7 +112,8 @@ const validPatchInputs = {
   "VCA": ["in", "levelCV"],
   "SHAPER": ["in"],
   "PAN": ["in", "angleCV"],
-  "DELAY": ["in", "lagCV"]
+  "DELAY": ["in", "lagCV"],
+  "FOLDER": ["in","thresholdCV","symmetryCV","levelCV","gainCV"]
 };
 
 // valid patch outputs - pointless at the moment but in future modules may have more than one output
@@ -130,7 +133,8 @@ const validPatchOutputs = {
   "ADSR": ["out"],
   "DECAY": ["out"],
   "PAN": ["out"],
-  "DELAY": ["out"]
+  "DELAY": ["out"],
+  "FOLDER": ["out"]
 };
 
 // ------------------------------------------------------------
@@ -155,7 +159,8 @@ class Monitor {
       delay: 0,
       noise: 0,
       shaper: 0,
-      audio: 0
+      audio: 0,
+      wavefolder: 0,
     }
   }
 
@@ -318,6 +323,7 @@ function addListenersToGUI() {
   // start button
   gui("start-button").onclick = async () => {
     context = new AudioContext();
+    await context.audioWorklet.addModule("wave-folder.js");
     disableGUI(false);
     connectEffects(context);
     initialiseEffects();
@@ -1303,6 +1309,90 @@ moduleContext.Amplifier = class {
 }
 
 // ------------------------------------------------------------
+// Wavefolder
+// ------------------------------------------------------------
+
+moduleContext.Wavefolder = class {
+
+  #folder
+  #context
+
+  constructor(ctx) {
+    console.log("making a wavefolder");
+    this.#context = ctx;
+    this.#folder = new AudioWorkletNode(ctx,"wave-folder");
+    this.threshold = 0.5;
+    this.symmetry = 0;
+    this.gain = 1;
+    this.stages = 1;
+    this.level = 1;
+    monitor.retain("wavefolder");
+  }
+
+  get in() {
+    return this.#folder;
+  }
+
+  get out() {
+    return this.#folder;
+  }
+
+  set threshold(t) {
+    this.#folder.parameters.get("threshold").value = t;
+  }
+
+  set symmetry(s) {
+    this.#folder.parameters.get("symmetry").value = s;
+  }
+
+  set level(v) {
+    this.#folder.parameters.get("level").value = v;
+  }
+
+  get levelCV() {
+    return this.#folder.parameters.get("level");
+  }
+
+  get gainCV() {
+    return this.#folder.parameters.get("gain");
+  }
+
+  get symmetryCV() {
+    return this.#folder.parameters.get("symmetry");
+  }
+
+  get thresholdCV() {
+    return this.#folder.parameters.get("threshold");
+  }
+
+  set gain(g) {
+    this.#folder.parameters.get("gain").value = g;
+  }
+
+  set stages(s) {
+    this.#folder.parameters.get("stages").value = s;
+  }
+
+  stop(tim) {
+    if (VERBOSE) console.log("stopping Wavefolder");
+    let stopTime = tim - this.#context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      if (VERBOSE) console.log("disconnecting Wavefolder");
+      this.#folder.port.postMessage({
+        type : "setBoolean",
+        value : false
+      });
+      this.#folder.disconnect();
+      this.#folder = null;
+      this.#context = null;
+      monitor.release("wavefolder");
+    }, (stopTime + 0.1) * 1000);
+  }
+
+}
+
+// ------------------------------------------------------------
 // Audio class - the endpoint for audio connections
 // ------------------------------------------------------------
 
@@ -1726,7 +1816,7 @@ function getGrammarSource() {
 
   patchinput = varname "." inputparam 
 
-  inputparam = "in" | "levelCV" | "pitchCV" | "cutoffCV" | "pulsewidthCV" | "angleCV" | "lagCV"
+  inputparam = "in" | "levelCV" | "pitchCV" | "cutoffCV" | "pulsewidthCV" | "angleCV" | "lagCV" | "thresholdCV" | "symmetryCV" | "gainCV"
 
   outputparam = "out"
 
@@ -1756,6 +1846,7 @@ function getGrammarSource() {
   | "DECAY"
   | "PAN"
   | "DELAY"
+  | "FOLDER"
 
   Exp 
     = AddExp
@@ -1789,7 +1880,7 @@ function getGrammarSource() {
   tweakable
   = varname "." parameter
 
-  parameter = "pitch" | "detune" | "level" | "lag" | "phase" | "angle" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release" | "fuzz" | "pulsewidth"
+  parameter = "pitch" | "detune" | "level" | "lag" | "phase" | "angle" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release" | "fuzz" | "pulsewidth" | "threshold" | "symmetry" | "gain" | "stages"
 
   varname (a module name)
   = lower alnum*

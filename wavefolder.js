@@ -1,9 +1,12 @@
 window.addEventListener('DOMContentLoaded', init);
 
+const NUM_FOLDS = 2;
+
 let context;
 let synth;
 let folder;
 let scope;
+let lfo;
 
 function gui(name) {
   return document.getElementById(name);
@@ -60,10 +63,18 @@ class Synth {
 
 function startTest() {
   synth = new Synth(context);
-  folder = new Wavefolder(context);
+  folder = new NewWavefolder(context,NUM_FOLDS);
+  //lfo = context.createOscillator();
+  //lfo.frequency.value = 0.5;
+  //lfo.type = "sine";
+  //lfo.start();
+  //let g = context.createGain();
+  //g.gain.value = 0.2;
   synth.out.connect(folder.in);
   folder.out.connect(context.destination);
   folder.out.connect(scope.in);
+  //lfo.connect(g);
+  //g.connect(folder.levelCV);
   synth.start();
   scope.draw();
 }
@@ -214,6 +225,7 @@ class Wavefolder {
     this.symmetry = 0;
     this.gain = 1;
     this.stages = 1;
+    this.level = 1;
   }
 
   get in() {
@@ -232,6 +244,22 @@ class Wavefolder {
     this.#folder.parameters.get("symmetry").value = s;
   }
 
+  set level(v) {
+    this.#folder.parameters.get("level").value = v;
+  }
+
+  get levelCV() {
+    return this.#folder.parameters.get("level");
+  }
+
+  get symmetryCV() {
+    return this.#folder.parameters.get("symmetry");
+  }
+
+  get thresholdCV() {
+    return this.#folder.parameters.get("threshold");
+  }
+
   set gain(g) {
     this.#folder.parameters.get("gain").value = g;
   }
@@ -239,5 +267,92 @@ class Wavefolder {
   set stages(s) {
     this.#folder.parameters.get("stages").value = s;
   }
+
+}
+
+
+// ===========================================
+
+class NewWavefolder {
+
+  #folders
+  #context
+  #in
+  #out
+  #symmetry
+  #mix
+
+  constructor(ctx,numFolds) {
+    if (numFolds<1) {
+      throw new Error("NewWaveFolder: cannot have less than one folding stage");
+    }
+    console.log("making a folder");
+    this.#context = ctx;
+    this.#folders = [];
+    for (let i = 0; i < numFolds; i++) {
+      let f = ctx.createWaveShaper()
+      f.curve = this.createFoldingCurve(1024);
+      f.oversample = "4x";
+      this.#folders.push(f);
+    }
+    this.#in = ctx.createGain();
+    this.#in.gain.value = 1;
+    this.#out = ctx.createGain();
+    this.#out.gain.value = 1;
+    this.#mix = ctx.createGain();
+    this.#mix.gain.value = 1;
+
+    this.#in.connect(this.#mix);
+    this.#mix.connect(this.#folders[0]);
+
+    this.#symmetry = ctx.createConstantSource();
+    this.#symmetry.offset.value = 0;
+    this.#symmetry.connect(this.#mix);
+    this.#symmetry.start();
+
+    for (let i=0; i<numFolds-1; i++) {
+      this.#folders[i].connect(this.#folders[i+1]);
+    }
+
+    this.#folders[numFolds-1].connect(this.#out);
+
+  }
+
+  get in() {
+    return this.#in;
+  }
+
+  get out() {
+    return this.#out;
+  }
+
+  set gain(v) {
+    this.#mix.gain.value = v;
+  }
+
+  set symmetry(s) {
+    this.#symmetry.offset.value = s;
+  }
+
+  createFoldingCurve(length) {
+    const curve = new Float32Array(length);
+    for (let i = 0; i < length; i++) {
+    curve[i] = Math.sin(2*Math.PI*i/(length-1));
+    }
+    /*
+    for (let i = 0; i < length; i++) {
+      const x = (i * 2 / length) - 1; // Normalize to [-1, 1]
+      if (x > 0.5) {
+        curve[i] = 0.5 - (x - 0.5); // Reflect around 0.5
+      } else if (x < -0.5) {
+        curve[i] = -0.5 - (x + 0.5); // Reflect around -0.5
+      } else {
+        curve[i] = x;
+      }
+    }
+    */
+    return curve;
+  }
+
 
 }

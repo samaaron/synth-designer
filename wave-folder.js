@@ -6,6 +6,13 @@ class Wavefolder extends AudioWorkletProcessor {
 
     constructor() {
         super();
+        this.running = true;
+        this.port.onmessage = (event) => {
+            if (event.data.type === "setBoolean") {
+                this.running = event.data.value;
+                console.log(`Wavefolder running is ${this.running}`);
+            }
+        };
     }
 
     static get parameterDescriptors() {
@@ -13,7 +20,8 @@ class Wavefolder extends AudioWorkletProcessor {
             { name: 'threshold', defaultValue: 0.5, minValue: 0, maxValue: 1, automationRate: "k-rate" },
             { name: 'symmetry', defaultValue: 0, minValue: -1, maxValue: 1, automationRate: "k-rate" },
             { name: 'stages', defaultValue: 1, minValue: 1, maxValue: 6, automationRate: "k-rate" },
-            { name: 'gain', defaultValue: 1, minValue: 0.1, maxValue: 10, automationRate: "k-rate" }
+            { name: 'gain', defaultValue: 1, minValue: 0.1, maxValue: 10, automationRate: "k-rate" },
+            { name: 'level', defaultValue: 1, minValue: 0, maxValue: 1, automationRate: "k-rate" }
         ];
     }
 
@@ -26,6 +34,7 @@ class Wavefolder extends AudioWorkletProcessor {
         const symmetry = parameters.symmetry[0];
         const gain = parameters.gain[0];
         const stages = parameters.stages[0];
+        const level = parameters.level[0];
 
         for (let chan = 0; chan < input.length; chan++) {
             const inputChannel = input[chan];
@@ -44,20 +53,11 @@ class Wavefolder extends AudioWorkletProcessor {
                             y = x;
                         x = y;
                     }
-                    // hard clip to range
-                    /*
-                    if (y>1) 
-                    y=1;
-                    else if (y<-1) 
-                    y=-1;
-                */
-                    
-                    outputChannel[i] = y;
-                    
+                    outputChannel[i] = y*level;
                 }
             }
         }
-        return true;
+        return this.running;
     }
 }
 
