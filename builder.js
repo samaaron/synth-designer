@@ -305,6 +305,9 @@ function addListenersToGUI() {
   // export button 
   gui("export-button").onclick = async () => { await exportAsJSON(); };
 
+  // copy to clipboard button 
+  gui("clip-button").onclick = () => { copyToClipboard(); };
+
   // play button 
   gui("play-button").onmousedown = () => {
     const midiNoteNumber = getIntParam("pitch");
@@ -365,6 +368,16 @@ function addListenersToGUI() {
 }
 
 // ------------------------------------------------------------
+// copy to clipboard
+// ------------------------------------------------------------
+
+function copyToClipboard() {
+  if (generator != undefined && generator.isValid) {
+    console.log("copy to clipboard")
+  }
+}
+
+// ------------------------------------------------------------
 // disable buttons
 // ------------------------------------------------------------
 
@@ -374,6 +387,7 @@ function disableGUI(b) {
   gui("save-button").disabled = b;
   gui("save-as-button").disabled = b;
   gui("export-button").disabled = b;
+  gui("clip-button").disabled = b;
   gui("play-button").disabled = b;
   gui("midi-label").disabled = b;
   gui("midi-input").disabled = b;
@@ -2534,7 +2548,7 @@ BleepPlayer = class {
 
 async function connectEffects(ctx) {
   reverb = new Reverb(ctx);
-  await reverb.load("./impulses/large-hall.wav");
+  await reverb.load("./impulses/medium-hall.wav");
   reverb.out.connect(ctx.destination);
 }
 

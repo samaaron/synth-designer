@@ -1,6 +1,6 @@
 window.addEventListener('DOMContentLoaded', init);
 
-const NUM_FOLDS = 2;
+const NUM_FOLDS = 4;
 
 let context;
 let synth;
@@ -300,8 +300,8 @@ class NewWavefolder {
     this.#folders = [];
     for (let i = 0; i < this.#numFolds; i++) {
       let fold = this.#context.createWaveShaper()
-      fold.curve = this.createFoldingCurve(1024);
-      fold.oversample = "2x";
+      fold.curve = this.createFoldingCurve(4096);
+      fold.oversample = "4x";
       this.#folders.push(fold);
     }
   }
