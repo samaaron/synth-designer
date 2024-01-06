@@ -374,6 +374,17 @@ function addListenersToGUI() {
 function copyToClipboard() {
   if (generator != undefined && generator.isValid) {
     console.log("copy to clipboard")
+    const params = getParametersForGenerator(generator);
+    console.log(params);
+    const clipText = "synth designer put this on the clipboard";
+    navigator.clipboard.writeText(clipText).then(
+      () => {
+        console.log("Text copied to clipboard");
+      },
+      (error) => {
+        console.error("Failed to copy text: ", error);
+      }
+    );
   }
 }
 
