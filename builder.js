@@ -5,6 +5,9 @@
 
 window.addEventListener('DOMContentLoaded', init);
 
+const MIDI_CONTROLLERS = [74,71,76,77,93,18,19,16];
+let controlMap;
+
 // various constants
 
 const MIDDLE_C = 261.63; // Hz
@@ -310,16 +313,16 @@ function addListenersToGUI() {
 
   // play button 
   gui("play-button").onmousedown = () => {
-    const midiNoteNumber = getIntParam("pitch");
-    const velocity = getFloatParam("level");
+    const midiNoteNumber = getIntParam("slider-pitch");
+    const velocity = getFloatParam("slider-level");
     playNote(midiNoteNumber, velocity);
   };
   gui("play-button").onmouseup = () => {
-    const midiNoteNumber = getIntParam("pitch");
+    const midiNoteNumber = getIntParam("slider-pitch");
     stopNote(midiNoteNumber);
   };
   gui("play-button").onmouseout = () => {
-    const midiNoteNumber = getIntParam("pitch");
+    const midiNoteNumber = getIntParam("slider-pitch");
     stopNote(midiNoteNumber);
   };
 
@@ -333,17 +336,17 @@ function addListenersToGUI() {
   }
 
   // pitch slider
-  gui("pitch").addEventListener("input", function () {
+  gui("slider-pitch").addEventListener("input", function () {
     gui("pitch-label").textContent = `pitch [${midiToNoteName(parseInt(this.value))}]`;
   });
 
   // amplitude slider
-  gui("level").addEventListener("input", function () {
+  gui("slider-level").addEventListener("input", function () {
     setFloatControl("level", parseFloat(this.value));
   });
 
   // reverb slider
-  gui("reverb").addEventListener("input", function () {
+  gui("slider-reverb").addEventListener("input", function () {
     setReverb(parseFloat(this.value));
   });
 
@@ -462,6 +465,21 @@ function onMIDIMessage(message) {
   if (op === MIDI_NOTE_OFF || (op === MIDI_NOTE_ON && message.data[2] === 0)) {
     const midiNoteNumber = message.data[1];
     stopNote(midiNoteNumber);
+  }
+  // midi controller
+  if (op === 0xB0) {
+    const controllerNumber = message.data[1];
+    const controllerValue = message.data[2] / 127;
+    // console.log(`CC ${controllerNumber} ${controllerValue}`);
+    let param = controlMap.get(controllerNumber);
+    if (param!=undefined) {
+      // console.log(param);
+      let el = gui("slider-"+param);
+      let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * controllerValue;
+      //console.log(value);
+      setFloatControl(param, value);
+    }
+
   }
 }
 
@@ -1960,14 +1978,21 @@ function parseGeneratorSpec() {
 function createControls(json) {
   const obj = JSON.parse(json);
   removeAllSliders();
+  controlMap = new Map();
   let count = 0;
   let row = 1;
   for (const m of obj.statements) {
     // find all the parameters
     if (m.param) {
       let p = m.param;
-      if (count > 11)
+      // we map the first few sliders to the preferred list of MIDI controllers
+      if (count < MIDI_CONTROLLERS.length) {
+        controlMap.set(MIDI_CONTROLLERS[count],p.name);
+        console.log(`${MIDI_CONTROLLERS[count]} ${p.name}`);
+      }
+      if (count > 11) {
         row = 2;
+      }
       makeSlider(`container${row}`, p.name, p.doc, p.min, p.max, p.default, p.step);
       count++;
     }
@@ -2756,8 +2781,9 @@ function clamp(value, min, max) {
 // ------------------------------------------------------------
 
 function setFloatControl(label, value) {
-  gui(label).value = value;
-  gui(`${label}-label`).textContent = `${label} [${value.toFixed(2)}]`;
+  console.log(`${label}-label`);
+  gui("slider-"+label).value = value;
+  gui(`label-${label}`).textContent = `${label} [${value.toFixed(2)}]`;
 }
 
 // ------------------------------------------------------------

@@ -72,7 +72,7 @@ highpass.cutoff = 3000
 
 env.attack = 0.02
 env.level = param.level
-env.sustain = 0.5
+env.sustain = param.level*0.5
 env.release = 0.1
 env.decay = 0.05
 
