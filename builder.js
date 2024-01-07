@@ -1512,6 +1512,7 @@ function playNote(midiNoteNumber, velocity) {
     player.out.connect(scope.in);
     player.start(context.currentTime);
     monitor.retain("note");
+    scope.resetRMS();
   }
 }
 
@@ -1999,7 +2000,6 @@ function createControls(json) {
       // we map the first few sliders to the preferred list of MIDI controllers
       if (count < MIDI_CONTROLLERS.length) {
         controlMap.set(MIDI_CONTROLLERS[count],p.name);
-        console.log(`${MIDI_CONTROLLERS[count]} ${p.name}`);
       }
       if (count > 11) {
         row = 2;
@@ -2792,7 +2792,6 @@ function clamp(value, min, max) {
 // ------------------------------------------------------------
 
 function setFloatControl(label, value) {
-  console.log(`${label}-label`);
   gui("slider-"+label).value = value;
   gui(`label-${label}`).textContent = `${label} [${value.toFixed(2)}]`;
 }
@@ -2911,9 +2910,9 @@ class ScopeView {
       this._context = canvas.getContext("2d");
       this._width = canvas.width;
       this._height = canvas.height;
-      this._context.fillStyle = (params && params.fillStyle) ? params.fillStyle : "rgb(37,37,37)";
+      this._context.fillStyle = (params && params.fillStyle) ? params.fillStyle : "#252525";
       this._context.lineWidth = (params && params.lineWidth) ? params.lineWidth : 2;
-      this._context.strokeStyle = (params && params.strokeStyle) ? params.strokeStyle : "rgb(200,200,200)";
+      this._context.strokeStyle = (params && params.strokeStyle) ? params.strokeStyle : "#e6983f";
       this._sync = (params && params.sync) ? params.sync : false;
   }
 
@@ -2943,6 +2942,7 @@ class ScopeView {
       }
       this._context.lineTo(this._width, this._height / 2);
       this._context.stroke();
+
   }
 
   /**
@@ -2969,6 +2969,8 @@ class Scope {
   _analyser
   _dataArray
   _view
+  _rms
+  _peakRMS
 
   /**
    * Make a scope model-controller
@@ -2979,8 +2981,9 @@ class Scope {
       this._view = view;
       this._analyser = ctx.createAnalyser();
       this._analyser.fftSize = 1024;
-      const bufferLength = this._analyser.fftSize;
-      this._dataArray = new Uint8Array(bufferLength);
+      this._dataArray = new Uint8Array(this._analyser.fftSize);
+      this._rms=0;
+      this._peakRMS=0;
   }
 
   /**
@@ -2991,13 +2994,37 @@ class Scope {
   }
 
   /**
+   * compute the RMS level
+   */
+  computeRMS() {
+    let sum = 0;
+    for (let i = 0; i < this._dataArray.length; i++) {
+      // put into the range [-1,1]
+      const x = this._dataArray[i] / 128 - 1;
+      sum += x*x;
+    }
+    // return root of the mean of the squares
+    this._rms = Math.sqrt(sum/this._dataArray.length);
+    if (this._rms>this._peakRMS) {
+      this._peakRMS=this._rms;
+    }
+  }
+
+  resetRMS() {
+    this._peakRMS=0;
+  }
+
+  /**
   * Draw the data
   * Because we need to refer to this.draw when we request the animation
   * frame, must use an arrow function which retains the surrounding context
   */
   draw = () => {
       this._analyser.getByteTimeDomainData(this._dataArray);
+      this.computeRMS();
       this._view.draw(this._dataArray);
+      // update the rms information
+      gui("rms-label").textContent="\u00A0\u00A0"+`RMS=${this._rms.toFixed(4)}, Peak RMS=${this._peakRMS.toFixed(4)}`;
       requestAnimationFrame(this.draw);
   }
 
