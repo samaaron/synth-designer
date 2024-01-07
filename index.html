@@ -11,8 +11,6 @@
 
   <h2><img width=100px src="bleep-white.png" style="object-fit: contain;"> <span style="vertical-align: 10px;"> Builder<span id="dot" style="color:#e6983f; opacity:0;">&nbsp;&#x25C9;</span></span></h2>
 
-  <div class="monitor" id="monitor">idle</div>
-
   <p>
     <button class="orangebutton" id="start-button">Start</button>
     <button class="greybutton" id="load-button">Load</button>
@@ -28,14 +26,17 @@
     Current file: none
   </div>
   </p>
+  <canvas id="scope-canvas" class="bleep-canvas" width="523" height="40">
+    Your browser does not support the HTML5 canvas tag.
+  </canvas></p>
 
   <table>
     <tr>
       <td>
-        <textarea class="textarea" rows=30 cols=60 id="synth-spec"></textarea>
+        <textarea class="textarea" rows=29 cols=60 id="synth-spec"></textarea>
       </td>
       <td>
-        <textarea readonly class="textarea" rows=30 cols=30 id="parse-errors"></textarea>
+        <textarea readonly class="textarea" rows=29 cols=30 id="parse-errors"></textarea>
       </td>
       <td valign="top">
         <div class="slider-container">
@@ -68,6 +69,9 @@
   </table>
 
   </div>
+
+  <div class="monitor" id="monitor">idle</div>
+
   <script src="builder.js"></script>
   <script src="unpkg.com_ohm-js@17.1.0_dist_ohm.js"></script>
 

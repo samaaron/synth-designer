@@ -43,7 +43,7 @@ pitchmod.level = 1.4
 lfo2.out -> filtermod.in
 filtermod.out -> lowpass.cutoffCV
 lfo2.pitch = 5
-filtermod.level = 240
+filtermod.level = param.cutoff*0.2
 
 env.out -> vca.levelCV
 

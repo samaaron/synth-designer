@@ -11,6 +11,12 @@ color:#ffffff;
   padding: 0px;
 }
 
+.bleep-canvas {
+  margin-left: 12px;
+  background-color: #252525;
+  border: 0px;
+}
+
 .slider-container {
   display: flex; /* Use flexbox for layout */
   align-items: center; /* Center elements vertically */
