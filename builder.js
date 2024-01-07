@@ -312,8 +312,11 @@ function addListenersToGUI() {
   // export button 
   gui("export-button").onclick = async () => { await exportAsJSON(); };
 
-  // copy to clipboard button 
-  gui("clip-button").onclick = () => { copyToClipboard(); };
+  // copy parameters to clipboard button 
+  gui("clip-button").onclick = () => { copyParamsToClipboard(); };
+
+  // copy docs to clipboard button 
+  gui("docs-button").onclick = () => { copyDocsToClipboard(); };
 
   // play button 
   gui("play-button").onmousedown = () => {
@@ -381,13 +384,28 @@ function addListenersToGUI() {
 }
 
 // ------------------------------------------------------------
-// copy to clipboard
+// copy parameters to clipboard
 // ------------------------------------------------------------
 
-function copyToClipboard() {
+function copyParamsToClipboard() {
   if (generator != undefined && generator.isValid) {
     const params = getParametersForGenerator(generator);
     const text = getParameterListAsString(params);
+    navigator.clipboard.writeText(text).then(() => {
+      console.log(text);
+    }, (error) => {
+      console.error("Failed to copy text: ", error);
+    });
+  }
+}
+
+// ------------------------------------------------------------
+// copy docs to clipboard
+// ------------------------------------------------------------
+
+function copyDocsToClipboard() {
+  if (generator != undefined && generator.isValid) {
+    const text = generator.getDocumentationAsMarkdownString();
     navigator.clipboard.writeText(text).then(() => {
       console.log(text);
     }, (error) => {
@@ -414,6 +432,7 @@ function disableGUI(b) {
   gui("save-as-button").disabled = b;
   gui("export-button").disabled = b;
   gui("clip-button").disabled = b;
+  gui("docs-button").disabled = b;
   gui("play-button").disabled = b;
   gui("midi-label").disabled = b;
   gui("midi-input").disabled = b;
@@ -2305,6 +2324,20 @@ class BleepGenerator {
   throwWarning(msg) {
     this.#hasWarning = true;
     this.#warningString = msg;
+  }
+
+  getDocumentationAsMarkdownString() {
+    const code="\`\`\`";
+    var doc = `## ${this.#longname} (${code}${this.#shortname}${code})\n`;
+    doc += `${this.#doc}\n\n`;
+    doc += `Author: ${this.#author}\n\n`;
+    doc += `### Parameters\n\n`;
+    doc += `| parameter | minimum | maximum | default | description |\n`;
+    doc += `| --------- | ------- | ------- | ------- | ----------- |\n`;
+    Object.values(this.#parameters).forEach(param => {
+      doc += `| ${code}${param.name}${code} | ${param.min} | ${param.max} | ${param.default} | ${param.doc} |\n`;
+    });
+    return doc;
   }
 
   // get the long name of the generator

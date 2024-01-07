@@ -3,7 +3,7 @@ longname : Catholic Style
 type : synth
 author : Guy Brown
 version : 1.0
-doc : Hollow synth reminiscent of the lead in King in a Catholic Style by China Crisis
+doc : Hollow synth reminiscent of the lead in the song King in a Catholic Style by China Crisis
 @end
 
 @param cutoff
