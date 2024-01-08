@@ -5,7 +5,7 @@
 
 window.addEventListener('DOMContentLoaded', init);
 
-const MIDI_CONTROLLERS = [74,71,76,77,93,18,19,16];
+const MIDI_CONTROLLERS = [74, 71, 76, 77, 93, 18, 19, 16];
 let controlMap;
 
 // various constants
@@ -102,7 +102,7 @@ const validTweaks = {
   "DECAY": ["attack", "decay", "level"],
   "PAN": ["angle"],
   "DELAY": ["lag"],
-  "FOLDER": ["threshold","symmetry","gain","level","stages"]
+  "FOLDER": ["threshold", "symmetry", "gain", "level", "stages"]
 };
 
 // valid patch inputs, used for error checking
@@ -120,7 +120,7 @@ const validPatchInputs = {
   "SHAPER": ["in"],
   "PAN": ["in", "angleCV"],
   "DELAY": ["in", "lagCV"],
-  "FOLDER": ["in","thresholdCV","symmetryCV","levelCV","gainCV"]
+  "FOLDER": ["in", "thresholdCV", "symmetryCV", "levelCV", "gainCV"]
 };
 
 // valid patch outputs - pointless at the moment but in future modules may have more than one output
@@ -501,9 +501,9 @@ function onMIDIMessage(message) {
     const controllerValue = message.data[2] / 127;
     // console.log(`CC ${controllerNumber} ${controllerValue}`);
     let param = controlMap.get(controllerNumber);
-    if (param!=undefined) {
+    if (param != undefined) {
       // console.log(param);
-      let el = gui("slider-"+param);
+      let el = gui("slider-" + param);
       let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * controllerValue;
       //console.log(value);
       setFloatControl(param, value);
@@ -1260,9 +1260,9 @@ moduleContext.Decay = class {
 
   get release() {
     const currentLevel = this.#param.value;
-    if (currentLevel>0) {
-      const k = -Math.log(0.01/this.#level)/this.#decay;
-      return -Math.log(0.01/currentLevel)/k;
+    if (currentLevel > 0) {
+      const k = -Math.log(0.01 / this.#level) / this.#decay;
+      return -Math.log(0.01 / currentLevel) / k;
     } else {
       return 0.01;
     }
@@ -1394,7 +1394,7 @@ moduleContext.Wavefolder = class {
   constructor(ctx) {
     console.log("making a wavefolder");
     this.#context = ctx;
-    this.#folder = new AudioWorkletNode(ctx,"wave-folder");
+    this.#folder = new AudioWorkletNode(ctx, "wave-folder");
     this.threshold = 0.5;
     this.symmetry = 0;
     this.gain = 1;
@@ -1454,8 +1454,8 @@ moduleContext.Wavefolder = class {
     setTimeout(() => {
       if (VERBOSE) console.log("disconnecting Wavefolder");
       this.#folder.port.postMessage({
-        type : "setBoolean",
-        value : false
+        type: "setBoolean",
+        value: false
       });
       this.#folder.disconnect();
       this.#folder = null;
@@ -2018,7 +2018,7 @@ function createControls(json) {
       let p = m.param;
       // we map the first few sliders to the preferred list of MIDI controllers
       if (count < MIDI_CONTROLLERS.length) {
-        controlMap.set(MIDI_CONTROLLERS[count],p.name);
+        controlMap.set(MIDI_CONTROLLERS[count], p.name);
       }
       if (count > 11) {
         row = 2;
@@ -2337,21 +2337,68 @@ class BleepGenerator {
     Object.values(this.#parameters).forEach(param => {
       doc += `| ${code}${param.name}${code} | ${param.min} | ${param.max} | ${param.default} | ${param.doc} |\n`;
     });
-    console.log(this);
     doc += `### WebAudio graph\n`;
     doc += `${code}mermaid\n`;
-    doc += `graph TD;`;
+    doc += `graph TD;\n`;
     // modules
     Object.values(this.#patches).forEach(patch => {
-      doc += `\t${patch.from.id}-->${patch.to.id};\n`;
+      const fromString = this.nodeToMarkdown(patch.from.id);
+      const toString = this.nodeToMarkdown(patch.to.id);
+      doc += `   ` + fromString + `-->` + toString + `;\n`;
     });
     // envelopes
     Object.values(this.#envelopes).forEach(patch => {
-      doc += `\t${patch.from.id}-.->${patch.to.id};\n`;
+      const fromString = this.nodeToMarkdown(patch.from.id);
+      const toString = this.nodeToMarkdown(patch.to.id);
+      doc += `   ` + fromString + `-.->` + toString + `;\n`;
     });
     doc += `${code}\n`;
     doc += `### Examples\n`;
     return doc;
+  }
+
+  nodeToMarkdown(id) {
+    let str;
+    let leftBracket = "(";
+    let rightBracket = ")";
+    if (id == "audio") {
+      str = id;
+    } else {
+      const type = this.getTypeForID(id);
+      switch (type) {
+        case "SAW-OSC":
+        case "SIN-OSC":
+        case "SQR-OSC":
+        case "TRI-OSC":
+        case "PULSE-OSC":
+        case "LFO":
+          leftBracket = "([";
+          rightBracket = "])";
+          break;
+        case "LPF":
+        case "HPF":
+          leftBracket = "[";
+          rightBracket = "]";
+          break;
+        case "DECAY":
+        case "ADSR":
+          leftBracket = "[/";
+          rightBracket = "\\]";
+          break;
+      }
+      str = `${type}:${id}`;
+    }
+    str = `${id}_id` + leftBracket + `"${str}"` + rightBracket;
+    return str;
+  }
+
+  getTypeForID(id) {
+    for (let i = 0; i < this.#modules.length; i++) {
+      if (this.#modules[i].id === id) {
+        return this.#modules[i].type;
+      }
+    }
+    return null;
   }
 
   // get the long name of the generator
@@ -2839,7 +2886,7 @@ function clamp(value, min, max) {
 // ------------------------------------------------------------
 
 function setFloatControl(label, value) {
-  gui("slider-"+label).value = value;
+  gui("slider-" + label).value = value;
   gui(`label-${label}`).textContent = `${label} [${value.toFixed(2)}]`;
 }
 
@@ -2954,13 +3001,13 @@ class ScopeView {
    * @param {Object} params - parameters for display and sync
    */
   constructor(canvas, params) {
-      this._context = canvas.getContext("2d");
-      this._width = canvas.width;
-      this._height = canvas.height;
-      this._context.fillStyle = (params && params.fillStyle) ? params.fillStyle : "#252525";
-      this._context.lineWidth = (params && params.lineWidth) ? params.lineWidth : 2;
-      this._context.strokeStyle = (params && params.strokeStyle) ? params.strokeStyle : "#e6983f";
-      this._sync = (params && params.sync) ? params.sync : false;
+    this._context = canvas.getContext("2d");
+    this._width = canvas.width;
+    this._height = canvas.height;
+    this._context.fillStyle = (params && params.fillStyle) ? params.fillStyle : "#252525";
+    this._context.lineWidth = (params && params.lineWidth) ? params.lineWidth : 2;
+    this._context.strokeStyle = (params && params.strokeStyle) ? params.strokeStyle : "#e6983f";
+    this._sync = (params && params.sync) ? params.sync : false;
   }
 
   /**
@@ -2968,27 +3015,27 @@ class ScopeView {
    * @param {Uint8Array} data - the array to display
    */
   draw(data) {
-      let st = 0;
-      if (this._sync) {
-          st = this.firstZeroCrossing(data);
-          if (st > this._SYNC_WINDOW) {
-              st = 0;
-          }
+    let st = 0;
+    if (this._sync) {
+      st = this.firstZeroCrossing(data);
+      if (st > this._SYNC_WINDOW) {
+        st = 0;
       }
-      const n = data.length - this._SYNC_WINDOW;
-      const stepSize = this._width / n;
-      this._context.fillRect(0, 0, this._width, this._height);
-      let x = 0;
-      this._context.beginPath();
-      let y = data[st] * this._height / 256;
-      this._context.moveTo(x, y);
-      for (let i = 1; i < n; i++) {
-          y = data[st + i] * this._height / 256;
-          this._context.lineTo(x, y);
-          x += stepSize;
-      }
-      this._context.lineTo(this._width, this._height / 2);
-      this._context.stroke();
+    }
+    const n = data.length - this._SYNC_WINDOW;
+    const stepSize = this._width / n;
+    this._context.fillRect(0, 0, this._width, this._height);
+    let x = 0;
+    this._context.beginPath();
+    let y = data[st] * this._height / 256;
+    this._context.moveTo(x, y);
+    for (let i = 1; i < n; i++) {
+      y = data[st + i] * this._height / 256;
+      this._context.lineTo(x, y);
+      x += stepSize;
+    }
+    this._context.lineTo(this._width, this._height / 2);
+    this._context.stroke();
 
   }
 
@@ -2998,11 +3045,11 @@ class ScopeView {
    * @returns an integer index
    */
   firstZeroCrossing(data) {
-      let idx = 0;
-      while ((idx < (data.length - 2)) && (data[idx] * data[idx + 1] > 0)) {
-          idx++;
-      }
-      return idx;
+    let idx = 0;
+    while ((idx < (data.length - 2)) && (data[idx] * data[idx + 1] > 0)) {
+      idx++;
+    }
+    return idx;
   }
 }
 
@@ -3025,19 +3072,19 @@ class Scope {
    * @param {ScopeView} view - the scope view
    */
   constructor(ctx, view) {
-      this._view = view;
-      this._analyser = ctx.createAnalyser();
-      this._analyser.fftSize = 1024;
-      this._dataArray = new Uint8Array(this._analyser.fftSize);
-      this._rms=0;
-      this._peakRMS=0;
+    this._view = view;
+    this._analyser = ctx.createAnalyser();
+    this._analyser.fftSize = 1024;
+    this._dataArray = new Uint8Array(this._analyser.fftSize);
+    this._rms = 0;
+    this._peakRMS = 0;
   }
 
   /**
    * Get a frame of data to display
    */
   get frame() {
-      return this._dataArray;
+    return this._dataArray;
   }
 
   /**
@@ -3048,17 +3095,17 @@ class Scope {
     for (let i = 0; i < this._dataArray.length; i++) {
       // put into the range [-1,1]
       const x = this._dataArray[i] / 128 - 1;
-      sum += x*x;
+      sum += x * x;
     }
     // return root of the mean of the squares
-    this._rms = Math.sqrt(sum/this._dataArray.length);
-    if (this._rms>this._peakRMS) {
-      this._peakRMS=this._rms;
+    this._rms = Math.sqrt(sum / this._dataArray.length);
+    if (this._rms > this._peakRMS) {
+      this._peakRMS = this._rms;
     }
   }
 
   resetRMS() {
-    this._peakRMS=0;
+    this._peakRMS = 0;
   }
 
   /**
@@ -3067,19 +3114,19 @@ class Scope {
   * frame, must use an arrow function which retains the surrounding context
   */
   draw = () => {
-      this._analyser.getByteTimeDomainData(this._dataArray);
-      this.computeRMS();
-      this._view.draw(this._dataArray);
-      // update the rms information
-      gui("rms-label").textContent="\u00A0\u00A0"+`RMS=${this._rms.toFixed(4)}, Peak RMS=${this._peakRMS.toFixed(4)}`;
-      requestAnimationFrame(this.draw);
+    this._analyser.getByteTimeDomainData(this._dataArray);
+    this.computeRMS();
+    this._view.draw(this._dataArray);
+    // update the rms information
+    gui("rms-label").textContent = "\u00A0\u00A0" + `RMS=${this._rms.toFixed(4)}, Peak RMS=${this._peakRMS.toFixed(4)}`;
+    requestAnimationFrame(this.draw);
   }
 
   /**
    * Get the input node
    */
   get in() {
-      return this._analyser;
+    return this._analyser;
   }
 
 }
