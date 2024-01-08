@@ -2366,22 +2366,15 @@ class BleepGenerator {
     } else {
       const type = this.getTypeForID(id);
       switch (type) {
-        case "SAW-OSC":
-        case "SIN-OSC":
-        case "SQR-OSC":
-        case "TRI-OSC":
-        case "PULSE-OSC":
-        case "LFO":
+        case "SAW-OSC": case "SIN-OSC": case "SQR-OSC": case "TRI-OSC": case "PULSE-OSC": case "LFO":
           leftBracket = "([";
           rightBracket = "])";
           break;
-        case "LPF":
-        case "HPF":
+        case "LPF": case "HPF":
           leftBracket = "[";
           rightBracket = "]";
           break;
-        case "DECAY":
-        case "ADSR":
+        case "DECAY": case "ADSR":
           leftBracket = "[/";
           rightBracket = "\\]";
           break;
