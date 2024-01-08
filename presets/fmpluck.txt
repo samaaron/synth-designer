@@ -1,9 +1,9 @@
-@synth twoopfm
-longname : Two operator FM
+@synth fmpluck
+longname : Plucked or struck sounds using FM
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : Two operator FM with carrier, modulator and feedback
+doc : This patch uses two-operator frequency modulation (FM) to make a range of plucked or struck sounds. It consists of a carrier and modulator, each with exponentially decaying envelopes. Increasing the feedback makes the sound more complex, leading to noise at high feeback levels. Play with the ratio control to get a range of sounds from plucked strings to bells.
 @end
 
 # parameters

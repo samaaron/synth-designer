@@ -2327,7 +2327,7 @@ class BleepGenerator {
   }
 
   getDocumentationAsMarkdownString() {
-    const code="\`\`\`";
+    const code = "\`\`\`";
     var doc = `## ${this.#longname} (${code}${this.#shortname}${code})\n`;
     doc += `${this.#doc}\n\n`;
     doc += `Author: ${this.#author}\n\n`;
@@ -2337,6 +2337,20 @@ class BleepGenerator {
     Object.values(this.#parameters).forEach(param => {
       doc += `| ${code}${param.name}${code} | ${param.min} | ${param.max} | ${param.default} | ${param.doc} |\n`;
     });
+    console.log(this);
+    doc += `### WebAudio graph\n`;
+    doc += `${code}mermaid\n`;
+    doc += `graph TD;`;
+    // modules
+    Object.values(this.#patches).forEach(patch => {
+      doc += `\t${patch.from.id}-->${patch.to.id};\n`;
+    });
+    // envelopes
+    Object.values(this.#envelopes).forEach(patch => {
+      doc += `\t${patch.from.id}-.->${patch.to.id};\n`;
+    });
+    doc += `${code}\n`;
+    doc += `### Examples\n`;
     return doc;
   }
 
