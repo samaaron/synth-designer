@@ -1,5 +1,5 @@
 @synth choir
-longname : choir
+longname : Choir
 type : synth
 author : Guy Brown
 version : 1.0

@@ -1,9 +1,9 @@
-@synth default
-longname : Default patch
+@synth ninth
+longname : Ninth chord
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : A very simple default patch
+doc : Atmospheric chord with added ninth.
 @end
 
 # parameters

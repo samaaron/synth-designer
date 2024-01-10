@@ -1,9 +1,9 @@
 @synth randomblips
-longname : Random Blips
+longname : Random blips
 type : synth
 author : Guy Brown
 version : 1.0
-doc : Simple synth demonstrating the use of random parameter values
+doc : Simple synth demonstrating the use of a random parameter tweak. Each new note gets a random filter cutoff, within a range determined by the randomness parameter.
 @end
 
 @param cutoff

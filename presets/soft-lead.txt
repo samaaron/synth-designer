@@ -1,9 +1,9 @@
-@synth default
-longname : Default patch
+@synth softlead
+longname : Soft lead
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : A very simple default patch
+doc : A soft lead sound
 @end
 
 # parameters

@@ -1,9 +1,9 @@
 @synth dogbass
-longname : TBD bass sound
+longname : Square wave bass sound
 type : synth
 author : Guy Brown
 version : 1.0
-doc : TBD bass sound a bit thinner than a square
+doc : A bass sound using a pulse oscillator, set a bit thinner than a square.
 @end
 
 @param cutoff

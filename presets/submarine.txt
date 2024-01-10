@@ -3,7 +3,7 @@ longname : Submarine
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : Sounds a bit like sonar, noise and resonance
+doc : Sounds a bit like a sonar ping, with noise and resonance
 @end
 
 @param volume
