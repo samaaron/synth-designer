@@ -9,7 +9,8 @@
 
 <body>
 
-  <h2><img width=100px src="bleep-white.png" style="object-fit: contain;"> <span style="vertical-align: 10px;"> Builder<span id="dot" style="color:#e6983f; opacity:0;">&nbsp;&#x25C9;</span></span></h2>
+  <h2><img width=100px src="bleep-white.png" style="object-fit: contain;"> <span style="vertical-align: 10px;">
+      Builder<span id="dot" style="color:#e6983f; opacity:0;">&nbsp;&#x25C9;</span></span></h2>
 
   <p>
     <button class="orangebutton" id="start-button">Start</button>
@@ -28,18 +29,19 @@
   </div>
   </p>
   <table>
-<tr><td>
-  <canvas id="scope-canvas" class="bleep-canvas" width="520" height="40">
-    Your browser does not support the HTML5 canvas tag.
-  </canvas>
-  </td>
-  <td>
-    <div id="rms-label" class="monitor">
-      &nbsp;&nbsp;RMS=0.0000, Peak RMS=0.0000
-  </div>
-</td>
-</tr>
-</table>
+    <tr>
+      <td>
+        <canvas id="scope-canvas" class="bleep-canvas" width="520" height="40">
+          Your browser does not support the HTML5 canvas tag.
+        </canvas>
+      </td>
+      <td>
+        <div id="rms-label" class="monitor">
+          &nbsp;&nbsp;RMS=0.0000, Peak RMS=0.0000
+        </div>
+      </td>
+    </tr>
+  </table>
 
   <table>
     <tr>
@@ -83,8 +85,37 @@
 
   <div class="monitor" id="monitor">idle</div>
 
+  <pre class="mermaid">
+    %%{
+      init: {
+        'theme': 'base',
+        'themeVariables': {
+          'primaryColor': '#4f4f4f',
+          'primaryTextColor': '#ccc',
+          'primaryBorderColor': '#4f4f4f',
+          'lineColor': '#aaaaaa',
+          'secondaryColor': '#006100',
+          'tertiaryColor': '#fff'
+        }
+      }
+    }%%
+    graph LR
+        A --- B
+        B-->C[fa:fa-ban forbidden]
+        B-->D(fa:fa-spinner);
+      </pre>
+
   <script src="builder.js"></script>
   <script src="unpkg.com_ohm-js@17.1.0_dist_ohm.js"></script>
+
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'base',
+    });
+  </script>
 
 </body>
 
