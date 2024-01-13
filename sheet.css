@@ -5,6 +5,11 @@ background-color: #2d2d2d;
 color:#ffffff;
 }
 
+.mermaid {
+  align-items: center;
+width:500px;
+}
+
 .monitor {
   font-size:10pt;
   color:#999999;
@@ -22,6 +27,7 @@ color:#ffffff;
   align-items: center; /* Center elements vertically */
   padding: 3px;
   margin-bottom: 6px;
+  width : 300px;
 }
 
 .slider {

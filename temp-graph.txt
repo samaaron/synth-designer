@@ -1,0 +1,51 @@
+<pre class="mermaid">
+%%{
+init: {
+'theme': 'base',
+'themeVariables': {
+'primaryColor': '#4f4f4f',
+'primaryTextColor': '#ccc',
+'primaryBorderColor': '#4f4f4f',
+'lineColor': '#aaaaaa',
+'secondaryColor': '#006100',
+'tertiaryColor': '#fff'
+}
+}
+}%%
+graph TD;
+vco1_id(["SIN-OSC:vco1"])-->gain1_id("VCA:gain1");
+vco2_id(["SIN-OSC:vco2"])-->gain2_id("VCA:gain2");
+vco3_id(["SIN-OSC:vco3"])-->gain3_id("VCA:gain3");
+vco4_id(["SIN-OSC:vco4"])-->gain4_id("VCA:gain4");
+vco5_id(["SIN-OSC:vco5"])-->gain5_id("VCA:gain5");
+gain1_id("VCA:gain1")-->mix_id("VCA:mix");
+gain2_id("VCA:gain2")-->mix_id("VCA:mix");
+gain3_id("VCA:gain3")-->mix_id("VCA:mix");
+gain4_id("VCA:gain4")-->mix_id("VCA:mix");
+gain5_id("VCA:gain5")-->mix_id("VCA:mix");
+vco4_id(["SIN-OSC:vco4"])-->percgain1_id("VCA:percgain1");
+vco5_id(["SIN-OSC:vco5"])-->percgain2_id("VCA:percgain2");
+percgain1_id("VCA:percgain1")-->percmix_id("VCA:percmix");
+percgain2_id("VCA:percgain2")-->percmix_id("VCA:percmix");
+percmix_id("VCA:percmix")-->mix_id("VCA:mix");
+mix_id("VCA:mix")-->distort_id("SHAPER:distort");
+distort_id("SHAPER:distort")-->lowpass_id["LPF:lowpass"];
+distort_id("SHAPER:distort")-->highpass_id["HPF:highpass"];
+lowpass_id["LPF:lowpass"]-->lowlag_id("DELAY:lowlag");
+highpass_id["HPF:highpass"]-->highlag_id("DELAY:highlag");
+highlfo_id(["LFO:highlfo"])-->highmod_id("VCA:highmod");
+highmod_id("VCA:highmod")-->highlag_id("DELAY:highlag");
+lowlfo_id(["LFO:lowlfo"])-->lowmod_id("VCA:lowmod");
+lowmod_id("VCA:lowmod")-->lowlag_id("DELAY:lowlag");
+highlfo_id(["LFO:highlfo"])-->highspread_id("VCA:highspread");
+highspread_id("VCA:highspread")-->highpan_id("PAN:highpan");
+lowlfo_id(["LFO:lowlfo"])-->lowspread_id("VCA:lowspread");
+lowspread_id("VCA:lowspread")-->lowpan_id("PAN:lowpan");
+lowlag_id("DELAY:lowlag")-->lowpan_id("PAN:lowpan");
+highlag_id("DELAY:highlag")-->highpan_id("PAN:highpan");
+lowpan_id("PAN:lowpan")-->stereomix_id("VCA:stereomix");
+highpan_id("PAN:highpan")-->stereomix_id("VCA:stereomix");
+stereomix_id("VCA:stereomix")-->audio_id("audio");
+percenv_id[/"ADSR:percenv"\]-.->percmix_id("VCA:percmix");
+env_id[/"ADSR:env"\]-.->mix_id("VCA:mix");
+</pre>

@@ -5,12 +5,18 @@
   <meta charset="UTF-8">
   <link rel="stylesheet" href="sheet.css">
   <title>Synth Builder</title>
+  <!-- <script type="module">
+      <script src="https://unpkg.com/mermaid@7.1.0/dist/mermaid.min.js"></script>
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+      startOnLoad: true,
+      securityLevel: 'loose',
+      theme: 'base',
+    }); -->
+  </script>
 </head>
 
 <body>
-
-  <h2><img width=100px src="bleep-white.png" style="object-fit: contain;"> <span style="vertical-align: 10px;">
-      Builder<span id="dot" style="color:#e6983f; opacity:0;">&nbsp;&#x25C9;</span></span></h2>
 
   <p>
     <button class="orangebutton" id="start-button">Start</button>
@@ -21,12 +27,12 @@
     <button class="greybutton" id="clip-button">Copy Params to Clipboard</button>
     <button class="greybutton" id="docs-button">Copy Docs to Clipboard</button>
     <span id="midi-label">&nbsp;Midi input:&nbsp;</span><select class="midiinput" id="midi-input"></select>
+    <span id="dot" style="color:#e6983f; opacity:0;">&nbsp;&#x25C9;</span>
   </p>
 
   <p>
-  <div id="file-label">
-    Current file: none
-  </div>
+  <div id="file-label">Current file: none</div>
+  <div class="monitor" id="monitor">idle</div>
   </p>
   <table>
     <tr>
@@ -46,10 +52,9 @@
   <table>
     <tr>
       <td>
-        <textarea class="textarea" rows=29 cols=60 id="synth-spec"></textarea>
-      </td>
-      <td>
-        <textarea readonly class="textarea" rows=29 cols=30 id="parse-errors"></textarea>
+        <textarea class="textarea" rows=29 cols=60 id="synth-spec"></textarea><br>
+        <textarea readonly class="textarea" rows=4 cols=60 id="parse-errors"></textarea>
+
       </td>
       <td valign="top">
         <div class="slider-container">
@@ -78,44 +83,19 @@
           </tr>
         </table>
       </td>
+      <td width>
+        <div id="mermaid-graph"></div>
+
+      </td>
     </tr>
   </table>
 
   </div>
 
-  <div class="monitor" id="monitor">idle</div>
 
-  <pre class="mermaid">
-    %%{
-      init: {
-        'theme': 'base',
-        'themeVariables': {
-          'primaryColor': '#4f4f4f',
-          'primaryTextColor': '#ccc',
-          'primaryBorderColor': '#4f4f4f',
-          'lineColor': '#aaaaaa',
-          'secondaryColor': '#006100',
-          'tertiaryColor': '#fff'
-        }
-      }
-    }%%
-    graph LR
-        A --- B
-        B-->C[fa:fa-ban forbidden]
-        B-->D(fa:fa-spinner);
-      </pre>
-
-  <script src="builder.js"></script>
   <script src="unpkg.com_ohm-js@17.1.0_dist_ohm.js"></script>
 
-  <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({
-      startOnLoad: true,
-      securityLevel: 'loose',
-      theme: 'base',
-    });
-  </script>
+  <script src="builder.js" type="module"></script>
 
 </body>
 
