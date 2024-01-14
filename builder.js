@@ -928,90 +928,6 @@ moduleContext.Amplifier = class {
 
 }
 
-// ------------------------------------------------------------
-// Wavefolder
-// ------------------------------------------------------------
-
-moduleContext.Wavefolder = class {
-
-  #folder
-  #context
-
-  constructor(ctx) {
-    console.log("making a wavefolder");
-    this.#context = ctx;
-    this.#folder = new AudioWorkletNode(ctx, "wave-folder");
-    this.threshold = 0.5;
-    this.symmetry = 0;
-    this.gain = 1;
-    this.stages = 1;
-    this.level = 1;
-    monitor.retain("wavefolder");
-  }
-
-  get in() {
-    return this.#folder;
-  }
-
-  get out() {
-    return this.#folder;
-  }
-
-  set threshold(t) {
-    this.#folder.parameters.get("threshold").value = t;
-  }
-
-  set symmetry(s) {
-    this.#folder.parameters.get("symmetry").value = s;
-  }
-
-  set level(v) {
-    this.#folder.parameters.get("level").value = v;
-  }
-
-  get levelCV() {
-    return this.#folder.parameters.get("level");
-  }
-
-  get gainCV() {
-    return this.#folder.parameters.get("gain");
-  }
-
-  get symmetryCV() {
-    return this.#folder.parameters.get("symmetry");
-  }
-
-  get thresholdCV() {
-    return this.#folder.parameters.get("threshold");
-  }
-
-  set gain(g) {
-    this.#folder.parameters.get("gain").value = g;
-  }
-
-  set stages(s) {
-    this.#folder.parameters.get("stages").value = s;
-  }
-
-  stop(tim) {
-    if (VERBOSE) console.log("stopping Wavefolder");
-    let stopTime = tim - this.#context.currentTime;
-    if (stopTime < 0) stopTime = 0;
-    setTimeout(() => {
-      if (VERBOSE) console.log("disconnecting Wavefolder");
-      this.#folder.port.postMessage({
-        type: "setBoolean",
-        value: false
-      });
-      this.#folder.disconnect();
-      this.#folder = null;
-      this.#context = null;
-      monitor.release("wavefolder");
-    }, (stopTime + 0.1) * 1000);
-  }
-
-}
-
 // mapping between grammar names for modules and class names
 
 const moduleClasses = {
@@ -1030,8 +946,7 @@ const moduleClasses = {
   "ADSR": "Envelope",
   "DECAY": "Decay",
   "AUDIO": "Audio",
-  "DELAY": "Delay",
-  "FOLDER": "Wavefolder"
+  "DELAY": "Delay"
 };
 
 // valid tweaks, used for error checking
@@ -1115,8 +1030,7 @@ class Monitor {
       delay: 0,
       noise: 0,
       shaper: 0,
-      audio: 0,
-      wavefolder: 0,
+      audio: 0
     }
   }
 
@@ -1144,8 +1058,6 @@ class Monitor {
 // ------------------------------------------------------------
 
 function init() {
-  console.log("HERE");
-
   mermaid.initialize({
     startOnLoad: true,
     theme: 'base', 
@@ -1181,7 +1093,6 @@ function setDefaultValues() {
 // ------------------------------------------------------------
 
 function makeSlider(containerName, id, docstring, min, max, val, step) {
-  console.log(containerName);
   // get the root container
   const container = document.getElementById(containerName);
   // make the slider container
@@ -1237,10 +1148,7 @@ function makeImmediateTweak(param, value) {
 // ------------------------------------------------------------
 
 function removeAllSliders() {
-  // FIXED FOR SINGLE COLUMN
-  console.log("REMOVE_ALL_SLIDERS");
   for (let row = 1; row <= 2; row++) {
-    console.log(`container${row}`);
     const container = document.getElementById(`container${row}`);
     while (container.firstChild)
       container.removeChild(container.firstChild);
@@ -1304,7 +1212,6 @@ function addListenersToGUI() {
   // start button
   gui("start-button").onclick = async () => {
     context = new AudioContext();
-    await context.audioWorklet.addModule("wave-folder.js");
     disableGUI(false);
     connectEffects(context);
     initialiseEffects();
@@ -1318,7 +1225,7 @@ function addListenersToGUI() {
 
   // pitch slider
   gui("slider-pitch").addEventListener("input", function () {
-    gui("pitch-label").textContent = `pitch [${midiToNoteName(parseInt(this.value))}]`;
+    gui("label-pitch").textContent = `pitch [${midiToNoteName(parseInt(this.value))}]`;
   });
 
   // amplitude slider
@@ -2936,7 +2843,6 @@ function unityGain(ctx) {
 // ------------------------------------------------------------
 
 function midiToNoteName(m) {
-  // ISSUE : note name is not updated in GUI @guyjbrown
   const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   return noteNames[m % 12] + (Math.floor(m / 12) - 1);
 }
