@@ -5,6 +5,11 @@ background-color: #2d2d2d;
 color:#ffffff;
 }
 
+.mermaid {
+  align-items: center;
+width:500px;
+}
+
 .monitor {
   font-size:10pt;
   color:#999999;
@@ -22,6 +27,7 @@ color:#ffffff;
   align-items: center; /* Center elements vertically */
   padding: 3px;
   margin-bottom: 6px;
+  width : 300px;
 }
 
 .slider {
@@ -162,3 +168,39 @@ textarea:focus {
   opacity: 1
 }
 
+
+
+.body-container {
+  display: flex;
+}
+
+.column {
+  border: 0px; 
+  padding: 0px;
+  box-sizing: border-box;
+}
+
+.fixed-width {
+  width: 528px; /* Adjust as needed */
+  flex-shrink: 0; /* Prevents the column from shrinking */
+  position : relative;
+  left:5px;
+  margin-right: 10px;
+}
+
+.content-width {
+  white-space: nowrap; /* Prevents content from wrapping */
+}
+
+.remaining-width {
+  flex-grow: 1; /* Takes up the remaining space */
+  justify-content: center; /* Center horizontally */
+  align-items: top; 
+  height: 540px; /* Set a height for the element */
+}
+
+.mermid-container {
+  border:0px;
+  padding:0px;
+  max-height: 540;
+}

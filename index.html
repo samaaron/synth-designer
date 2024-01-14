@@ -9,8 +9,6 @@
 
 <body>
 
-  <h2><img width=100px src="bleep-white.png" style="object-fit: contain;"> <span style="vertical-align: 10px;"> Builder<span id="dot" style="color:#e6983f; opacity:0;">&nbsp;&#x25C9;</span></span></h2>
-
   <p>
     <button class="orangebutton" id="start-button">Start</button>
     <button class="greybutton" id="load-button">Load</button>
@@ -20,71 +18,77 @@
     <button class="greybutton" id="clip-button">Copy Params to Clipboard</button>
     <button class="greybutton" id="docs-button">Copy Docs to Clipboard</button>
     <span id="midi-label">&nbsp;Midi input:&nbsp;</span><select class="midiinput" id="midi-input"></select>
+    <span id="dot" style="color:#e6983f; opacity:0;">&nbsp;&#x25C9;</span>
   </p>
 
   <p>
-  <div id="file-label">
-    Current file: none
-  </div>
+  <div id="file-label">Current file: none</div>
+  <div class="monitor" id="monitor">idle</div>
   </p>
-  <table>
-<tr><td>
-  <canvas id="scope-canvas" class="bleep-canvas" width="520" height="40">
-    Your browser does not support the HTML5 canvas tag.
-  </canvas>
-  </td>
-  <td>
-    <div id="rms-label" class="monitor">
-      &nbsp;&nbsp;RMS=0.0000, Peak RMS=0.0000
-  </div>
-</td>
-</tr>
-</table>
 
-  <table>
+  <table border="0px" padding="0px">
     <tr>
       <td>
-        <textarea class="textarea" rows=29 cols=60 id="synth-spec"></textarea>
+        <canvas id="scope-canvas" class="bleep-canvas" width="520" height="40">
+          Your browser does not support the HTML5 canvas tag.
+        </canvas>
       </td>
       <td>
-        <textarea readonly class="textarea" rows=29 cols=30 id="parse-errors"></textarea>
-      </td>
-      <td valign="top">
-        <div class="slider-container">
-          <input class="slider" type="range" id="slider-pitch" min="24" max="108" value="60" step="1">
-          <label id="label-pitch" for="slider-pitch">pitch [C4]</label>
+        <div id="rms-label" class="monitor">
+          &nbsp;&nbsp;RMS=0.0000, Peak RMS=0.0000
         </div>
-        <div class="slider-container">
-          <input class="slider" type="range" id="slider-level" min="0" max="1" value="1" step="0.01">
-          <label id="label-level" for="slider-level">level [1]</label>
-        </div>
-
-        <div class="slider-container">
-          <input class="slider" type="range" id="slider-reverb" min="0" max="1" value="0.1" step="0.01">
-          <label id="label-reverb" for="slider-reverb">reverb [1]</label>
-        </div>
-
-        <button class="playbutton" id="play-button">Play</button>
-        <table>
-          <tr>
-            <td valign="top">
-              <div id="container1"></div>
-            </td>
-            <td valign="top">
-              <div id="container2"></div>
-            </td>
-          </tr>
-        </table>
       </td>
     </tr>
   </table>
 
+  <div class="body-container">
+    <div class="column fixed-width">
+      <textarea class="textarea" rows=29 id="synth-spec"></textarea><br>
+      <textarea readonly class="textarea" rows=4 id="parse-errors"></textarea>
+    </div>
+    <div class="column content-width">
+
+      <table>
+        <tr>
+          <td valign="top">
+            <div class="slider-container">
+              <input class="slider" type="range" id="slider-pitch" min="24" max="108" value="60" step="1">
+              <label id="label-pitch" for="slider-pitch">pitch [C4]</label>
+            </div>
+            <div class="slider-container">
+              <input class="slider" type="range" id="slider-level" min="0" max="1" value="1" step="0.01">
+              <label id="label-level" for="slider-level">level [1]</label>
+            </div>
+
+            <div class="slider-container">
+              <input class="slider" type="range" id="slider-reverb" min="0" max="1" value="0.1" step="0.01">
+              <label id="label-reverb" for="slider-reverb">reverb [1]</label>
+            </div>
+
+            <button class="playbutton" id="play-button">Play</button>
+            <table>
+              <tr>
+                <td valign="top">
+                  <div id="container1"></div>
+                </td>
+                <td valign="top">
+                  <div id="container2"></div>
+                </td>
+              </tr>
+            </table>
+        </tr>
+      </table>
+    </div>
+
+    <div class="column remaining-width">
+      <div id="mermaid-graph" class="mermaid-container"></div>
+    </div>
+
   </div>
 
-  <div class="monitor" id="monitor">idle</div>
-
-  <script src="builder.js"></script>
   <script src="unpkg.com_ohm-js@17.1.0_dist_ohm.js"></script>
+
+  <script src="builder.js" type="module"></script>
 
 </body>
 

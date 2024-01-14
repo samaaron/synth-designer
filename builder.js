@@ -1,3 +1,5 @@
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
 // TODO add crossfade node
 // TODO the noise node is really inefficient - generates 2 seconds of noise for every note
 // TODO audio node is no longer used, remove it
@@ -25,6 +27,10 @@ const VERBOSE = false;
 
 const MIDI_NOTE_ON = 0x90;
 const MIDI_NOTE_OFF = 0x80;
+
+// file handle
+
+let fileHandle;
 
 // midi context
 
@@ -63,471 +69,11 @@ let generator = null;
 let context = null;
 let moduleContext = {};
 
-// mapping between grammar names for modules and class names
-
-const moduleClasses = {
-  "SAW-OSC": "SawOsc",
-  "SIN-OSC": "SinOsc",
-  "TRI-OSC": "TriOsc",
-  "SQR-OSC": "SquareOsc",
-  "PULSE-OSC": "PulseOsc",
-  "LFO": "LFO",
-  "PAN": "Panner",
-  "NOISE": "Noise",
-  "LPF": "LowpassFilter",
-  "HPF": "HighpassFilter",
-  "VCA": "Amplifier",
-  "SHAPER": "Waveshaper",
-  "ADSR": "Envelope",
-  "DECAY": "Decay",
-  "AUDIO": "Audio",
-  "DELAY": "Delay",
-  "FOLDER": "Wavefolder"
-};
-
-// valid tweaks, used for error checking
-
-const validTweaks = {
-  "SAW-OSC": ["detune", "pitch"],
-  "SIN-OSC": ["detune", "pitch"],
-  "SQR-OSC": ["detune", "pitch"],
-  "TRI-OSC": ["detune", "pitch"],
-  "PULSE-OSC": ["detune", "pitch", "pulsewidth"],
-  "LFO": ["pitch", "phase"],
-  "LPF": ["cutoff", "resonance"],
-  "HPF": ["cutoff", "resonance"],
-  "VCA": ["level"],
-  "SHAPER": ["fuzz"],
-  "ADSR": ["attack", "decay", "sustain", "release", "level"],
-  "DECAY": ["attack", "decay", "level"],
-  "PAN": ["angle"],
-  "DELAY": ["lag"],
-  "FOLDER": ["threshold", "symmetry", "gain", "level", "stages"]
-};
-
-// valid patch inputs, used for error checking
-
-const validPatchInputs = {
-  "AUDIO": ["in"],
-  "SAW-OSC": ["pitchCV"],
-  "SIN-OSC": ["pitchCV"],
-  "SQR-OSC": ["pitchCV"],
-  "TRI-OSC": ["pitchCV"],
-  "PULSE-OSC": ["pitchCV", "pulsewidthCV"],
-  "LPF": ["in", "cutoffCV"],
-  "HPF": ["in", "cutoffCV"],
-  "VCA": ["in", "levelCV"],
-  "SHAPER": ["in"],
-  "PAN": ["in", "angleCV"],
-  "DELAY": ["in", "lagCV"],
-  "FOLDER": ["in", "thresholdCV", "symmetryCV", "levelCV", "gainCV"]
-};
-
-// valid patch outputs - pointless at the moment but in future modules may have more than one output
-
-const validPatchOutputs = {
-  "SAW-OSC": ["out"],
-  "SIN-OSC": ["out"],
-  "SQR-OSC": ["out"],
-  "TRI-OSC": ["out"],
-  "PULSE-OSC": ["out"],
-  "LFO": ["out"],
-  "NOISE": ["out"],
-  "LPF": ["out"],
-  "HPF": ["out"],
-  "VCA": ["out"],
-  "SHAPER": ["out"],
-  "ADSR": ["out"],
-  "DECAY": ["out"],
-  "PAN": ["out"],
-  "DELAY": ["out"],
-  "FOLDER": ["out"]
-};
-
-// ------------------------------------------------------------
-// monitor structure
-// ------------------------------------------------------------
-
-class Monitor {
-
-  #numNotes
-  #fields
-
-  constructor() {
-    this.#numNotes = 0;
-    this.#fields = {
-      note: 0,
-      osc: 0,
-      amp: 0,
-      lowpass: 0,
-      highpass: 0,
-      lfo: 0,
-      panner: 0,
-      delay: 0,
-      noise: 0,
-      shaper: 0,
-      audio: 0,
-      wavefolder: 0,
-    }
-  }
-
-  retain(f) {
-    this.#fields[f]++;
-    this.display();
-  }
-
-  release(f) {
-    this.#fields[f]--;
-    this.display();
-  }
-
-  display() {
-    let str = "";
-    for (const key in this.#fields) {
-      str += `${key} ${this.#fields[key]} : `;
-    }
-    gui("monitor").textContent = str;
-  }
-}
-
-// ------------------------------------------------------------
-// initialise the button callbacks etc
-// ------------------------------------------------------------
-
-function init() {
-  disableGUI(true);
-  addListenersToGUI();
-  setupMidi();
-  makeGrammar();
-  setDefaultValues();
-  monitor = new Monitor();
-}
-
-// ------------------------------------------------------------
-// set default parameters
-// ------------------------------------------------------------
-
-function setDefaultValues() {
-  setFloatControl("level", 0.8);
-  setFloatControl("reverb", 0.1);
-}
-
-// ------------------------------------------------------------
-// dynamically add an HTML slider to the page
-// ------------------------------------------------------------
-
-function makeSlider(containerName, id, docstring, min, max, val, step) {
-  // get the root container
-  const container = document.getElementById(containerName);
-  // make the slider container
-  const sliderContainer = document.createElement("div");
-  sliderContainer.className = "slider-container";
-  sliderContainer.id = "param-" + id;
-  // make the slider
-  const slider = document.createElement("input");
-  slider.className = "slider";
-  slider.type = "range";
-  slider.id = "slider-" + id;
-  slider.min = min;
-  slider.max = max;
-  slider.step = step;
-  slider.value = val;
-  // doc string
-  if (SHOW_DOC_STRINGS) {
-    const doc = document.createElement("label");
-    doc.className = "docstring";
-    doc.id = "doc-" + id;
-    doc.textContent = docstring;
-    container.appendChild(doc);
-  }
-  // label
-  const label = document.createElement("label");
-  label.id = "label-" + id;
-  label.setAttribute("for", "slider-" + id);
-  label.textContent = `${id} [${val}]`;
-  // add a callback to the slider
-  slider.addEventListener("input", function () {
-    let val = parseFloat(this.value);
-    gui(label.id).textContent = `${id} [${val}]`;
-    makeImmediateTweak(id, val);
-  });
-  // add to the document
-  sliderContainer.appendChild(slider);
-  sliderContainer.appendChild(label);
-  container.appendChild(sliderContainer);
-}
-
-// ------------------------------------------------------------
-// tweak a parameter in real time, changing it immediately
-// ------------------------------------------------------------
-
-function makeImmediateTweak(param, value) {
-  playerForNote.forEach((player, note) => {
-    player.applyTweakNow(param, value);
-  });
-}
-
-// ------------------------------------------------------------
-// remove all the sliders, if we created any previously
-// ------------------------------------------------------------
-
-function removeAllSliders() {
-  for (let row = 1; row <= 2; row++) {
-    const container = document.getElementById(`container${row}`);
-    while (container.firstChild)
-      container.removeChild(container.firstChild);
-  }
-}
-
-// ------------------------------------------------------------
-// add event listeners to GUI controls
-// ------------------------------------------------------------
-
-function addListenersToGUI() {
-
-  // listen for change events in the text area and indicate if the file is edited
-
-  gui("synth-spec").addEventListener("input", () => {
-    if (gui("synth-spec").value.length > 0) {
-      parseGeneratorSpec();
-      if (!wasEdited) {
-        gui("file-label").textContent += "*";
-        wasEdited = true;
-      }
-    }
-  });
-
-  // set the current file name to none
-  gui("file-label").textContent = "Current file: none";
-
-  // load button 
-  gui("load-button").onclick = async () => { await loadFile(); };
-
-  // save button 
-  gui("save-button").onclick = async () => { await saveFile(); };
-
-  // save as button 
-  gui("save-as-button").onclick = async () => { await saveAsFile(); };
-
-  // export button 
-  gui("export-button").onclick = async () => { await exportAsJSON(); };
-
-  // copy parameters to clipboard button 
-  gui("clip-button").onclick = () => { copyParamsToClipboard(); };
-
-  // copy docs to clipboard button 
-  gui("docs-button").onclick = () => { copyDocsToClipboard(); };
-
-  // play button 
-  gui("play-button").onmousedown = () => {
-    const midiNoteNumber = getIntParam("slider-pitch");
-    const velocity = getFloatParam("slider-level");
-    playNote(midiNoteNumber, velocity);
-  };
-  gui("play-button").onmouseup = () => {
-    const midiNoteNumber = getIntParam("slider-pitch");
-    stopNote(midiNoteNumber);
-  };
-  gui("play-button").onmouseout = () => {
-    const midiNoteNumber = getIntParam("slider-pitch");
-    stopNote(midiNoteNumber);
-  };
-
-  // start button
-  gui("start-button").onclick = async () => {
-    context = new AudioContext();
-    await context.audioWorklet.addModule("wave-folder.js");
-    disableGUI(false);
-    connectEffects(context);
-    initialiseEffects();
-    let view = new ScopeView(gui("scope-canvas"), {
-      lineWidth: 2,
-      sync: true
-    });
-    scope = new Scope(context, view);
-    scope.draw();
-  }
-
-  // pitch slider
-  gui("slider-pitch").addEventListener("input", function () {
-    gui("pitch-label").textContent = `pitch [${midiToNoteName(parseInt(this.value))}]`;
-  });
-
-  // amplitude slider
-  gui("slider-level").addEventListener("input", function () {
-    setFloatControl("level", parseFloat(this.value));
-  });
-
-  // reverb slider
-  gui("slider-reverb").addEventListener("input", function () {
-    setReverb(parseFloat(this.value));
-  });
-
-  // midi input selector
-  gui("midi-input").addEventListener("change", () => {
-    midiInputEnabled = false;
-    const index = parseInt(gui("midi-input").value);
-    if (midi != null && index > 0) {
-      let selectedName = midiInputs[index - 1].name;
-      // note that we need to set all callbacks since we might change the midi input while running
-      // and then the previous callback would persist
-      for (let val of midi.inputs.values()) {
-        if (val.name === selectedName)
-          val.onmidimessage = onMIDIMessage;
-        else
-          val.onmidimessage = undefined;
-      }
-      midiInputEnabled = true;
-    }
-  });
-
-}
-
-// ------------------------------------------------------------
-// copy parameters to clipboard
-// ------------------------------------------------------------
-
-function copyParamsToClipboard() {
-  if (generator != undefined && generator.isValid) {
-    const params = getParametersForGenerator(generator);
-    const text = getParameterListAsString(params);
-    navigator.clipboard.writeText(text).then(() => {
-      console.log(text);
-    }, (error) => {
-      console.error("Failed to copy text: ", error);
-    });
-  }
-}
-
-// ------------------------------------------------------------
-// copy docs to clipboard
-// ------------------------------------------------------------
-
-function copyDocsToClipboard() {
-  if (generator != undefined && generator.isValid) {
-    const text = generator.getDocumentationAsMarkdownString();
-    navigator.clipboard.writeText(text).then(() => {
-      console.log(text);
-    }, (error) => {
-      console.error("Failed to copy text: ", error);
-    });
-  }
-}
-
-function getParameterListAsString(params) {
-  let str = "use_defaults({";
-  str += Object.entries(params).map(([key, value]) => `${key}=${value}`).join(',');
-  str += "})";
-  return str;
-}
-
-// ------------------------------------------------------------
-// disable buttons
-// ------------------------------------------------------------
-
-function disableGUI(b) {
-  gui("start-button").disabled = !b;
-  gui("load-button").disabled = b;
-  gui("save-button").disabled = b;
-  gui("save-as-button").disabled = b;
-  gui("export-button").disabled = b;
-  gui("clip-button").disabled = b;
-  gui("docs-button").disabled = b;
-  gui("play-button").disabled = b;
-  gui("midi-label").disabled = b;
-  gui("midi-input").disabled = b;
-}
-
-// ------------------------------------------------------------
-// Set up the MIDI system and find possible input devices
-// ------------------------------------------------------------
-
-function setupMidi() {
-
-  navigator.requestMIDIAccess({ "sysex": "false" }).then((access) => {
-    // Get lists of available MIDI controllers
-    // might need to cache access
-    midi = access;
-    midiInputs = Array.from(access.inputs.values());
-
-    // get the html element for the list of midi inputs
-    const inputSelector = document.getElementById("midi-input");
-
-    // first element in the list is no input
-    let option = document.createElement("option");
-    option.text = "None";
-    option.value = 0;
-    inputSelector.appendChild(option);
-
-    // set the options for the remaining html elements
-    let index = 1;
-    for (let val of midiInputs) {
-      option = document.createElement("option");
-      option.text = val.name;
-      option.value = index;
-      inputSelector.appendChild(option);
-      index++;
-    };
-
-  });
-}
-
-// ------------------------------------------------------------
-// callback for when a MIDI event is received
-// ------------------------------------------------------------
-
-function onMIDIMessage(message) {
-  // mask the lowest nibble since we don't care about which MIDI channel we receive from
-  const op = message.data[0] & 0xf0;
-  // a note on is only a note on if it has a non-zero velocity
-  if (op === MIDI_NOTE_ON && message.data[2] != 0) {
-    // blip the orange dot
-    blipDot();
-    // note number
-    const midiNoteNumber = message.data[1];
-    // convert velocity to the range [0,1]
-    const velocity = message.data[2] / 127.0;
-    // play the note
-    playNote(midiNoteNumber, velocity);
-  }
-  // a note off is a note off, or a note on with zero velocity
-  if (op === MIDI_NOTE_OFF || (op === MIDI_NOTE_ON && message.data[2] === 0)) {
-    const midiNoteNumber = message.data[1];
-    stopNote(midiNoteNumber);
-  }
-  // midi controller
-  if (op === 0xB0) {
-    const controllerNumber = message.data[1];
-    const controllerValue = message.data[2] / 127;
-    // console.log(`CC ${controllerNumber} ${controllerValue}`);
-    let param = controlMap.get(controllerNumber);
-    if (param != undefined) {
-      // console.log(param);
-      let el = gui("slider-" + param);
-      let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * controllerValue;
-      //console.log(value);
-      setFloatControl(param, value);
-    }
-
-  }
-}
-
-// ------------------------------------------------------------
-// Blip the orange dot for a short time
-// ------------------------------------------------------------
-
-function blipDot() {
-  midiDot.style.opacity = 1;
-  setTimeout(() => {
-    midiDot.style.opacity = 0;
-  }, DOT_DURATION_MS);
-}
-
 // ------------------------------------------------------------
 // Prototype oscillator class
 // ------------------------------------------------------------
 
-Oscillator = class {
+class Oscillator {
 
   osc
   context
@@ -1466,45 +1012,485 @@ moduleContext.Wavefolder = class {
 
 }
 
+// mapping between grammar names for modules and class names
+
+const moduleClasses = {
+  "SAW-OSC": "SawOsc",
+  "SIN-OSC": "SinOsc",
+  "TRI-OSC": "TriOsc",
+  "SQR-OSC": "SquareOsc",
+  "PULSE-OSC": "PulseOsc",
+  "LFO": "LFO",
+  "PAN": "Panner",
+  "NOISE": "Noise",
+  "LPF": "LowpassFilter",
+  "HPF": "HighpassFilter",
+  "VCA": "Amplifier",
+  "SHAPER": "Waveshaper",
+  "ADSR": "Envelope",
+  "DECAY": "Decay",
+  "AUDIO": "Audio",
+  "DELAY": "Delay",
+  "FOLDER": "Wavefolder"
+};
+
+// valid tweaks, used for error checking
+
+const validTweaks = {
+  "SAW-OSC": ["detune", "pitch"],
+  "SIN-OSC": ["detune", "pitch"],
+  "SQR-OSC": ["detune", "pitch"],
+  "TRI-OSC": ["detune", "pitch"],
+  "PULSE-OSC": ["detune", "pitch", "pulsewidth"],
+  "LFO": ["pitch", "phase"],
+  "LPF": ["cutoff", "resonance"],
+  "HPF": ["cutoff", "resonance"],
+  "VCA": ["level"],
+  "SHAPER": ["fuzz"],
+  "ADSR": ["attack", "decay", "sustain", "release", "level"],
+  "DECAY": ["attack", "decay", "level"],
+  "PAN": ["angle"],
+  "DELAY": ["lag"],
+  "FOLDER": ["threshold", "symmetry", "gain", "level", "stages"]
+};
+
+// valid patch inputs, used for error checking
+
+const validPatchInputs = {
+  "AUDIO": ["in"],
+  "SAW-OSC": ["pitchCV"],
+  "SIN-OSC": ["pitchCV"],
+  "SQR-OSC": ["pitchCV"],
+  "TRI-OSC": ["pitchCV"],
+  "PULSE-OSC": ["pitchCV", "pulsewidthCV"],
+  "LPF": ["in", "cutoffCV"],
+  "HPF": ["in", "cutoffCV"],
+  "VCA": ["in", "levelCV"],
+  "SHAPER": ["in"],
+  "PAN": ["in", "angleCV"],
+  "DELAY": ["in", "lagCV"],
+  "FOLDER": ["in", "thresholdCV", "symmetryCV", "levelCV", "gainCV"]
+};
+
+// valid patch outputs - pointless at the moment but in future modules may have more than one output
+
+const validPatchOutputs = {
+  "SAW-OSC": ["out"],
+  "SIN-OSC": ["out"],
+  "SQR-OSC": ["out"],
+  "TRI-OSC": ["out"],
+  "PULSE-OSC": ["out"],
+  "LFO": ["out"],
+  "NOISE": ["out"],
+  "LPF": ["out"],
+  "HPF": ["out"],
+  "VCA": ["out"],
+  "SHAPER": ["out"],
+  "ADSR": ["out"],
+  "DECAY": ["out"],
+  "PAN": ["out"],
+  "DELAY": ["out"],
+  "FOLDER": ["out"]
+};
+
 // ------------------------------------------------------------
-// Audio class - the endpoint for audio connections
+// monitor structure
 // ------------------------------------------------------------
 
-/*
-moduleContext.Audio = class {
+class Monitor {
 
-  #gain
-  #context
+  #numNotes
+  #fields
 
-  constructor(ctx) {
-    this.#context = ctx;
-    this.#gain = unityGain(ctx);
-    monitor.retain("audio");
+  constructor() {
+    this.#numNotes = 0;
+    this.#fields = {
+      note: 0,
+      osc: 0,
+      amp: 0,
+      lowpass: 0,
+      highpass: 0,
+      lfo: 0,
+      panner: 0,
+      delay: 0,
+      noise: 0,
+      shaper: 0,
+      audio: 0,
+      wavefolder: 0,
+    }
   }
 
-  get in() {
-    return this.#gain;
+  retain(f) {
+    this.#fields[f]++;
+    this.display();
   }
 
-  get out() {
-    return this.#gain;
+  release(f) {
+    this.#fields[f]--;
+    this.display();
   }
 
-  stop(tim) {
-    if (VERBOSE) console.log("stopping Audio");
-    let stopTime = tim - this.#context.currentTime;
-    if (stopTime < 0) stopTime = 0;
-    setTimeout(() => {
-      if (VERBOSE) console.log("disconnecting Audio");
-      this.#gain.disconnect();
-      this.#gain = null;
-      this.#context = null;
-      monitor.release("audio");
-    }, (stopTime+0.1) * 1000);
+  display() {
+    let str = "";
+    for (const key in this.#fields) {
+      str += `${key} ${this.#fields[key]} : `;
+    }
+    gui("monitor").textContent = str;
   }
+}
+
+// ------------------------------------------------------------
+// initialise the button callbacks etc
+// ------------------------------------------------------------
+
+function init() {
+  console.log("HERE");
+
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base', 
+    themeVariables: {
+      "primaryColor": "#4f4f4f",
+      "primaryTextColor": "#ccc",
+      "primaryBorderColor": "#4f4f4f",
+      "lineColor": "#aaaaaa",
+      "secondaryColor": "#006100",
+      "tertiaryColor": "#fff"
+    }
+  });
+  
+  disableGUI(true);
+  addListenersToGUI();
+  setupMidi();
+  makeGrammar();
+  setDefaultValues();
+  monitor = new Monitor();
+}
+
+// ------------------------------------------------------------
+// set default parameters
+// ------------------------------------------------------------
+
+function setDefaultValues() {
+  setFloatControl("level", 0.8);
+  setFloatControl("reverb", 0.1);
+}
+
+// ------------------------------------------------------------
+// dynamically add an HTML slider to the page
+// ------------------------------------------------------------
+
+function makeSlider(containerName, id, docstring, min, max, val, step) {
+  console.log(containerName);
+  // get the root container
+  const container = document.getElementById(containerName);
+  // make the slider container
+  const sliderContainer = document.createElement("div");
+  sliderContainer.className = "slider-container";
+  sliderContainer.id = "param-" + id;
+  // make the slider
+  const slider = document.createElement("input");
+  slider.className = "slider";
+  slider.type = "range";
+  slider.id = "slider-" + id;
+  slider.min = min;
+  slider.max = max;
+  slider.step = step;
+  slider.value = val;
+  // doc string
+  if (SHOW_DOC_STRINGS) {
+    const doc = document.createElement("label");
+    doc.className = "docstring";
+    doc.id = "doc-" + id;
+    doc.textContent = docstring;
+    container.appendChild(doc);
+  }
+  // label
+  const label = document.createElement("label");
+  label.id = "label-" + id;
+  label.setAttribute("for", "slider-" + id);
+  label.textContent = `${id} [${val}]`;
+  // add a callback to the slider
+  slider.addEventListener("input", function () {
+    let val = parseFloat(this.value);
+    gui(label.id).textContent = `${id} [${val}]`;
+    makeImmediateTweak(id, val);
+  });
+  // add to the document
+  sliderContainer.appendChild(slider);
+  sliderContainer.appendChild(label);
+  container.appendChild(sliderContainer);
+}
+
+// ------------------------------------------------------------
+// tweak a parameter in real time, changing it immediately
+// ------------------------------------------------------------
+
+function makeImmediateTweak(param, value) {
+  playerForNote.forEach((player, note) => {
+    player.applyTweakNow(param, value);
+  });
+}
+
+// ------------------------------------------------------------
+// remove all the sliders, if we created any previously
+// ------------------------------------------------------------
+
+function removeAllSliders() {
+  // FIXED FOR SINGLE COLUMN
+  console.log("REMOVE_ALL_SLIDERS");
+  for (let row = 1; row <= 2; row++) {
+    console.log(`container${row}`);
+    const container = document.getElementById(`container${row}`);
+    while (container.firstChild)
+      container.removeChild(container.firstChild);
+  }
+}
+
+// ------------------------------------------------------------
+// add event listeners to GUI controls
+// ------------------------------------------------------------
+
+function addListenersToGUI() {
+
+  // listen for change events in the text area and indicate if the file is edited
+
+  gui("synth-spec").addEventListener("input", () => {
+    if (gui("synth-spec").value.length > 0) {
+      parseGeneratorSpec();
+      if (!wasEdited) {
+        gui("file-label").textContent += "*";
+        wasEdited = true;
+      }
+    }
+  });
+
+  // set the current file name to none
+  gui("file-label").textContent = "Current file: none";
+
+  // load button 
+  gui("load-button").onclick = async () => { await loadFile(); };
+
+  // save button 
+  gui("save-button").onclick = async () => { await saveFile(); };
+
+  // save as button 
+  gui("save-as-button").onclick = async () => { await saveAsFile(); };
+
+  // export button 
+  gui("export-button").onclick = async () => { await exportAsJSON(); };
+
+  // copy parameters to clipboard button 
+  gui("clip-button").onclick = () => { copyParamsToClipboard(); };
+
+  // copy docs to clipboard button 
+  gui("docs-button").onclick = () => { copyDocsToClipboard(); };
+
+  // play button 
+  gui("play-button").onmousedown = () => {
+    const midiNoteNumber = getIntParam("slider-pitch");
+    const velocity = getFloatParam("slider-level");
+    playNote(midiNoteNumber, velocity);
+  };
+  gui("play-button").onmouseup = () => {
+    const midiNoteNumber = getIntParam("slider-pitch");
+    stopNote(midiNoteNumber);
+  };
+  gui("play-button").onmouseout = () => {
+    const midiNoteNumber = getIntParam("slider-pitch");
+    stopNote(midiNoteNumber);
+  };
+
+  // start button
+  gui("start-button").onclick = async () => {
+    context = new AudioContext();
+    await context.audioWorklet.addModule("wave-folder.js");
+    disableGUI(false);
+    connectEffects(context);
+    initialiseEffects();
+    let view = new ScopeView(gui("scope-canvas"), {
+      lineWidth: 2,
+      sync: true
+    });
+    scope = new Scope(context, view);
+    scope.draw();
+  }
+
+  // pitch slider
+  gui("slider-pitch").addEventListener("input", function () {
+    gui("pitch-label").textContent = `pitch [${midiToNoteName(parseInt(this.value))}]`;
+  });
+
+  // amplitude slider
+  gui("slider-level").addEventListener("input", function () {
+    setFloatControl("level", parseFloat(this.value));
+  });
+
+  // reverb slider
+  gui("slider-reverb").addEventListener("input", function () {
+    setReverb(parseFloat(this.value));
+  });
+
+  // midi input selector
+  gui("midi-input").addEventListener("change", () => {
+    midiInputEnabled = false;
+    const index = parseInt(gui("midi-input").value);
+    if (midi != null && index > 0) {
+      let selectedName = midiInputs[index - 1].name;
+      // note that we need to set all callbacks since we might change the midi input while running
+      // and then the previous callback would persist
+      for (let val of midi.inputs.values()) {
+        if (val.name === selectedName)
+          val.onmidimessage = onMIDIMessage;
+        else
+          val.onmidimessage = undefined;
+      }
+      midiInputEnabled = true;
+    }
+  });
 
 }
-*/
+
+// ------------------------------------------------------------
+// copy parameters to clipboard
+// ------------------------------------------------------------
+
+function copyParamsToClipboard() {
+  if (generator != undefined && generator.isValid) {
+    const params = getParametersForGenerator(generator);
+    const text = getParameterListAsString(params);
+    navigator.clipboard.writeText(text).then(() => {
+      console.log(text);
+    }, (error) => {
+      console.error("Failed to copy text: ", error);
+    });
+  }
+}
+
+// ------------------------------------------------------------
+// copy docs to clipboard
+// ------------------------------------------------------------
+
+function copyDocsToClipboard() {
+  if (generator != undefined && generator.isValid) {
+    const text = generator.getDocumentationAsMarkdownString();
+    navigator.clipboard.writeText(text).then(() => {
+      console.log(text);
+    }, (error) => {
+      console.error("Failed to copy text: ", error);
+    });
+  }
+}
+
+function getParameterListAsString(params) {
+  let str = "use_defaults({";
+  str += Object.entries(params).map(([key, value]) => `${key}=${value}`).join(',');
+  str += "})";
+  return str;
+}
+
+// ------------------------------------------------------------
+// disable buttons
+// ------------------------------------------------------------
+
+function disableGUI(b) {
+  gui("start-button").disabled = !b;
+  gui("load-button").disabled = b;
+  gui("save-button").disabled = b;
+  gui("save-as-button").disabled = b;
+  gui("export-button").disabled = b;
+  gui("clip-button").disabled = b;
+  gui("docs-button").disabled = b;
+  gui("play-button").disabled = b;
+  gui("midi-label").disabled = b;
+  gui("midi-input").disabled = b;
+}
+
+// ------------------------------------------------------------
+// Set up the MIDI system and find possible input devices
+// ------------------------------------------------------------
+
+function setupMidi() {
+
+  navigator.requestMIDIAccess({ "sysex": "false" }).then((access) => {
+    // Get lists of available MIDI controllers
+    // might need to cache access
+    midi = access;
+    midiInputs = Array.from(access.inputs.values());
+
+    // get the html element for the list of midi inputs
+    const inputSelector = document.getElementById("midi-input");
+
+    // first element in the list is no input
+    let option = document.createElement("option");
+    option.text = "None";
+    option.value = 0;
+    inputSelector.appendChild(option);
+
+    // set the options for the remaining html elements
+    let index = 1;
+    for (let val of midiInputs) {
+      option = document.createElement("option");
+      option.text = val.name;
+      option.value = index;
+      inputSelector.appendChild(option);
+      index++;
+    };
+
+  });
+}
+
+// ------------------------------------------------------------
+// callback for when a MIDI event is received
+// ------------------------------------------------------------
+
+function onMIDIMessage(message) {
+  // mask the lowest nibble since we don't care about which MIDI channel we receive from
+  const op = message.data[0] & 0xf0;
+  // a note on is only a note on if it has a non-zero velocity
+  if (op === MIDI_NOTE_ON && message.data[2] != 0) {
+    // blip the orange dot
+    blipDot();
+    // note number
+    const midiNoteNumber = message.data[1];
+    // convert velocity to the range [0,1]
+    const velocity = message.data[2] / 127.0;
+    // play the note
+    playNote(midiNoteNumber, velocity);
+  }
+  // a note off is a note off, or a note on with zero velocity
+  if (op === MIDI_NOTE_OFF || (op === MIDI_NOTE_ON && message.data[2] === 0)) {
+    const midiNoteNumber = message.data[1];
+    stopNote(midiNoteNumber);
+  }
+  // midi controller
+  if (op === 0xB0) {
+    const controllerNumber = message.data[1];
+    const controllerValue = message.data[2] / 127;
+    // console.log(`CC ${controllerNumber} ${controllerValue}`);
+    let param = controlMap.get(controllerNumber);
+    if (param != undefined) {
+      // console.log(param);
+      let el = gui("slider-" + param);
+      let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * controllerValue;
+      //console.log(value);
+      setFloatControl(param, value);
+    }
+
+  }
+}
+
+// ------------------------------------------------------------
+// Blip the orange dot for a short time
+// ------------------------------------------------------------
+
+function blipDot() {
+  midiDot.style.opacity = 1;
+  setTimeout(() => {
+    midiDot.style.opacity = 0;
+  }, DOT_DURATION_MS);
+}
+
 
 // ------------------------------------------------------------
 // play a note
@@ -1990,6 +1976,8 @@ function parseGeneratorSpec() {
       createControls(json);
       currentJSON = convertToStandardJSON(json);
       generator = new BleepGenerator(currentJSON);
+      // new bit - draw as mermaid graph
+      generator.drawGraphAsMermaid();
       // was there a warning?
       if (generator.hasWarning) {
         gui("parse-errors").value += "\n" + generator.warningString;
@@ -2153,7 +2141,7 @@ function convertToPostfix(expression) {
     }
   }
   while (stack.length > 0) {
-    current = stack.pop();
+    let current = stack.pop();
     if (current != ",") {
       result.push(current);
     }
@@ -2324,6 +2312,40 @@ class BleepGenerator {
   throwWarning(msg) {
     this.#hasWarning = true;
     this.#warningString = msg;
+  }
+
+  drawGraphAsMermaid() {
+    var element = gui("mermaid-graph");
+    // get rid of all the kids
+    while (element.firstChild) {
+      element.removeChild(element.firstChild);
+    }
+    // mermaid callback that inserts a svg into the HTML
+    var insertSvg = function (svg, bindFunctions) {
+        element.innerHTML = svg.svg;
+        bindFunctions?.(element);
+    };
+    // get this generator in mermaid form, with a fishy tail and all
+    var graphDefinition = this.getGraphAsMermaid();
+    // mermaid transforms our graph description into a svg
+    var graph = mermaid.render('graph-id', graphDefinition).then(insertSvg);
+  }
+
+  getGraphAsMermaid() {
+    var doc = `graph TD;\n`;
+    // modules
+    Object.values(this.#patches).forEach(patch => {
+      const fromString = this.nodeToMarkdown(patch.from.id);
+      const toString = this.nodeToMarkdown(patch.to.id);
+      doc += `   ` + fromString + `-->` + toString + `;\n`;
+    });
+    // envelopes
+    Object.values(this.#envelopes).forEach(patch => {
+      const fromString = this.nodeToMarkdown(patch.from.id);
+      const toString = this.nodeToMarkdown(patch.to.id);
+      doc += `   ` + fromString + `-.->` + toString + `;\n`;
+    });
+    return doc;
   }
 
   getDocumentationAsMarkdownString() {
@@ -2514,7 +2536,7 @@ class BleepGenerator {
 
 // bleep generator doesnt need the context
 
-BleepPlayer = class {
+class BleepPlayer {
 
   node
   context
@@ -2692,7 +2714,7 @@ async function connectEffects(ctx) {
 // Convolutional reverb class
 // ------------------------------------------------------------
 
-Reverb = class {
+class Reverb {
 
   #in
   #out
