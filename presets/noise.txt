@@ -28,7 +28,8 @@ ADSR : env
 # patch
 
 noise.out -> lowpass.in
-lowpass.out -> audio.in
+lowpass.out -> vca.in
+vca.out -> audio.in
 
 lowpass.cutoff = param.cutoff
 env.attack = 0.1

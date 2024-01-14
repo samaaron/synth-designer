@@ -5,15 +5,6 @@
   <meta charset="UTF-8">
   <link rel="stylesheet" href="sheet.css">
   <title>Synth Builder</title>
-  <!-- <script type="module">
-      <script src="https://unpkg.com/mermaid@7.1.0/dist/mermaid.min.js"></script>
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-    mermaid.initialize({
-      startOnLoad: true,
-      securityLevel: 'loose',
-      theme: 'base',
-    }); -->
-  </script>
 </head>
 
 <body>
@@ -34,7 +25,8 @@
   <div id="file-label">Current file: none</div>
   <div class="monitor" id="monitor">idle</div>
   </p>
-  <table>
+
+  <table border="0px" padding="0px">
     <tr>
       <td>
         <canvas id="scope-canvas" class="bleep-canvas" width="520" height="40">
@@ -49,49 +41,50 @@
     </tr>
   </table>
 
-  <table>
-    <tr>
-      <td>
-        <textarea class="textarea" rows=29 cols=60 id="synth-spec"></textarea><br>
-        <textarea readonly class="textarea" rows=4 cols=60 id="parse-errors"></textarea>
+  <div class="body-container">
+    <div class="column fixed-width">
+      <textarea class="textarea" rows=29 id="synth-spec"></textarea><br>
+      <textarea readonly class="textarea" rows=4 id="parse-errors"></textarea>
+    </div>
+    <div class="column content-width">
 
-      </td>
-      <td valign="top">
-        <div class="slider-container">
-          <input class="slider" type="range" id="slider-pitch" min="24" max="108" value="60" step="1">
-          <label id="label-pitch" for="slider-pitch">pitch [C4]</label>
-        </div>
-        <div class="slider-container">
-          <input class="slider" type="range" id="slider-level" min="0" max="1" value="1" step="0.01">
-          <label id="label-level" for="slider-level">level [1]</label>
-        </div>
+      <table>
+        <tr>
+          <td valign="top">
+            <div class="slider-container">
+              <input class="slider" type="range" id="slider-pitch" min="24" max="108" value="60" step="1">
+              <label id="label-pitch" for="slider-pitch">pitch [C4]</label>
+            </div>
+            <div class="slider-container">
+              <input class="slider" type="range" id="slider-level" min="0" max="1" value="1" step="0.01">
+              <label id="label-level" for="slider-level">level [1]</label>
+            </div>
 
-        <div class="slider-container">
-          <input class="slider" type="range" id="slider-reverb" min="0" max="1" value="0.1" step="0.01">
-          <label id="label-reverb" for="slider-reverb">reverb [1]</label>
-        </div>
+            <div class="slider-container">
+              <input class="slider" type="range" id="slider-reverb" min="0" max="1" value="0.1" step="0.01">
+              <label id="label-reverb" for="slider-reverb">reverb [1]</label>
+            </div>
 
-        <button class="playbutton" id="play-button">Play</button>
-        <table>
-          <tr>
-            <td valign="top">
-              <div id="container1"></div>
-            </td>
-            <td valign="top">
-              <div id="container2"></div>
-            </td>
-          </tr>
-        </table>
-      </td>
-      <td width>
-        <div id="mermaid-graph"></div>
+            <button class="playbutton" id="play-button">Play</button>
+            <table>
+              <tr>
+                <td valign="top">
+                  <div id="container1"></div>
+                </td>
+                <td valign="top">
+                  <div id="container2"></div>
+                </td>
+              </tr>
+            </table>
+        </tr>
+      </table>
+    </div>
 
-      </td>
-    </tr>
-  </table>
+    <div class="column remaining-width">
+      <div id="mermaid-graph" class="mermaid-container"></div>
+    </div>
 
   </div>
-
 
   <script src="unpkg.com_ohm-js@17.1.0_dist_ohm.js"></script>
 

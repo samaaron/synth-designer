@@ -2332,8 +2332,20 @@ class BleepGenerator {
   }
 
   getGraphAsMermaid() {
-    var str = "graph TD; vco1_id([\"SIN-OSC:vco1\"])-->gain1_id(\"VCA:gain1\"); vco2_id([\"SIN-OSC:vco2\"])-->gain2_id(\"VCA:gain2\");";
-    return str;
+    var doc = `graph TD;\n`;
+    // modules
+    Object.values(this.#patches).forEach(patch => {
+      const fromString = this.nodeToMarkdown(patch.from.id);
+      const toString = this.nodeToMarkdown(patch.to.id);
+      doc += `   ` + fromString + `-->` + toString + `;\n`;
+    });
+    // envelopes
+    Object.values(this.#envelopes).forEach(patch => {
+      const fromString = this.nodeToMarkdown(patch.from.id);
+      const toString = this.nodeToMarkdown(patch.to.id);
+      doc += `   ` + fromString + `-.->` + toString + `;\n`;
+    });
+    return doc;
   }
 
   getDocumentationAsMarkdownString() {
