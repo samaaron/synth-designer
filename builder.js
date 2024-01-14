@@ -2936,7 +2936,8 @@ function unityGain(ctx) {
 // ------------------------------------------------------------
 
 function midiToNoteName(m) {
-  noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+  // ISSUE : note name is not updated in GUI @guyjbrown
+  const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
   return noteNames[m % 12] + (Math.floor(m / 12) - 1);
 }
 
