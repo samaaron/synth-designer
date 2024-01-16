@@ -4,6 +4,7 @@ import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.mi
 // TODO the noise node is really inefficient - generates 2 seconds of noise for every note
 // TODO audio node is no longer used, remove it
 // TODO add a formant filter
+// check
 
 window.addEventListener('DOMContentLoaded', init);
 
