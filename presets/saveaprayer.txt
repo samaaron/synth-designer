@@ -3,7 +3,7 @@ longname : Square wave arpeggiator sound
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : A square wave arpeggiator sound based on the track Save a prayer by Duran Duran. Add Roland Chorus and delay at 0.75 beats, apply mascara and play on a yacht in the Carribean.
+doc : A square wave arpeggiator sound based on the track Save a Prayer by Duran Duran. Add Roland Chorus and delay at 0.75 beats, apply mascara and play on a yacht in the Carribean.
 @end
 
 # parameters

@@ -3,7 +3,7 @@ longname : Childhood
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : Bright simple sound with modulation
+doc : Bright simple polysynth sound with pitch and filter modulation
 @end
 
 # parameters
