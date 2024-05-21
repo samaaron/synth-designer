@@ -1,3 +1,7 @@
+import GUI from './js/GUI';
+import Monitor from './js/monitor';
+import Scope from './js/scope';
+import ScopeView from './js/scopeview';
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 
 // TODO add crossfade node
@@ -57,7 +61,7 @@ let scope;
 
 // gui stuff
 
-const midiDot = gui("dot"); // we need this quickly so cache it
+const midiDot = GUI.tag("dot"); // we need this quickly so cache it
 const DOT_DURATION_MS = 50; // pulse the dot for 50ms when we get a midi note on
 
 // global variables (sorry)
@@ -1010,51 +1014,6 @@ const validPatchOutputs = {
 };
 
 // ------------------------------------------------------------
-// monitor structure
-// ------------------------------------------------------------
-
-class Monitor {
-
-  #numNotes
-  #fields
-
-  constructor() {
-    this.#numNotes = 0;
-    this.#fields = {
-      note: 0,
-      osc: 0,
-      amp: 0,
-      lowpass: 0,
-      highpass: 0,
-      lfo: 0,
-      panner: 0,
-      delay: 0,
-      noise: 0,
-      shaper: 0,
-      audio: 0
-    }
-  }
-
-  retain(f) {
-    this.#fields[f]++;
-    this.display();
-  }
-
-  release(f) {
-    this.#fields[f]--;
-    this.display();
-  }
-
-  display() {
-    let str = "";
-    for (const key in this.#fields) {
-      str += `${key} ${this.#fields[key]} : `;
-    }
-    gui("monitor").textContent = str;
-  }
-}
-
-// ------------------------------------------------------------
 // initialise the button callbacks etc
 // ------------------------------------------------------------
 
@@ -1125,7 +1084,7 @@ function makeSlider(containerName, id, docstring, min, max, val, step) {
   // add a callback to the slider
   slider.addEventListener("input", function () {
     let val = parseFloat(this.value);
-    gui(label.id).textContent = `${id} [${val}]`;
+    GUI.tag(label.id).textContent = `${id} [${val}]`;
     makeImmediateTweak(id, val);
   });
   // add to the document
@@ -1164,59 +1123,59 @@ function addListenersToGUI() {
 
   // listen for change events in the text area and indicate if the file is edited
 
-  gui("synth-spec").addEventListener("input", () => {
-    if (gui("synth-spec").value.length > 0) {
+  GUI.tag("synth-spec").addEventListener("input", () => {
+    if (GUI.tag("synth-spec").value.length > 0) {
       parseGeneratorSpec();
       if (!wasEdited) {
-        gui("file-label").textContent += "*";
+        GUI.tag("file-label").textContent += "*";
         wasEdited = true;
       }
     }
   });
 
   // set the current file name to none
-  gui("file-label").textContent = "Current file: none";
+  GUI.tag("file-label").textContent = "Current file: none";
 
   // load button 
-  gui("load-button").onclick = async () => { await loadFile(); };
+  GUI.tag("load-button").onclick = async () => { await loadFile(); };
 
   // save button 
-  gui("save-button").onclick = async () => { await saveFile(); };
+  GUI.tag("save-button").onclick = async () => { await saveFile(); };
 
   // save as button 
-  gui("save-as-button").onclick = async () => { await saveAsFile(); };
+  GUI.tag("save-as-button").onclick = async () => { await saveAsFile(); };
 
   // export button 
-  gui("export-button").onclick = async () => { await exportAsJSON(); };
+  GUI.tag("export-button").onclick = async () => { await exportAsJSON(); };
 
   // copy parameters to clipboard button 
-  gui("clip-button").onclick = () => { copyParamsToClipboard(); };
+  GUI.tag("clip-button").onclick = () => { copyParamsToClipboard(); };
 
   // copy docs to clipboard button 
-  gui("docs-button").onclick = () => { copyDocsToClipboard(); };
+  GUI.tag("docs-button").onclick = () => { copyDocsToClipboard(); };
 
   // play button 
-  gui("play-button").onmousedown = () => {
+  GUI.tag("play-button").onmousedown = () => {
     const midiNoteNumber = getIntParam("slider-pitch");
     const velocity = getFloatParam("slider-level");
     playNote(midiNoteNumber, velocity);
   };
-  gui("play-button").onmouseup = () => {
+  GUI.tag("play-button").onmouseup = () => {
     const midiNoteNumber = getIntParam("slider-pitch");
     stopNote(midiNoteNumber);
   };
-  gui("play-button").onmouseout = () => {
+  GUI.tag("play-button").onmouseout = () => {
     const midiNoteNumber = getIntParam("slider-pitch");
     stopNote(midiNoteNumber);
   };
 
   // start button
-  gui("start-button").onclick = async () => {
+  GUI.tag("start-button").onclick = async () => {
     context = new AudioContext();
     disableGUI(false);
     connectEffects(context);
     initialiseEffects();
-    let view = new ScopeView(gui("scope-canvas"), {
+    let view = new ScopeView(GUI.tag("scope-canvas"), {
       lineWidth: 2,
       sync: true
     });
@@ -1225,24 +1184,24 @@ function addListenersToGUI() {
   }
 
   // pitch slider
-  gui("slider-pitch").addEventListener("input", function () {
-    gui("label-pitch").textContent = `pitch [${midiToNoteName(parseInt(this.value))}]`;
+  GUI.tag("slider-pitch").addEventListener("input", function () {
+    GUI.tag("label-pitch").textContent = `pitch [${midiToNoteName(parseInt(this.value))}]`;
   });
 
   // amplitude slider
-  gui("slider-level").addEventListener("input", function () {
+  GUI.tag("slider-level").addEventListener("input", function () {
     setFloatControl("level", parseFloat(this.value));
   });
 
   // reverb slider
-  gui("slider-reverb").addEventListener("input", function () {
+  GUI.tag("slider-reverb").addEventListener("input", function () {
     setReverb(parseFloat(this.value));
   });
 
   // midi input selector
-  gui("midi-input").addEventListener("change", () => {
+  GUI.tag("midi-input").addEventListener("change", () => {
     midiInputEnabled = false;
-    const index = parseInt(gui("midi-input").value);
+    const index = parseInt(GUI.tag("midi-input").value);
     if (midi != null && index > 0) {
       let selectedName = midiInputs[index - 1].name;
       // note that we need to set all callbacks since we might change the midi input while running
@@ -1302,16 +1261,16 @@ function getParameterListAsString(params) {
 // ------------------------------------------------------------
 
 function disableGUI(b) {
-  gui("start-button").disabled = !b;
-  gui("load-button").disabled = b;
-  gui("save-button").disabled = b;
-  gui("save-as-button").disabled = b;
-  gui("export-button").disabled = b;
-  gui("clip-button").disabled = b;
-  gui("docs-button").disabled = b;
-  gui("play-button").disabled = b;
-  gui("midi-label").disabled = b;
-  gui("midi-input").disabled = b;
+  GUI.tag("start-button").disabled = !b;
+  GUI.tag("load-button").disabled = b;
+  GUI.tag("save-button").disabled = b;
+  GUI.tag("save-as-button").disabled = b;
+  GUI.tag("export-button").disabled = b;
+  GUI.tag("clip-button").disabled = b;
+  GUI.tag("docs-button").disabled = b;
+  GUI.tag("play-button").disabled = b;
+  GUI.tag("midi-label").disabled = b;
+  GUI.tag("midi-input").disabled = b;
 }
 
 // ------------------------------------------------------------
@@ -1379,7 +1338,7 @@ function onMIDIMessage(message) {
     let param = controlMap.get(controllerNumber);
     if (param != undefined) {
       // console.log(param);
-      let el = gui("slider-" + param);
+      let el = GUI.tag("slider-" + param);
       let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * controllerValue;
       //console.log(value);
       setFloatControl(param, value);
@@ -1875,10 +1834,10 @@ function getGrammarSource() {
 function parseGeneratorSpec() {
   if (VERBOSE) console.log("parsing");
   generator = null;
-  let result = synthGrammar.match(gui("synth-spec").value + "\n");
+  let result = synthGrammar.match(GUI.tag("synth-spec").value + "\n");
   if (result.succeeded()) {
     try {
-      gui("parse-errors").value = "OK";
+      GUI.tag("parse-errors").value = "OK";
       const adapter = semantics(result);
       const json = adapter.interpret();
       createControls(json);
@@ -1888,13 +1847,13 @@ function parseGeneratorSpec() {
       generator.drawGraphAsMermaid();
       // was there a warning?
       if (generator.hasWarning) {
-        gui("parse-errors").value += "\n" + generator.warningString;
+        GUI.tag("parse-errors").value += "\n" + generator.warningString;
       }
     } catch (error) {
-      gui("parse-errors").value = error.message;
+      GUI.tag("parse-errors").value = error.message;
     }
   } else {
-    gui("parse-errors").value = result.message;
+    GUI.tag("parse-errors").value = result.message;
   }
 }
 
@@ -2223,7 +2182,7 @@ class BleepGenerator {
   }
 
   drawGraphAsMermaid() {
-    var element = gui("mermaid-graph");
+    var element = GUI.tag("mermaid-graph");
     // get rid of all the kids
     while (element.firstChild) {
       element.removeChild(element.firstChild);
@@ -2706,14 +2665,6 @@ function setReverb(w) {
 }
 
 // ------------------------------------------------------------
-// Get the document element with a given name
-// ------------------------------------------------------------
-
-function gui(name) {
-  return document.getElementById(name);
-}
-
-// ------------------------------------------------------------
 // Get an integer parameter with a given name
 // ------------------------------------------------------------
 
@@ -2738,8 +2689,8 @@ async function loadFile() {
   [fileHandle] = await window.showOpenFilePicker();
   const file = await fileHandle.getFile();
   const contents = await file.text();
-  gui("synth-spec").value = contents;
-  gui("file-label").textContent = "Current file: " + fileHandle.name;
+  GUI.tag("synth-spec").value = contents;
+  GUI.tag("file-label").textContent = "Current file: " + fileHandle.name;
   wasEdited = false;
   parseGeneratorSpec();
 }
@@ -2752,10 +2703,10 @@ async function loadFile() {
 async function saveFile() {
   if (fileHandle != null) {
     const writable = await fileHandle.createWritable();
-    await writable.write(gui("synth-spec").value);
+    await writable.write(GUI.tag("synth-spec").value);
     await writable.close();
     // remove the star
-    gui("file-label").textContent = "Current file: " + fileHandle.name;
+    GUI.tag("file-label").textContent = "Current file: " + fileHandle.name;
     wasEdited = false;
   }
 }
@@ -2772,9 +2723,9 @@ async function saveAsFile() {
   }
   fileHandle = await window.showSaveFilePicker(opts);
   const writable = await fileHandle.createWritable();
-  await writable.write(gui("synth-spec").value);
+  await writable.write(GUI.tag("synth-spec").value);
   await writable.close();
-  gui("file-label").textContent = "Current file: " + fileHandle.name;
+  GUI.tag("file-label").textContent = "Current file: " + fileHandle.name;
   wasEdited = false;
 }
 
@@ -2809,8 +2760,8 @@ function clamp(value, min, max) {
 // ------------------------------------------------------------
 
 function setFloatControl(label, value) {
-  gui("slider-" + label).value = value;
-  gui(`label-${label}`).textContent = `${label} [${value.toFixed(2)}]`;
+  GUI.tag("slider-" + label).value = value;
+  GUI.tag(`label-${label}`).textContent = `${label} [${value.toFixed(2)}]`;
 }
 
 // ------------------------------------------------------------
@@ -2902,154 +2853,4 @@ function testExpression(infix, param, minima, maxima) {
   postfixResult = evaluatePostfix(postfix, param, maxima, minima);
   console.log(`infix=${infixResult} postfix=${postfixResult}`);
   console.log("");
-}
-
-/**
-* =========================================================================
-* ScopeView - a line view for the scope (other views are possible ...)
-* =========================================================================
-*/
-class ScopeView {
-
-  _SYNC_WINDOW = 200
-
-  _context
-  _width
-  _height
-  _sync
-
-  /**
-   * Make a scope view
-   * @param {string} canvas - name of the HTML canvas
-   * @param {Object} params - parameters for display and sync
-   */
-  constructor(canvas, params) {
-    this._context = canvas.getContext("2d");
-    this._width = canvas.width;
-    this._height = canvas.height;
-    this._context.fillStyle = (params && params.fillStyle) ? params.fillStyle : "#252525";
-    this._context.lineWidth = (params && params.lineWidth) ? params.lineWidth : 2;
-    this._context.strokeStyle = (params && params.strokeStyle) ? params.strokeStyle : "#e6983f";
-    this._sync = (params && params.sync) ? params.sync : false;
-  }
-
-  /**
-   * 
-   * @param {Uint8Array} data - the array to display
-   */
-  draw(data) {
-    let st = 0;
-    if (this._sync) {
-      st = this.firstZeroCrossing(data);
-      if (st > this._SYNC_WINDOW) {
-        st = 0;
-      }
-    }
-    const n = data.length - this._SYNC_WINDOW;
-    const stepSize = this._width / n;
-    this._context.fillRect(0, 0, this._width, this._height);
-    let x = 0;
-    this._context.beginPath();
-    let y = data[st] * this._height / 256;
-    this._context.moveTo(x, y);
-    for (let i = 1; i < n; i++) {
-      y = data[st + i] * this._height / 256;
-      this._context.lineTo(x, y);
-      x += stepSize;
-    }
-    this._context.lineTo(this._width, this._height / 2);
-    this._context.stroke();
-
-  }
-
-  /**
-   * 
-   * @param {Uint8Array} data  - the array to process
-   * @returns an integer index
-   */
-  firstZeroCrossing(data) {
-    let idx = 0;
-    while ((idx < (data.length - 2)) && (data[idx] * data[idx + 1] > 0)) {
-      idx++;
-    }
-    return idx;
-  }
-}
-
-/**
-* =========================================================================
-* Scope - model-controller for the scope
-* =========================================================================
-*/
-class Scope {
-
-  _analyser
-  _dataArray
-  _view
-  _rms
-  _peakRMS
-
-  /**
-   * Make a scope model-controller
-   * @param {AudioContext} ctx - the audio context
-   * @param {ScopeView} view - the scope view
-   */
-  constructor(ctx, view) {
-    this._view = view;
-    this._analyser = ctx.createAnalyser();
-    this._analyser.fftSize = 1024;
-    this._dataArray = new Uint8Array(this._analyser.fftSize);
-    this._rms = 0;
-    this._peakRMS = 0;
-  }
-
-  /**
-   * Get a frame of data to display
-   */
-  get frame() {
-    return this._dataArray;
-  }
-
-  /**
-   * compute the RMS level
-   */
-  computeRMS() {
-    let sum = 0;
-    for (let i = 0; i < this._dataArray.length; i++) {
-      // put into the range [-1,1]
-      const x = this._dataArray[i] / 128 - 1;
-      sum += x * x;
-    }
-    // return root of the mean of the squares
-    this._rms = Math.sqrt(sum / this._dataArray.length);
-    if (this._rms > this._peakRMS) {
-      this._peakRMS = this._rms;
-    }
-  }
-
-  resetRMS() {
-    this._peakRMS = 0;
-  }
-
-  /**
-  * Draw the data
-  * Because we need to refer to this.draw when we request the animation
-  * frame, must use an arrow function which retains the surrounding context
-  */
-  draw = () => {
-    this._analyser.getByteTimeDomainData(this._dataArray);
-    this.computeRMS();
-    this._view.draw(this._dataArray);
-    // update the rms information
-    gui("rms-label").textContent = "\u00A0\u00A0" + `RMS=${this._rms.toFixed(4)}, Peak RMS=${this._peakRMS.toFixed(4)}`;
-    requestAnimationFrame(this.draw);
-  }
-
-  /**
-   * Get the input node
-   */
-  get in() {
-    return this._analyser;
-  }
-
 }
