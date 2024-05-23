@@ -1,10 +1,12 @@
+import Constants from './constants.js';
+
 export default class Waveshaper {
 
     #shaper
     #context
     #monitor
-  
-    VERBOSE = false 
+
+    VERBOSE = false
 
     constructor(ctx,monitor) {
       this.#context = ctx;
@@ -14,26 +16,26 @@ export default class Waveshaper {
       this.#shaper.oversample = "4x";
       this.#monitor.retain("shaper");
     }
-  
+
     get in() {
       return this.#shaper;
     }
-  
+
     get out() {
       return this.#shaper;
     }
-  
+
     get fuzz() {
       return 0; // all that matters is that this returns a number
     }
-  
+
     set fuzz(n) {
       this.#shaper.curve = this.makeDistortionCurve(n);
     }
-  
+
     // this is a sigmoid function which is linear for k=0 and goes through (-1,-1), (0,0) and (1,1)
     // https://stackoverflow.com/questions/22312841/waveshaper-node-in-webaudio-how-to-emulate-distortion
-  
+
     makeDistortionCurve(n) {
       const numSamples = 44100;
       const curve = new Float32Array(numSamples);
@@ -44,19 +46,18 @@ export default class Waveshaper {
       }
       return curve;
     }
-  
+
     stop(tim) {
-      if (VERBOSE) console.log("stopping Shaper");
+      if (Constants.VERBOSE) console.log("stopping Shaper");
       let stopTime = tim - this.#context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (VERBOSE) console.log("disconnecting Shaper");
+        if (Constants.VERBOSE) console.log("disconnecting Shaper");
         this.#shaper.disconnect();
         this.#shaper = null;
         this.#context = null;
         this.#monitor.release("shaper");
       }, (stopTime + 0.1) * 1000);
     }
-  
+
   }
-  

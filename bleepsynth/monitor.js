@@ -1,4 +1,4 @@
-import GUI from "./GUI";
+import GUI from "../js/GUI";
 
 /**
  * Monitor - keep track of WebAudio components
@@ -7,7 +7,7 @@ import GUI from "./GUI";
 export default class Monitor {
 
     #fields
-  
+
     constructor() {
       this.#fields = {
         note: 0,
@@ -23,17 +23,18 @@ export default class Monitor {
         audio: 0
       }
     }
-  
+
     retain(f) {
       this.#fields[f]++;
       this.display();
     }
-  
+
     release(f) {
       this.#fields[f]--;
       this.display();
     }
-  
+
+    // TODO #6 - remove the dependency on GUI here @guyjbrown
     display() {
       let str = "";
       for (const key in this.#fields) {
