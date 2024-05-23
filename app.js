@@ -3,6 +3,8 @@ import Monitor from './js/monitor';
 import Scope from './js/scope';
 import ScopeView from './js/scopeview';
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+import Panner from './js/panner';
+import Waveshaper from './js/waveshaper';
 
 // TODO add crossfade node
 // TODO the noise node is really inefficient - generates 2 seconds of noise for every note
@@ -82,12 +84,14 @@ class Oscillator {
 
   osc
   context
+  monitor
 
-  constructor(ctx) {
+  constructor(ctx,monitor) {
     this.context = ctx;
+    this.monitor = monitor
     this.osc = ctx.createOscillator(ctx);
     this.osc.frequency.value = MIDDLE_C;
-    monitor.retain("osc");
+    this.monitor.retain("osc");
   }
 
   set detune(n) {
@@ -129,7 +133,7 @@ class Oscillator {
       this.osc.disconnect();
       this.osc = null;
       this.context = null;
-      monitor.release("osc");
+      this.monitor.release("osc");
     }, (stopTime + 0.1) * 1000);
   }
 
@@ -148,9 +152,11 @@ moduleContext.LFO = class {
   #mixer
   #freqHz
   #context
+  #monitor
 
-  constructor(ctx) {
+  constructor(ctx,monitor) {
     this.#context = ctx;
+    this.#monitor = monitor;
     this.#freqHz = 5; // Hz
 
     this.#sinOsc = ctx.createOscillator();
@@ -170,7 +176,7 @@ moduleContext.LFO = class {
     this.#sinGain.connect(this.#mixer);
     this.#cosGain.connect(this.#mixer);
 
-    monitor.retain("lfo");
+    this.#monitor.retain("lfo");
 
   }
 
@@ -217,7 +223,7 @@ moduleContext.LFO = class {
       this.#cosGain = null;
       this.#mixer = null;
       this.#context = null;
-      monitor.release("lfo");
+      this.#monitor.release("lfo");
     }, (stopTime + 0.1) * 1000);
   }
 
@@ -227,53 +233,55 @@ moduleContext.LFO = class {
 // Stereo panner
 // ------------------------------------------------------------
 
-moduleContext.Panner = class {
+moduleContext.Panner = Panner;
 
-  #pan
-  #context
+// moduleContext.Panner = class {
 
-  constructor(ctx) {
-    this.#context = ctx;
-    this.#pan = ctx.createStereoPanner();
-    monitor.retain("panner");
-  }
+//   #pan
+//   #context
 
-  // stereo position between -1 and 1
-  set angle(p) {
-    this.#pan.pan.value = p;
-  }
+//   constructor(ctx) {
+//     this.#context = ctx;
+//     this.#pan = ctx.createStereoPanner();
+//     monitor.retain("panner");
+//   }
 
-  // stereo position between -1 and 1
-  get angle() {
-    return this.#pan.pan.value;
-  }
+//   // stereo position between -1 and 1
+//   set angle(p) {
+//     this.#pan.pan.value = p;
+//   }
 
-  get angleCV() {
-    return this.#pan.pan;
-  }
+//   // stereo position between -1 and 1
+//   get angle() {
+//     return this.#pan.pan.value;
+//   }
 
-  get in() {
-    return this.#pan;
-  }
+//   get angleCV() {
+//     return this.#pan.pan;
+//   }
 
-  get out() {
-    return this.#pan;
-  }
+//   get in() {
+//     return this.#pan;
+//   }
 
-  stop(tim) {
-    if (VERBOSE) console.log("stopping Panner");
-    let stopTime = tim - this.#context.currentTime;
-    if (stopTime < 0) stopTime = 0;
-    setTimeout(() => {
-      if (VERBOSE) console.log("disconnecting Panner");
-      this.#pan.disconnect();
-      this.#pan = null;
-      this.#context = null;
-      monitor.release("panner");
-    }, (stopTime + 0.1) * 1000);
-  }
+//   get out() {
+//     return this.#pan;
+//   }
 
-}
+//   stop(tim) {
+//     if (VERBOSE) console.log("stopping Panner");
+//     let stopTime = tim - this.#context.currentTime;
+//     if (stopTime < 0) stopTime = 0;
+//     setTimeout(() => {
+//       if (VERBOSE) console.log("disconnecting Panner");
+//       this.#pan.disconnect();
+//       this.#pan = null;
+//       this.#context = null;
+//       monitor.release("panner");
+//     }, (stopTime + 0.1) * 1000);
+//   }
+
+// }
 
 // ------------------------------------------------------------
 // Delay line
@@ -283,11 +291,13 @@ moduleContext.Delay = class {
 
   #delay
   #context
+  #monitor
 
-  constructor(ctx) {
+  constructor(ctx,monitor) {
     this.#context = ctx;
+    this.#monitor = monitor;
     this.#delay = ctx.createDelay(10);
-    monitor.retain("delay");
+    this.#monitor.retain("delay");
   }
 
   set lag(t) {
@@ -319,7 +329,7 @@ moduleContext.Delay = class {
       this.#delay.disconnect();
       this.#delay = null;
       this.#context = null;
-      monitor.release("delay");
+      this.#monitor.release("delay");
     }, (stopTime + 0.1) * 1000);
   }
 
@@ -344,8 +354,8 @@ moduleContext.PulseOsc = class extends Oscillator {
   #pulsewidth
   pwm
 
-  constructor(ctx) {
-    super(ctx);
+  constructor(ctx,monitor) {
+    super(ctx,monitor);
 
     // set the parameters of oscillator 1
     // we set the oscillator value to 0 to avoid an offset since we will control the
@@ -480,7 +490,7 @@ moduleContext.PulseOsc = class extends Oscillator {
       this.inverter = null;
       this.pwm = null;
       this.context = null;
-      monitor.release("osc");
+      this.monitor.release("osc");
     }, (stopTime + 0.1) * 1000);
   }
 
@@ -491,8 +501,8 @@ moduleContext.PulseOsc = class extends Oscillator {
 // ------------------------------------------------------------
 
 moduleContext.SawOsc = class extends Oscillator {
-  constructor(ctx) {
-    super(ctx);
+  constructor(ctx,monitor) {
+    super(ctx,monitor);
     this.osc.type = "sawtooth";
   }
 }
@@ -502,8 +512,8 @@ moduleContext.SawOsc = class extends Oscillator {
 // ------------------------------------------------------------
 
 moduleContext.SinOsc = class extends Oscillator {
-  constructor(ctx) {
-    super(ctx);
+  constructor(ctx,monitor) {
+    super(ctx,monitor);
     this.osc.type = "sine";
   }
 }
@@ -513,8 +523,8 @@ moduleContext.SinOsc = class extends Oscillator {
 // ------------------------------------------------------------
 
 moduleContext.TriOsc = class extends Oscillator {
-  constructor(ctx) {
-    super(ctx);
+  constructor(ctx,monitor) {
+    super(ctx,monitor);
     this.osc.type = "triangle";
   }
 }
@@ -524,8 +534,8 @@ moduleContext.TriOsc = class extends Oscillator {
 // ------------------------------------------------------------
 
 moduleContext.SquareOsc = class extends Oscillator {
-  constructor(ctx) {
-    super(ctx);
+  constructor(ctx,monitor) {
+    super(ctx,monitor);
     this.osc.type = "square";
   }
 }
@@ -543,9 +553,11 @@ moduleContext.Noise = class NoiseGenerator {
 
   #noise
   #context
+  #monitor
 
-  constructor(ctx) {
+  constructor(ctx,monitor) {
     this.#context = ctx;
+    this.#monitor = monitor
     let bufferSize = 2 * ctx.sampleRate;
     let noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     let data = noiseBuffer.getChannelData(0);
@@ -554,7 +566,7 @@ moduleContext.Noise = class NoiseGenerator {
     this.#noise = ctx.createBufferSource();
     this.#noise.buffer = noiseBuffer;
     this.#noise.loop = true;
-    monitor.retain("noise");
+    this.#monitor.retain("noise");
   }
 
   get out() {
@@ -575,7 +587,7 @@ moduleContext.Noise = class NoiseGenerator {
       this.#noise.disconnect();
       this.#noise = null;
       this.#context = null;
-      monitor.release("noise");
+      this.#monitor.release("noise");
     }, (stopTime + 0.1) * 1000);
   }
 
@@ -589,14 +601,16 @@ moduleContext.LowpassFilter = class {
 
   #filter
   #context
+  #monitor
 
-  constructor(ctx) {
+  constructor(ctx,monitor) {
     this.#context = ctx;
+    this.#monitor = monitor;
     this.#filter = ctx.createBiquadFilter();
     this.#filter.frequency.value = 1000;
     this.#filter.Q.value = 1;
     this.#filter.type = "lowpass";
-    monitor.retain("lowpass");
+    this.#monitor.retain("lowpass");
   }
 
   get cutoff() {
@@ -636,7 +650,7 @@ moduleContext.LowpassFilter = class {
       this.#filter.disconnect();
       this.#filter = null;
       this.#context = null;
-      monitor.release("lowpass");
+      this.#monitor.release("lowpass");
     }, (stopTime + 0.1) * 1000);
   }
 
@@ -650,14 +664,15 @@ moduleContext.HighpassFilter = class {
 
   #filter
   #context
+  #monitor
 
-  constructor(ctx) {
+  constructor(ctx,monitor) {
     this.#context = ctx;
     this.#filter = ctx.createBiquadFilter();
     this.#filter.frequency.value = 1000;
     this.#filter.Q.value = 1;
     this.#filter.type = "highpass";
-    monitor.retain("highpass");
+    this.#monitor.retain("highpass");
   }
 
   get cutoff() {
@@ -697,7 +712,7 @@ moduleContext.HighpassFilter = class {
       this.#filter.disconnect();
       this.#filter = null;
       this.#context = null;
-      monitor.release("highpass");
+      this.#monitor.release("highpass");
     }, (stopTime + 0.1) * 1000);
   }
 
@@ -716,9 +731,11 @@ moduleContext.Envelope = class {
   #level
   #controlledParam
   #context
+  #monitor
 
-  constructor(ctx) {
+  constructor(ctx,monitor) {
     this.#context = ctx;
+    this.#monitor = monitor;
     this.#attack = 0.1;
     this.#decay = 0.5;
     this.#sustain = 0.5;
@@ -779,8 +796,12 @@ moduleContext.Decay = class {
   #decay
   #level
   #param
+  #context
+  #monitor
 
-  constructor(ctx) {
+  constructor(ctx,monitor) {
+    this.#context = ctx;
+    this.#monitor = monitor;
     this.#attack = 0.1;
     this.#decay = 0.5;
     this.#level = 1.0;
@@ -825,63 +846,67 @@ moduleContext.Decay = class {
 // Waveshaper class
 // ------------------------------------------------------------
 
-moduleContext.Waveshaper = class {
+moduleContext.Waveshaper = Waveshaper;
 
-  #shaper
-  #context
+// moduleContext.Waveshaper = class {
 
-  constructor(ctx) {
-    this.#context = ctx;
-    this.#shaper = ctx.createWaveShaper();
-    this.#shaper.curve = this.makeDistortionCurve(100);
-    this.#shaper.oversample = "4x";
-    monitor.retain("shaper");
-  }
+//   #shaper
+//   #context
+//   #monitor
 
-  get in() {
-    return this.#shaper;
-  }
+//   constructor(ctx,monitor) {
+//     this.#context = ctx;
+//     this.#monitor = monitor;
+//     this.#shaper = ctx.createWaveShaper();
+//     this.#shaper.curve = this.makeDistortionCurve(100);
+//     this.#shaper.oversample = "4x";
+//     this.#monitor.retain("shaper");
+//   }
 
-  get out() {
-    return this.#shaper;
-  }
+//   get in() {
+//     return this.#shaper;
+//   }
 
-  get fuzz() {
-    return 0; // all that matters is that this returns a number
-  }
+//   get out() {
+//     return this.#shaper;
+//   }
 
-  set fuzz(n) {
-    this.#shaper.curve = this.makeDistortionCurve(n);
-  }
+//   get fuzz() {
+//     return 0; // all that matters is that this returns a number
+//   }
 
-  // this is a sigmoid function which is linear for k=0 and goes through (-1,-1), (0,0) and (1,1)
-  // https://stackoverflow.com/questions/22312841/waveshaper-node-in-webaudio-how-to-emulate-distortion
+//   set fuzz(n) {
+//     this.#shaper.curve = this.makeDistortionCurve(n);
+//   }
 
-  makeDistortionCurve(n) {
-    const numSamples = 44100;
-    const curve = new Float32Array(numSamples);
-    //const deg = Math.PI / 180.0;
-    for (let i = 0; i < numSamples; i++) {
-      const x = (i * 2) / numSamples - 1;
-      curve[i] = (Math.PI + n) * x / (Math.PI + n * Math.abs(x));
-    }
-    return curve;
-  }
+//   // this is a sigmoid function which is linear for k=0 and goes through (-1,-1), (0,0) and (1,1)
+//   // https://stackoverflow.com/questions/22312841/waveshaper-node-in-webaudio-how-to-emulate-distortion
 
-  stop(tim) {
-    if (VERBOSE) console.log("stopping Shaper");
-    let stopTime = tim - this.#context.currentTime;
-    if (stopTime < 0) stopTime = 0;
-    setTimeout(() => {
-      if (VERBOSE) console.log("disconnecting Shaper");
-      this.#shaper.disconnect();
-      this.#shaper = null;
-      this.#context = null;
-      monitor.release("shaper");
-    }, (stopTime + 0.1) * 1000);
-  }
+//   makeDistortionCurve(n) {
+//     const numSamples = 44100;
+//     const curve = new Float32Array(numSamples);
+//     //const deg = Math.PI / 180.0;
+//     for (let i = 0; i < numSamples; i++) {
+//       const x = (i * 2) / numSamples - 1;
+//       curve[i] = (Math.PI + n) * x / (Math.PI + n * Math.abs(x));
+//     }
+//     return curve;
+//   }
 
-}
+//   stop(tim) {
+//     if (VERBOSE) console.log("stopping Shaper");
+//     let stopTime = tim - this.#context.currentTime;
+//     if (stopTime < 0) stopTime = 0;
+//     setTimeout(() => {
+//       if (VERBOSE) console.log("disconnecting Shaper");
+//       this.#shaper.disconnect();
+//       this.#shaper = null;
+//       this.#context = null;
+//       this.#monitor.release("shaper");
+//     }, (stopTime + 0.1) * 1000);
+//   }
+
+// }
 
 // ------------------------------------------------------------
 // Amplifier class
@@ -891,11 +916,13 @@ moduleContext.Amplifier = class {
 
   #gain
   #context
+  #monitor
 
-  constructor(ctx) {
+  constructor(ctx,monitor) {
     this.#context = ctx;
+    this.#monitor = monitor;
     this.#gain = unityGain(ctx);
-    monitor.retain("amp");
+    this.#monitor.retain("amp");
   }
 
   get in() {
@@ -927,7 +954,7 @@ moduleContext.Amplifier = class {
       this.#gain.disconnect();
       this.#gain = null;
       this.#context = null;
-      monitor.release("amp");
+      this.#monitor.release("amp");
     }, (stopTime + 0.1) * 1000);
   }
 
@@ -2038,8 +2065,8 @@ function isIdentifier(t) {
 // https://stackoverflow.com/questions/1366127/how-do-i-make-javascript-object-using-a-variable-string-to-define-the-class-name
 // ------------------------------------------------------------
 
-function getModuleInstance(ctx, type) {
-  return new moduleContext[moduleClasses[type]](ctx);
+function getModuleInstance(ctx, monitor, type) {
+  return new moduleContext[moduleClasses[type]](ctx,monitor);
 }
 
 // ------------------------------------------------------------
@@ -2427,10 +2454,10 @@ class BleepPlayer {
   createModules() {
     // make a webaudio object for each node
     for (let m of this.generator.modules) {
-      this.node[m.id] = getModuleInstance(this.context, m.type);
+      this.node[m.id] = getModuleInstance(this.context, monitor, m.type);
     }
     // we always need an audio object for output
-    this.node["audio"] = getModuleInstance(this.context, "VCA");
+    this.node["audio"] = getModuleInstance(this.context, monitor, "VCA");
   }
 
   // connect all the patch cables
