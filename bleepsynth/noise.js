@@ -1,5 +1,14 @@
 import Constants from "./constants";
 
+// ------------------------------------------------------------
+// Noise generator class
+// for reasons of efficiency we loop a 2-second buffer of noise rather than generating
+// random numbers for every sample
+// https://noisehack.com/generate-noise-web-audio-api/
+// TODO actually this is still very inefficient - we should share a noise generator across
+// all players
+// ------------------------------------------------------------
+
 export default class NoiseGenerator {
 
     #noise

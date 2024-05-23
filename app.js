@@ -14,6 +14,7 @@ import { PulseOsc, SawOsc, SinOsc, TriOsc, SquareOsc } from './bleepsynth/oscill
 import Envelope from './bleepsynth/envelope';
 import Decay from './bleepsynth/decay';
 import NoiseGenerator from './bleepsynth/noise';
+import Utility from './bleepsynth/utility';
 
 // TODO add crossfade node
 // TODO the noise node is really inefficient - generates 2 seconds of noise for every note
@@ -28,8 +29,6 @@ let controlMap;
 
 // various constants
 
-const MAX_MIDI_FREQ = 4186; // C8
-const MIN_MIDI_FREQ = 27.5;  // A0
 const MAX_LEVEL = 1;
 const MIN_LEVEL = 0;
 
@@ -100,15 +99,6 @@ let moduleContext = {
   TriOsc : TriOsc,
   Waveshaper : Waveshaper
 };
-
-// ------------------------------------------------------------
-// Noise generator class
-// for reasons of efficiency we loop a 2-second buffer of noise rather than generating
-// random numbers for every sample
-// https://noisehack.com/generate-noise-web-audio-api/
-// TODO actually this is still very inefficient - we should share a noise generator across
-// all players
-// ------------------------------------------------------------
 
 // mapping between grammar names for modules and class names
 
@@ -362,7 +352,7 @@ function addListenersToGUI() {
 
   // pitch slider
   GUI.tag("slider-pitch").addEventListener("input", function () {
-    GUI.tag("label-pitch").textContent = `pitch [${midiToNoteName(parseInt(this.value))}]`;
+    GUI.tag("label-pitch").textContent = `pitch [${Utility.midiToNoteName(parseInt(this.value))}]`;
   });
 
   // amplitude slider
@@ -551,7 +541,7 @@ function playNote(midiNoteNumber, velocity) {
       monitor.release("note");
     }
     // get the pitch and parameters
-    const pitchHz = midiNoteToFreqHz(midiNoteNumber);
+    const pitchHz = Utility.midiNoteToFreqHz(midiNoteNumber);
     const params = getParametersForGenerator(generator);
     // make a player and store a reference to it so we can stop it later
     player = new BleepPlayer(context, generator, pitchHz, velocity, params);
@@ -1263,10 +1253,10 @@ class BleepGenerator {
     // find the maxima and minima of all parameters and store them
     // but we need to store information about max/min pitch and level
     this.#maxima = {};
-    this.#maxima.pitch = MAX_MIDI_FREQ;
+    this.#maxima.pitch = Utility.MAX_MIDI_FREQ;
     this.#maxima.level = MAX_LEVEL;
     this.#minima = {};
-    this.#minima.pitch = MIN_MIDI_FREQ;
+    this.#minima.pitch = Utility.MIN_MIDI_FREQ;
     this.#minima.level = MIN_LEVEL;
     this.#defaults = {};
     this.#mutable = {};
@@ -1957,22 +1947,6 @@ function scaleValue(low, high, min, max, p) {
   return min + (p - low) * (max - min) / (high - low);
 }
 
-// ------------------------------------------------------------
-// Convert MIDI note number to its name and octave
-// ------------------------------------------------------------
-
-function midiToNoteName(m) {
-  const noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  return noteNames[m % 12] + (Math.floor(m / 12) - 1);
-}
-
-// ------------------------------------------------------------
-// Convert a midi note number to its frequency in Hz
-// ------------------------------------------------------------
-
-function midiNoteToFreqHz(m) {
-  return 440 * Math.pow(2, (m - 69) / 12.0);
-}
 
 // ------------------------------------------------------------
 // TEST HARNESS
