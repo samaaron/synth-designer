@@ -9,10 +9,11 @@ export default class LowpassFilter {
     constructor(ctx,monitor) {
       this.#context = ctx;
       this.#monitor = monitor;
-      this.#filter = ctx.createBiquadFilter();
-      this.#filter.frequency.value = 1000;
-      this.#filter.Q.value = 1;
-      this.#filter.type = "lowpass";
+      this.#filter = new BiquadFilterNode(ctx, {
+        type: "lowpass",
+        frequency: 1000,
+        Q: 1
+      });
       this.#monitor.retain("lowpass");
     }
 

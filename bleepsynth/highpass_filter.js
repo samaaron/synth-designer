@@ -9,10 +9,11 @@ export default class HighpassFilter {
     constructor(ctx,monitor) {
       this.#context = ctx;
       this.#monitor = monitor;
-      this.#filter = ctx.createBiquadFilter();
-      this.#filter.frequency.value = 1000;
-      this.#filter.Q.value = 1;
-      this.#filter.type = "highpass";
+      this.#filter = new BiquadFilterNode(ctx, {
+        type: "highpass",
+        frequency: 1000,
+        Q: 1
+      });
       this.#monitor.retain("highpass");
     }
 
