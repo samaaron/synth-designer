@@ -15,6 +15,7 @@ import Envelope from './bleepsynth/envelope';
 import Decay from './bleepsynth/decay';
 import NoiseGenerator from './bleepsynth/noise';
 import Utility from './bleepsynth/utility';
+import Constants from './bleepsynth/constants';
 
 // TODO add crossfade node
 // TODO the noise node is really inefficient - generates 2 seconds of noise for every note
@@ -198,7 +199,7 @@ function init() {
     }
   });
 
-  disableGUI(true);
+  GUI.disableGUI(true);
   addListenersToGUI();
   setupMidi();
   makeGrammar();
@@ -339,7 +340,7 @@ function addListenersToGUI() {
   // start button
   GUI.tag("start-button").onclick = async () => {
     context = new AudioContext();
-    disableGUI(false);
+    GUI.disableGUI(false);
     connectEffects(context);
     initialiseEffects();
     let view = new ScopeView(GUI.tag("scope-canvas"), {
@@ -427,18 +428,18 @@ function getParameterListAsString(params) {
 // disable buttons
 // ------------------------------------------------------------
 
-function disableGUI(b) {
-  GUI.tag("start-button").disabled = !b;
-  GUI.tag("load-button").disabled = b;
-  GUI.tag("save-button").disabled = b;
-  GUI.tag("save-as-button").disabled = b;
-  GUI.tag("export-button").disabled = b;
-  GUI.tag("clip-button").disabled = b;
-  GUI.tag("docs-button").disabled = b;
-  GUI.tag("play-button").disabled = b;
-  GUI.tag("midi-label").disabled = b;
-  GUI.tag("midi-input").disabled = b;
-}
+// function disableGUI(b) {
+//   GUI.tag("start-button").disabled = !b;
+//   GUI.tag("load-button").disabled = b;
+//   GUI.tag("save-button").disabled = b;
+//   GUI.tag("save-as-button").disabled = b;
+//   GUI.tag("export-button").disabled = b;
+//   GUI.tag("clip-button").disabled = b;
+//   GUI.tag("docs-button").disabled = b;
+//   GUI.tag("play-button").disabled = b;
+//   GUI.tag("midi-label").disabled = b;
+//   GUI.tag("midi-input").disabled = b;
+// }
 
 // ------------------------------------------------------------
 // Set up the MIDI system and find possible input devices
@@ -1253,10 +1254,10 @@ class BleepGenerator {
     // find the maxima and minima of all parameters and store them
     // but we need to store information about max/min pitch and level
     this.#maxima = {};
-    this.#maxima.pitch = Utility.MAX_MIDI_FREQ;
+    this.#maxima.pitch = Constants.MAX_MIDI_FREQ;
     this.#maxima.level = MAX_LEVEL;
     this.#minima = {};
-    this.#minima.pitch = Utility.MIN_MIDI_FREQ;
+    this.#minima.pitch = Constants.MIN_MIDI_FREQ;
     this.#minima.level = MIN_LEVEL;
     this.#defaults = {};
     this.#mutable = {};
@@ -1614,6 +1615,10 @@ class BleepPlayer {
     for (let t of this.generator.tweaks) {
       let obj = this.node[t.id];
       let val = this.evaluatePostfix(t.expression);
+      console.log(`applyTweaks param=${t.param} obj=${obj} val=${val}`);
+      console.log(obj);
+      console.log(t.id);
+      console.log(t.expression);
       obj[t.param] = val;
     }
   }
@@ -1712,7 +1717,7 @@ class BleepPlayer {
       } else if (t === "random") {
         let op1 = stack.pop();
         let op2 = stack.pop();
-        let r = randomBetween(op2, op1);
+        let r = Utility.randomBetween(op2, op1);
         stack.push(r);
       } else if (t === "map") {
         let op1 = stack.pop();
@@ -1721,7 +1726,7 @@ class BleepPlayer {
         let control = op3.replace("param.", "");
         let minval = this.generator.minima[control];
         let maxval = this.generator.maxima[control];
-        let s = scaleValue(minval, maxval, op2, op1, this.params[control]);
+        let s = Utility.scaleValue(minval, maxval, op2, op1, this.params[control]);
         stack.push(s);
       }
     }
@@ -1799,7 +1804,7 @@ class Reverb {
   }
 
   set wetLevel(level) {
-    this.#wetLevel = clamp(level, 0, 1);
+    this.#wetLevel = Utility.clamp(level, 0, 1);
     this.#wetGain.gain.value = this.#wetLevel;
     this.#dryGain.gain.value = 1 - this.#wetLevel;
   }
@@ -1914,15 +1919,6 @@ async function exportAsJSON() {
 }
 
 // ------------------------------------------------------------
-// Clamp a value to a maximum and minimum
-// https://www.youtube.com/watch?v=g2_zb6oyep8
-// ------------------------------------------------------------
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
-}
-
-// ------------------------------------------------------------
 // set control to value
 // ------------------------------------------------------------
 
@@ -1930,23 +1926,6 @@ function setFloatControl(label, value) {
   GUI.tag("slider-" + label).value = value;
   GUI.tag(`label-${label}`).textContent = `${label} [${value.toFixed(2)}]`;
 }
-
-// ------------------------------------------------------------
-// Make a random number between two values
-// ------------------------------------------------------------
-
-function randomBetween(min, max) {
-  return min + Math.random() * (max - min);
-}
-
-// ------------------------------------------------------------
-// Scale a value p in the range (low,high) to a new range (min,max)
-// ------------------------------------------------------------
-
-function scaleValue(low, high, min, max, p) {
-  return min + (p - low) * (max - min) / (high - low);
-}
-
 
 // ------------------------------------------------------------
 // TEST HARNESS
