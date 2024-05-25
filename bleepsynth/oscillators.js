@@ -1,4 +1,4 @@
-import Constants from "./constants";
+import Flags from "./flags.js";
 
 // ------------------------------------------------------------
 // Prototype oscillator class
@@ -43,17 +43,17 @@ class Oscillator {
     }
 
     start(tim) {
-      if (Constants.VERBOSE) console.log("starting oscillator");
+      if (Flags.VERBOSE) console.log("starting oscillator");
       this.osc.start(tim);
     }
 
     stop(tim) {
-      if (Constants.VERBOSE) console.log("stopping Oscillator");
+      if (Flags.VERBOSE) console.log("stopping Oscillator");
       this.osc.stop(tim);
       let stopTime = tim - this.context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (Constants.VERBOSE) console.log("disconnecting Oscillator");
+        if (Flags.VERBOSE) console.log("disconnecting Oscillator");
         this.osc.disconnect();
         this.osc = null;
         this.context = null;
@@ -193,7 +193,7 @@ export class PulseOsc extends Oscillator {
 
     // stop everything
     stop(tim) {
-      if (Constants.VERBOSE) console.log("stopping Pulse");
+      if (Flags.VERBOSE) console.log("stopping Pulse");
       this.osc.stop(tim);
       this.osc2.stop(tim);
       this.freqNode.stop(tim);
@@ -201,7 +201,7 @@ export class PulseOsc extends Oscillator {
       let stopTime = tim - this.context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (Constants.VERBOSE) console.log("disconnecting Pulse");
+        if (Flags.VERBOSE) console.log("disconnecting Pulse");
         this.osc.disconnect();
         this.osc2.disconnect();
         this.freqNode.disconnect();

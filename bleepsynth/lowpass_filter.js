@@ -1,4 +1,4 @@
-import Constants from "./constants";
+import Flags from "./flags.js";
 
 export default class LowpassFilter {
 
@@ -46,11 +46,11 @@ export default class LowpassFilter {
     }
 
     stop(tim) {
-      if (Constants.VERBOSE) console.log("stopping LPF");
+      if (Flags.VERBOSE) console.log("stopping LPF");
       let stopTime = tim - this.#context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (Constants.VERBOSE) console.log("disconnecting LPF");
+        if (Flags.VERBOSE) console.log("disconnecting LPF");
         this.#filter.disconnect();
         this.#filter = null;
         this.#context = null;

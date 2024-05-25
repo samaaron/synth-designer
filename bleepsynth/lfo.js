@@ -1,4 +1,4 @@
-import Constants from "./constants"
+import Flags from "./flags.js"
 
 export default class LFO {
 
@@ -62,13 +62,13 @@ export default class LFO {
     }
 
     stop(tim) {
-      if (Constants.VERBOSE) console.log("stopping LFO");
+      if (Flags.VERBOSE) console.log("stopping LFO");
       this.#sinOsc.stop(tim);
       this.#cosOsc.stop(tim);
       let stopTime = tim - this.#context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (Constants.VERBOSE) console.log("disconnecting LFO");
+        if (Flags.VERBOSE) console.log("disconnecting LFO");
         this.#sinOsc.disconnect();
         this.#cosOsc.disconnect();
         this.#sinGain.disconnect();

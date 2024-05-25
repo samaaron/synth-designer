@@ -1,4 +1,4 @@
-import Constants from "./constants";
+import Flags from "./flags.js";
 
 // ------------------------------------------------------------
 // Noise generator class
@@ -38,12 +38,12 @@ export default class NoiseGenerator {
   }
 
   stop(tim) {
-    if (Constants.VERBOSE) console.log("stopping Noise");
+    if (Flags.VERBOSE) console.log("stopping Noise");
     this.#noise.stop(tim);
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
-      if (Constants.VERBOSE) console.log("disconnecting Noise");
+      if (Flags.VERBOSE) console.log("disconnecting Noise");
       this.#noise.disconnect();
       this.#noise = null;
       this.#context = null;

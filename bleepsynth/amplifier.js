@@ -1,4 +1,4 @@
-import Constants from "./constants";
+import Flags from "./flags.js";
 
 export default class Amplifier {
 
@@ -37,11 +37,11 @@ export default class Amplifier {
   }
 
   stop(tim) {
-    if (Constants.VERBOSE) console.log("stopping Amplifier");
+    if (Flags.VERBOSE) console.log("stopping Amplifier");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
-      if (Constants.VERBOSE) console.log("disconnecting Amplifier");
+      if (Flags.VERBOSE) console.log("disconnecting Amplifier");
       this.#gain.disconnect();
       this.#gain = null;
       this.#context = null;

@@ -1,4 +1,4 @@
-import Constants from "./constants";
+import Flags from "./flags.js";
 
 export default class HighpassFilter {
 
@@ -46,11 +46,11 @@ export default class HighpassFilter {
     }
 
     stop(tim) {
-      if (Constants.VERBOSE) console.log("stopping HPF");
+      if (Flags.VERBOSE) console.log("stopping HPF");
       let stopTime = tim - this.#context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (Constants.VERBOSE) console.log("disconnecting HPF");
+        if (Flags.VERBOSE) console.log("disconnecting HPF");
         this.#filter.disconnect();
         this.#filter = null;
         this.#context = null;

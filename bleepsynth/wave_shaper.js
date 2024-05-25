@@ -1,12 +1,10 @@
-import Constants from './constants.js';
+import Flags from "./flags.js"
 
 export default class Waveshaper {
 
     #shaper
     #context
     #monitor
-
-    VERBOSE = false
 
     constructor(ctx,monitor) {
       this.#context = ctx;
@@ -48,11 +46,11 @@ export default class Waveshaper {
     }
 
     stop(tim) {
-      if (Constants.VERBOSE) console.log("stopping Shaper");
+      if (Flags.VERBOSE) console.log("stopping Shaper");
       let stopTime = tim - this.#context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (Constants.VERBOSE) console.log("disconnecting Shaper");
+        if (Flags.VERBOSE) console.log("disconnecting Shaper");
         this.#shaper.disconnect();
         this.#shaper = null;
         this.#context = null;

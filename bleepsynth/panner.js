@@ -1,4 +1,4 @@
-import Constants from "./constants";
+import Flags from "./flags.js";
 
 export default class Panner {
 
@@ -36,11 +36,11 @@ export default class Panner {
     }
 
     stop(tim) {
-      if (Constants.VERBOSE) console.log("stopping Panner");
+      if (Flags.VERBOSE) console.log("stopping Panner");
       let stopTime = tim - this.#context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (Constants.VERBOSE) console.log("disconnecting Panner");
+        if (Flags.VERBOSE) console.log("disconnecting Panner");
         this.#pan.disconnect();
         this.#pan = null;
         this.#context = null;

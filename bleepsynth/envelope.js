@@ -1,5 +1,3 @@
-import Constants from "./constants"
-
 export default class Envelope {
 
     #attack

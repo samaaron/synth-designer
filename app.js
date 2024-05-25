@@ -3,19 +3,10 @@ import Monitor from './bleepsynth/monitor';
 import Scope from './js/scope';
 import ScopeView from './js/scopeview';
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-import Panner from './bleepsynth/panner';
-import Waveshaper from './bleepsynth/wave_shaper';
-import Delay from './bleepsynth/delay';
-import LFO from './bleepsynth/lfo';
-import Amplifier from './bleepsynth/amplifier';
-import LowpassFilter from './bleepsynth/lowpass_filter';
-import HighpassFilter from './bleepsynth/highpass_filter';
-import { PulseOsc, SawOsc, SinOsc, TriOsc, SquareOsc } from './bleepsynth/oscillators';
-import Envelope from './bleepsynth/envelope';
-import Decay from './bleepsynth/decay';
-import NoiseGenerator from './bleepsynth/noise';
 import Utility from './bleepsynth/utility';
 import Constants from './bleepsynth/constants';
+import Grammar from './bleepsynth/grammar';
+import Flags from './bleepsynth/flags.js';
 
 // TODO add crossfade node
 // TODO the noise node is really inefficient - generates 2 seconds of noise for every note
@@ -27,10 +18,6 @@ window.addEventListener('DOMContentLoaded', init);
 
 const MIDI_CONTROLLERS = [74, 71, 76, 77, 93, 18, 19, 16];
 let controlMap;
-
-// flags
-
-const VERBOSE = false;
 
 // midi stuff
 
@@ -72,23 +59,6 @@ let currentJSON = null;
 let generator = null;
 let context = null;
 
-const moduleContext = {
-  Amplifier : Amplifier,
-  Decay : Decay,
-  Delay : Delay,
-  Envelope : Envelope,
-  HighpassFilter : HighpassFilter,
-  LFO : LFO,
-  LowpassFilter : LowpassFilter,
-  Noise : NoiseGenerator,
-  Panner : Panner,
-  PulseOsc : PulseOsc,
-  SawOsc : SawOsc,
-  SinOsc : SinOsc,
-  SquareOsc : SquareOsc,
-  TriOsc : TriOsc,
-  Waveshaper : Waveshaper
-};
 
 // ------------------------------------------------------------
 // initialise the button callbacks etc
@@ -364,7 +334,7 @@ function playNote(midiNoteNumber, velocity) {
     const params = getParametersForGenerator(generator);
     // make a player and store a reference to it so we can stop it later
     player = new BleepPlayer(context, generator, pitchHz, velocity, params);
-    if (VERBOSE) console.log(player);
+    if (Flags.VERBOSE) console.log(player);
     playerForNote.set(midiNoteNumber, player);
     player.out.connect(reverb.in);
     player.out.connect(scope.in);
@@ -410,7 +380,7 @@ function getParametersForGenerator(s) {
 function makeGrammar() {
 
   // get the grammar source, written in Ohm
-  const source = getGrammarSource();
+  const source = Grammar.getGrammarSource();
 
   let modules;
   let patches;
@@ -652,173 +622,11 @@ function getErrorLineNumber(source) {
 }
 
 // ------------------------------------------------------------
-// helper function to get the grammar source, written in Ohm
-// ------------------------------------------------------------
-
-function getGrammarSource() {
-  return String.raw`
-  Synth {
-
-  Graph = Synthblock Statement+
-
-  Parameter = "@param" paramname Paramtype Mutable Paramstep Minval Maxval Defaultval Docstring "@end"
-
-  Synthblock = "@synth" shortname Longname Type Author Version Docstring "@end"
-
-  shortname = letter (letter | "-")+
-
-  paramname = letter (alnum | "_")+
-
-  Mutable (a yes or no value)
-  = "mutable" ":" yesno
-
-  yesno = "yes" | "no"
-
-  Paramtype (a parameter type)
-  = "type" ":" validtype
-
-  Paramstep (a parameter step value)
-  = "step" ":" number
-
-  validtype (a valid type)
-  = "float" | "int"
-
-  Longname (a long name)
-  = "longname" ":" string
-
-  Type (a patch type)
-  = "type" ":" Patchtype
-
-  Patchtype (a synth or effect type)
-  = "synth" | "effect"
-
-  Minval (a minimum value)
-  = "min" ":" number
-
-  Maxval (a maximum value)
-  = "max" ":" number
-
-  Defaultval (a default value)
-  = "default" ":" number
-
-  Author (an author)
-  = "author" ":" string
-
-  Version (a version string)
-  = "version" ":" versionstring
-
-  Docstring (a documentation string)
-  = "doc" ":" string
-
-  versionstring (a version string)
-  = (alnum | "." | "-" | " ")+
-
-  string (a string)
-  = letter (alnum | "." | "," | "-" | " " | "(" | ")" )*
-
-  quote (a quote)
-  = "\""
-
-  Statement = comment
-  | Parameter
-  | Patch
-  | Tweak
-  | Declaration
-
-  Patch = patchoutput "->" (patchinput | audio)
-
-  patchoutput = varname "." outputparam
-
-  patchinput = varname "." inputparam
-
-  inputparam = "in" | "levelCV" | "pitchCV" | "cutoffCV" | "pulsewidthCV" | "angleCV" | "lagCV" | "thresholdCV" | "symmetryCV" | "gainCV"
-
-  outputparam = "out"
-
-  audio = "audio.in"
-
-  comment (a comment)
-  = "#" commentchar*
-
-  commentchar = alnum | "." | "+" | "-" | "/" | "*" | "." | ":" | blank
-
-  Tweak = tweakable "=" Exp
-
-  Declaration = module ":" varname
-
-  module = "SAW-OSC"
-  | "SIN-OSC"
-  | "SQR-OSC"
-  | "TRI-OSC"
-  | "PULSE-OSC"
-  | "LFO"
-  | "NOISE"
-  | "LPF"
-  | "HPF"
-  | "VCA"
-  | "SHAPER"
-  | "ADSR"
-  | "DECAY"
-  | "PAN"
-  | "DELAY"
-  | "FOLDER"
-
-  Exp
-    = AddExp
-
-  AddExp
-    = AddExp "+" MulExp  -- add
-  | AddExp "-" MulExp  -- subtract
-  | MulExp
-
-  MulExp
-    = MulExp "*" ExpExp -- times
-    | MulExp "/" ExpExp -- divide
-    | ExpExp
-
-  ExpExp
-    = "(" AddExp ")" -- paren
-    | "-" ExpExp -- neg
-    | Function
-    | number
-    | control
-
-  Function
-    = "map" "(" AddExp "," number "," number ")" -- map
-    | "random" "(" number "," number ")" -- random
-    | "exp" "(" AddExp ")" -- exp
-    | "log" "(" AddExp ")" -- log
-
-  control (a control parameter)
-  = "param" "." letter (alnum | "_")+
-
-  tweakable
-  = varname "." parameter
-
-  parameter = "pitch" | "detune" | "level" | "lag" | "phase" | "angle" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release" | "fuzz" | "pulsewidth" | "threshold" | "symmetry" | "gain" | "stages"
-
-  varname (a module name)
-  = lower alnum*
-
-  number (a number)
-  = floatingpoint | integer
-
-  floatingpoint = "-"? digit+ "." digit+
-
-  integer = "-"? digit+
-
-  blank = " "
-
-}
-`;
-}
-
-// ------------------------------------------------------------
 // parse the description to make a generator
 // ------------------------------------------------------------
 
 function parseGeneratorSpec() {
-  if (VERBOSE) console.log("parsing");
+  if (Flags.VERBOSE) console.log("parsing");
   generator = null;
   let result = synthGrammar.match(GUI.tag("synth-spec").value + "\n");
   if (result.succeeded()) {
@@ -1021,7 +829,7 @@ function isIdentifier(t) {
 // ------------------------------------------------------------
 
 function getModuleInstance(ctx, monitor, type) {
-  return new moduleContext[Constants.MODULE_CLASSES[type]](ctx,monitor);
+  return new Constants.MODULE_CONTEXT[Constants.MODULE_CLASSES[type]](ctx,monitor);
 }
 
 // ------------------------------------------------------------
@@ -1471,7 +1279,7 @@ class BleepPlayer {
 
   // stop the webaudio network right now
   stopImmediately() {
-    if (VERBOSE) console.log("stopping immediately");
+    if (Flags.VERBOSE) console.log("stopping immediately");
     let now = context.currentTime;
     Object.values(this.node).forEach((m) => {
       m.stop?.(now);
@@ -1480,7 +1288,7 @@ class BleepPlayer {
 
   // stop the webaudio network only after the release phase of envelopes has completed
   stopAfterRelease(when) {
-    if (VERBOSE) console.log("stopping after release");
+    if (Flags.VERBOSE) console.log("stopping after release");
     let longestRelease = 0;
     Object.values(this.node).forEach((m) => {
       if (m.release) {
