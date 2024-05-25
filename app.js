@@ -72,7 +72,7 @@ let currentJSON = null;
 let generator = null;
 let context = null;
 
-let moduleContext = {
+const moduleContext = {
   Amplifier : Amplifier,
   Decay : Decay,
   Delay : Delay,
@@ -88,86 +88,6 @@ let moduleContext = {
   SquareOsc : SquareOsc,
   TriOsc : TriOsc,
   Waveshaper : Waveshaper
-};
-
-// mapping between grammar names for modules and class names
-
-const moduleClasses = {
-  "SAW-OSC": "SawOsc",
-  "SIN-OSC": "SinOsc",
-  "TRI-OSC": "TriOsc",
-  "SQR-OSC": "SquareOsc",
-  "PULSE-OSC": "PulseOsc",
-  "LFO": "LFO",
-  "PAN": "Panner",
-  "NOISE": "Noise",
-  "LPF": "LowpassFilter",
-  "HPF": "HighpassFilter",
-  "VCA": "Amplifier",
-  "SHAPER": "Waveshaper",
-  "ADSR": "Envelope",
-  "DECAY": "Decay",
-  "AUDIO": "Audio",
-  "DELAY": "Delay"
-};
-
-// valid tweaks, used for error checking
-
-const validTweaks = {
-  "SAW-OSC": ["detune", "pitch"],
-  "SIN-OSC": ["detune", "pitch"],
-  "SQR-OSC": ["detune", "pitch"],
-  "TRI-OSC": ["detune", "pitch"],
-  "PULSE-OSC": ["detune", "pitch", "pulsewidth"],
-  "LFO": ["pitch", "phase"],
-  "LPF": ["cutoff", "resonance"],
-  "HPF": ["cutoff", "resonance"],
-  "VCA": ["level"],
-  "SHAPER": ["fuzz"],
-  "ADSR": ["attack", "decay", "sustain", "release", "level"],
-  "DECAY": ["attack", "decay", "level"],
-  "PAN": ["angle"],
-  "DELAY": ["lag"],
-  "FOLDER": ["threshold", "symmetry", "gain", "level", "stages"]
-};
-
-// valid patch inputs, used for error checking
-
-const validPatchInputs = {
-  "AUDIO": ["in"],
-  "SAW-OSC": ["pitchCV"],
-  "SIN-OSC": ["pitchCV"],
-  "SQR-OSC": ["pitchCV"],
-  "TRI-OSC": ["pitchCV"],
-  "PULSE-OSC": ["pitchCV", "pulsewidthCV"],
-  "LPF": ["in", "cutoffCV"],
-  "HPF": ["in", "cutoffCV"],
-  "VCA": ["in", "levelCV"],
-  "SHAPER": ["in"],
-  "PAN": ["in", "angleCV"],
-  "DELAY": ["in", "lagCV"],
-  "FOLDER": ["in", "thresholdCV", "symmetryCV", "levelCV", "gainCV"]
-};
-
-// valid patch outputs - pointless at the moment but in future modules may have more than one output
-
-const validPatchOutputs = {
-  "SAW-OSC": ["out"],
-  "SIN-OSC": ["out"],
-  "SQR-OSC": ["out"],
-  "TRI-OSC": ["out"],
-  "PULSE-OSC": ["out"],
-  "LFO": ["out"],
-  "NOISE": ["out"],
-  "LPF": ["out"],
-  "HPF": ["out"],
-  "VCA": ["out"],
-  "SHAPER": ["out"],
-  "ADSR": ["out"],
-  "DECAY": ["out"],
-  "PAN": ["out"],
-  "DELAY": ["out"],
-  "FOLDER": ["out"]
 };
 
 // ------------------------------------------------------------
@@ -204,16 +124,6 @@ function setDefaultValues() {
   GUI.setFloatControl("level", 0.8);
   GUI.setFloatControl("reverb", 0.1);
 }
-
-// ------------------------------------------------------------
-// tweak a parameter in real time, changing it immediately
-// ------------------------------------------------------------
-
-// function makeImmediateTweak(param, value) {
-//   playerForNote.forEach((player, note) => {
-//     player.applyTweakNow(param, value);
-//   });
-// }
 
 // ------------------------------------------------------------
 // add event listeners to GUI controls
@@ -606,7 +516,7 @@ function makeGrammar() {
         if (!modules.has(id))
           throwError(`a module called "${id}" has not been defined"`, this.source);
         const type = modules.get(id);
-        if (!validPatchOutputs[type].includes(param))
+        if (!Constants.VALID_PATCH_OUTPUTS[type].includes(param))
           throwError(`cannot patch the parameter "${param}" of module "${id}"`, this.source);
       }
       return `{"id":"${id}","param":"${param}"}`;
@@ -618,7 +528,7 @@ function makeGrammar() {
         if (!modules.has(id))
           throwError(`a module called "${id}" has not been defined`, this.source);
         const type = modules.get(id);
-        if (!validPatchInputs[type].includes(param))
+        if (!Constants.VALID_PATCH_INPUTS[type].includes(param))
           throwError(`cannot patch the parameter "${param}" of module "${id}"`, this.source);
       }
       return `{"id":"${id}","param":"${param}"}`;
@@ -629,7 +539,7 @@ function makeGrammar() {
       let twk = `${obj.id}.${obj.param}`;
       // check that this is a valid tweak
       let type = modules.get(obj.id);
-      if (!validTweaks[type].includes(obj.param))
+      if (!Constants.VALID_TWEAKS[type].includes(obj.param))
         throwError(`cannot set the parameter "${obj.param}" of module "${obj.id}"`, this.source);
       if (tweaks.includes(twk))
         throwError(`you cannot set the value of ${twk} more than once`, this.source);
@@ -1111,7 +1021,7 @@ function isIdentifier(t) {
 // ------------------------------------------------------------
 
 function getModuleInstance(ctx, monitor, type) {
-  return new moduleContext[moduleClasses[type]](ctx,monitor);
+  return new moduleContext[Constants.MODULE_CLASSES[type]](ctx,monitor);
 }
 
 // ------------------------------------------------------------
