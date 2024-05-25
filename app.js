@@ -35,7 +35,6 @@ const MIN_LEVEL = 0;
 
 // flags
 
-const SHOW_DOC_STRINGS = false;
 const VERBOSE = false;
 
 // midi stuff
@@ -68,11 +67,6 @@ let monitor;
 // scope
 
 let scope;
-
-// gui stuff
-
-const midiDot = GUI.tag("dot"); // we need this quickly so cache it
-const DOT_DURATION_MS = 50; // pulse the dot for 50ms when we get a midi note on
 
 // global variables (sorry)
 
@@ -212,53 +206,8 @@ function init() {
 // ------------------------------------------------------------
 
 function setDefaultValues() {
-  setFloatControl("level", 0.8);
-  setFloatControl("reverb", 0.1);
-}
-
-// ------------------------------------------------------------
-// dynamically add an HTML slider to the page
-// ------------------------------------------------------------
-
-function makeSlider(containerName, id, docstring, min, max, val, step) {
-  // get the root container
-  const container = document.getElementById(containerName);
-  // make the slider container
-  const sliderContainer = document.createElement("div");
-  sliderContainer.className = "slider-container";
-  sliderContainer.id = "param-" + id;
-  // make the slider
-  const slider = document.createElement("input");
-  slider.className = "slider";
-  slider.type = "range";
-  slider.id = "slider-" + id;
-  slider.min = min;
-  slider.max = max;
-  slider.step = step;
-  slider.value = val;
-  // doc string
-  if (SHOW_DOC_STRINGS) {
-    const doc = document.createElement("label");
-    doc.className = "docstring";
-    doc.id = "doc-" + id;
-    doc.textContent = docstring;
-    container.appendChild(doc);
-  }
-  // label
-  const label = document.createElement("label");
-  label.id = "label-" + id;
-  label.setAttribute("for", "slider-" + id);
-  label.textContent = `${id} [${val}]`;
-  // add a callback to the slider
-  slider.addEventListener("input", function () {
-    let val = parseFloat(this.value);
-    GUI.tag(label.id).textContent = `${id} [${val}]`;
-    makeImmediateTweak(id, val);
-  });
-  // add to the document
-  sliderContainer.appendChild(slider);
-  sliderContainer.appendChild(label);
-  container.appendChild(sliderContainer);
+  GUI.setFloatControl("level", 0.8);
+  GUI.setFloatControl("reverb", 0.1);
 }
 
 // ------------------------------------------------------------
@@ -269,18 +218,6 @@ function makeImmediateTweak(param, value) {
   playerForNote.forEach((player, note) => {
     player.applyTweakNow(param, value);
   });
-}
-
-// ------------------------------------------------------------
-// remove all the sliders, if we created any previously
-// ------------------------------------------------------------
-
-function removeAllSliders() {
-  for (let row = 1; row <= 2; row++) {
-    const container = document.getElementById(`container${row}`);
-    while (container.firstChild)
-      container.removeChild(container.firstChild);
-  }
 }
 
 // ------------------------------------------------------------
@@ -358,7 +295,7 @@ function addListenersToGUI() {
 
   // amplitude slider
   GUI.tag("slider-level").addEventListener("input", function () {
-    setFloatControl("level", parseFloat(this.value));
+    GUI.setFloatControl("level", parseFloat(this.value));
   });
 
   // reverb slider
@@ -425,23 +362,6 @@ function getParameterListAsString(params) {
 }
 
 // ------------------------------------------------------------
-// disable buttons
-// ------------------------------------------------------------
-
-// function disableGUI(b) {
-//   GUI.tag("start-button").disabled = !b;
-//   GUI.tag("load-button").disabled = b;
-//   GUI.tag("save-button").disabled = b;
-//   GUI.tag("save-as-button").disabled = b;
-//   GUI.tag("export-button").disabled = b;
-//   GUI.tag("clip-button").disabled = b;
-//   GUI.tag("docs-button").disabled = b;
-//   GUI.tag("play-button").disabled = b;
-//   GUI.tag("midi-label").disabled = b;
-//   GUI.tag("midi-input").disabled = b;
-// }
-
-// ------------------------------------------------------------
 // Set up the MIDI system and find possible input devices
 // ------------------------------------------------------------
 
@@ -485,7 +405,7 @@ function onMIDIMessage(message) {
   // a note on is only a note on if it has a non-zero velocity
   if (op === MIDI_NOTE_ON && message.data[2] != 0) {
     // blip the orange dot
-    blipDot();
+    GUI.blipDot();
     // note number
     const midiNoteNumber = message.data[1];
     // convert velocity to the range [0,1]
@@ -509,23 +429,11 @@ function onMIDIMessage(message) {
       let el = GUI.tag("slider-" + param);
       let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * controllerValue;
       //console.log(value);
-      setFloatControl(param, value);
+      GUI.setFloatControl(param, value);
     }
 
   }
 }
-
-// ------------------------------------------------------------
-// Blip the orange dot for a short time
-// ------------------------------------------------------------
-
-function blipDot() {
-  midiDot.style.opacity = 1;
-  setTimeout(() => {
-    midiDot.style.opacity = 0;
-  }, DOT_DURATION_MS);
-}
-
 
 // ------------------------------------------------------------
 // play a note
@@ -1031,7 +939,7 @@ function parseGeneratorSpec() {
 
 function createControls(json) {
   const obj = JSON.parse(json);
-  removeAllSliders();
+  GUI.removeAllSliders();
   controlMap = new Map();
   let count = 0;
   let row = 1;
@@ -1046,7 +954,7 @@ function createControls(json) {
       if (count > 11) {
         row = 2;
       }
-      makeSlider(`container${row}`, p.name, p.doc, p.min, p.max, p.default, p.step);
+      GUI.makeSlider(`container${row}`, p.name, p.doc, p.min, p.max, p.default, p.step);
       count++;
     }
   }
@@ -1833,7 +1741,7 @@ function initialiseEffects() {
 
 function setReverb(w) {
   reverb.wetLevel = w;
-  setFloatControl("reverb", w);
+  GUI.setFloatControl("reverb", w);
 }
 
 // ------------------------------------------------------------
@@ -1916,15 +1824,6 @@ async function exportAsJSON() {
     await writable.write(currentJSON);
     await writable.close();
   }
-}
-
-// ------------------------------------------------------------
-// set control to value
-// ------------------------------------------------------------
-
-function setFloatControl(label, value) {
-  GUI.tag("slider-" + label).value = value;
-  GUI.tag(`label-${label}`).textContent = `${label} [${value.toFixed(2)}]`;
 }
 
 // ------------------------------------------------------------

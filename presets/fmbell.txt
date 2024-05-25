@@ -48,8 +48,8 @@ ADSR : env
 
 modulator.out -> gain.in
 gain.out -> carrier.pitchCV
-carrier.detune = 200
-modulator.detune = 500
+carrier.detune = 0
+modulator.detune = 600
 env.out -> vca.levelCV
 
 carrier.out -> vca.in
