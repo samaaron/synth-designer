@@ -28,11 +28,6 @@ window.addEventListener('DOMContentLoaded', init);
 const MIDI_CONTROLLERS = [74, 71, 76, 77, 93, 18, 19, 16];
 let controlMap;
 
-// various constants
-
-const MAX_LEVEL = 1;
-const MIN_LEVEL = 0;
-
 // flags
 
 const VERBOSE = false;
@@ -214,11 +209,11 @@ function setDefaultValues() {
 // tweak a parameter in real time, changing it immediately
 // ------------------------------------------------------------
 
-function makeImmediateTweak(param, value) {
-  playerForNote.forEach((player, note) => {
-    player.applyTweakNow(param, value);
-  });
-}
+// function makeImmediateTweak(param, value) {
+//   playerForNote.forEach((player, note) => {
+//     player.applyTweakNow(param, value);
+//   });
+// }
 
 // ------------------------------------------------------------
 // add event listeners to GUI controls
@@ -422,14 +417,19 @@ function onMIDIMessage(message) {
   if (op === 0xB0) {
     const controllerNumber = message.data[1];
     const controllerValue = message.data[2] / 127;
-    // console.log(`CC ${controllerNumber} ${controllerValue}`);
+    console.log(`CC ${controllerNumber} ${controllerValue}`);
     let param = controlMap.get(controllerNumber);
+    console.log(param);
     if (param != undefined) {
       // console.log(param);
       let el = GUI.tag("slider-" + param);
       let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * controllerValue;
-      //console.log(value);
+      console.log(value);
       GUI.setFloatControl(param, value);
+      playerForNote.forEach((player,note) => {
+        player.applyTweakNow(param, value);
+    });
+
     }
 
   }
@@ -915,11 +915,10 @@ function parseGeneratorSpec() {
     try {
       GUI.tag("parse-errors").value = "OK";
       const adapter = semantics(result);
-      const json = adapter.interpret();
-      createControls(json);
-      currentJSON = convertToStandardJSON(json);
+      currentJSON = convertToStandardJSON(adapter.interpret());
+      controlMap = createControls(currentJSON);
       generator = new BleepGenerator(currentJSON);
-      // new bit - draw as mermaid graph
+      // draw as mermaid graph
       generator.drawGraphAsMermaid();
       // was there a warning?
       if (generator.hasWarning) {
@@ -940,24 +939,21 @@ function parseGeneratorSpec() {
 function createControls(json) {
   const obj = JSON.parse(json);
   GUI.removeAllSliders();
-  controlMap = new Map();
+  const map = new Map();
   let count = 0;
   let row = 1;
-  for (const m of obj.statements) {
-    // find all the parameters
-    if (m.param) {
-      let p = m.param;
-      // we map the first few sliders to the preferred list of MIDI controllers
-      if (count < MIDI_CONTROLLERS.length) {
-        controlMap.set(MIDI_CONTROLLERS[count], p.name);
-      }
-      if (count > 11) {
-        row = 2;
-      }
-      GUI.makeSlider(`container${row}`, p.name, p.doc, p.min, p.max, p.default, p.step);
-      count++;
+  for (const p of obj.parameters) {
+    // we map the first few sliders to the preferred list of MIDI controllers
+    if (count < MIDI_CONTROLLERS.length) {
+      map.set(MIDI_CONTROLLERS[count], p.name);
     }
+    if (count > 11) {
+      row = 2;
+    }
+    GUI.makeSlider(playerForNote, `container${row}`, p.name, p.doc, p.min, p.max, p.default, p.step);
+    count++;
   }
+  return map;
 }
 
 // ------------------------------------------------------------
@@ -1163,10 +1159,10 @@ class BleepGenerator {
     // but we need to store information about max/min pitch and level
     this.#maxima = {};
     this.#maxima.pitch = Constants.MAX_MIDI_FREQ;
-    this.#maxima.level = MAX_LEVEL;
+    this.#maxima.level = Constants.MAX_LEVEL;
     this.#minima = {};
     this.#minima.pitch = Constants.MIN_MIDI_FREQ;
-    this.#minima.level = MIN_LEVEL;
+    this.#minima.level = Constants.MIN_LEVEL;
     this.#defaults = {};
     this.#mutable = {};
     for (let m of this.#parameters) {
@@ -1534,6 +1530,7 @@ class BleepPlayer {
   // apply one tweak now as an instantaneous change
   // you can only do this to parameters that have been identified as mutable
   applyTweakNow(param, value) {
+    console.log("here");
     // is the parameter mutable?
     if (this.generator.mutable[param] === false)
       return;

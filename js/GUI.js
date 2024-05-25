@@ -5,7 +5,7 @@ export default class GUI {
 
     /**
      * get the element with the given name
-     * @param {string} name 
+     * @param {string} name
      * @returns {HTMLElement}
      */
     static tag(name) {
@@ -14,7 +14,7 @@ export default class GUI {
 
     /**
      * disable or enable the GUI elements
-     * @param {boolean} b 
+     * @param {boolean} b
      */
     static disableGUI(b) {
         GUI.tag("start-button").disabled = !b;
@@ -31,15 +31,15 @@ export default class GUI {
 
     /**
      * make a slider
-     * @param {string} containerName 
-     * @param {number} id 
-     * @param {string} docstring 
-     * @param {number} min 
-     * @param {number} max 
-     * @param {number} val 
-     * @param {number} step 
+     * @param {string} containerName
+     * @param {number} id
+     * @param {string} docstring
+     * @param {number} min
+     * @param {number} max
+     * @param {number} val
+     * @param {number} step
      */
-    static makeSlider(containerName, id, docstring, min, max, val, step) {
+    static makeSlider(playerForNote, containerName, id, docstring, min, max, val, step) {
         // get the root container
         const container = document.getElementById(containerName);
         // make the slider container
@@ -72,7 +72,9 @@ export default class GUI {
         slider.addEventListener("input", function () {
             let val = parseFloat(this.value);
             GUI.tag(label.id).textContent = `${id} [${val}]`;
-            makeImmediateTweak(id, val);
+            playerForNote.forEach((player,note) => {
+                player.applyTweakNow(id, val);
+            });
         });
         // add to the document
         sliderContainer.appendChild(slider);
@@ -104,8 +106,8 @@ export default class GUI {
 
     /**
      * set the value of a control to a real number
-     * @param {string} label 
-     * @param {number} value 
+     * @param {string} label
+     * @param {number} value
      */
     static setFloatControl(label, value) {
         GUI.tag("slider-" + label).value = value;

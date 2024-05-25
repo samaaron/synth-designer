@@ -8,7 +8,7 @@ doc : Thick synth bass sound
 
 @param cutoff
 type: float
-mutable: no
+mutable: yes
 step: 0.01
 min: 100
 max: 8000
