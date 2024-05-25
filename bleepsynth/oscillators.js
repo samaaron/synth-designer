@@ -6,6 +6,8 @@ import Flags from "./flags.js";
 
 class Oscillator {
 
+    static MIDDLE_C = 261.63; // Hz
+
     osc
     context
     monitor
@@ -14,7 +16,11 @@ class Oscillator {
       this.context = ctx;
       this.monitor = monitor
       this.osc = ctx.createOscillator(ctx);
-      this.osc.frequency.value = Constants.MIDDLE_C;
+      this.osc.frequency.value = Oscillator.MIDDLE_C;
+      this.osc.onended = () => {
+        this.osc.disconnect();
+        this.monitor.release("osc");
+      }
       this.monitor.retain("osc");
     }
 
@@ -50,15 +56,6 @@ class Oscillator {
     stop(tim) {
       if (Flags.VERBOSE) console.log("stopping Oscillator");
       this.osc.stop(tim);
-      let stopTime = tim - this.context.currentTime;
-      if (stopTime < 0) stopTime = 0;
-      setTimeout(() => {
-        if (Flags.VERBOSE) console.log("disconnecting Oscillator");
-        this.osc.disconnect();
-        this.osc = null;
-        this.context = null;
-        this.monitor.release("osc");
-      }, (stopTime + 0.1) * 1000);
     }
 
   }
@@ -89,7 +86,7 @@ export class PulseOsc extends Oscillator {
       // set the parameters of oscillator 1
       // we set the oscillator value to 0 to avoid an offset since we will control the
       // frequency of the two oscillatoes via the ConstantSourceNode
-      this.freqHz = Constants.MIDDLE_C;
+      this.freqHz = Oscillator.MIDDLE_C;
       this.osc.frequency.value = 0;
       this.osc.type = "sawtooth"
 

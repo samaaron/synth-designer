@@ -10,9 +10,6 @@ import Panner from './panner.js';
 import Waveshaper from './wave_shaper.js';
 import {SinOsc, SawOsc, SquareOsc, TriOsc, PulseOsc} from './oscillators.js';
 
-const VERBOSE = true;
-
-const MIDDLE_C = 261.63; // Hz
 const MAX_MIDI_FREQ = 4186; // C8
 const MIN_MIDI_FREQ = 27.5;  // A0
 const MAX_LEVEL = 1;
@@ -117,8 +114,6 @@ const MODULE_CLASSES = {
   };
   
 const Constants = {
-    VERBOSE,
-    MIDDLE_C,
     MAX_MIDI_FREQ,
     MIN_MIDI_FREQ,
     MIN_LEVEL,
