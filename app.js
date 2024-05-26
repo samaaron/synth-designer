@@ -1,24 +1,22 @@
 import GUI from './js/GUI.js';
-import Monitor from './bleepsynth/monitor.js';
 import Scope from './js/scope.js';
 import ScopeView from './js/scopeview.js';
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 import Utility from './bleepsynth/utility.js';
-import Grammar from './bleepsynth/grammar.js';
 import Flags from './bleepsynth/flags.js';
 import BleepGenerator from './bleepsynth/bleep_generator.js';
-import BleepPlayer from './bleepsynth/bleep_player.js';
-
-// TODO add crossfade node
-// TODO the noise node is really inefficient - generates 2 seconds of noise for every note
-// TODO audio node is no longer used, remove it
-// TODO add a formant filter
-// check
+import BleepSynthTests from './bleepsynth/bleep_synth_tests.js';
+import BleepSynthEngine from './bleepsynth/bleep_synth_engine.js';
 
 window.addEventListener('DOMContentLoaded', init);
 
 const MIDI_CONTROLLERS = [74, 71, 76, 77, 93, 18, 19, 16];
+
 let controlMap;
+
+// engine
+
+const synthEngine = new BleepSynthEngine();
 
 // midi stuff
 
@@ -43,18 +41,14 @@ let playerForNote = new Map();
 
 let reverb;
 
-// monitor - keep track of how many notes and nodes we have
-
-let monitor;
-
 // scope
 
 let scope;
 
 // global variables (sorry)
 
-let synthGrammar;
-let synthSemantics;
+// let synthGrammar;
+// let synthSemantics;
 let wasEdited;
 let currentJSON = null;
 let generator = null;
@@ -66,6 +60,13 @@ let context = null;
 // ------------------------------------------------------------
 
 function init() {
+
+  // tests
+
+  // BleepSynthTests.testExpressionEvaluation();
+
+  // initialisation
+
   mermaid.initialize({
     startOnLoad: true,
     theme: 'base',
@@ -82,9 +83,7 @@ function init() {
   GUI.disableGUI(true);
   addListenersToGUI();
   setupMidi();
-  ({synthSemantics, synthGrammar} = Grammar.makeGrammar());
   setDefaultValues();
-  monitor = new Monitor();
 }
 
 // ------------------------------------------------------------
@@ -106,7 +105,13 @@ function addListenersToGUI() {
 
   GUI.tag("synth-spec").addEventListener("input", () => {
     if (GUI.tag("synth-spec").value.length > 0) {
-      parseGeneratorSpec();
+      const spec = GUI.tag("synth-spec").value;
+      let message;
+      ({ generator: generator, message: message } = synthEngine.getGenerator(spec));
+      GUI.tag("parse-errors").value = message;
+      console.log(generator);
+      controlMap = createControls(generator);
+      drawGraphAsMermaid(generator);
       if (!wasEdited) {
         GUI.tag("file-label").textContent += "*";
         wasEdited = true;
@@ -302,7 +307,6 @@ function onMIDIMessage(message) {
     let param = controlMap.get(controllerNumber);
     console.log(param);
     if (param != undefined) {
-      // console.log(param);
       let el = GUI.tag("slider-" + param);
       let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * controllerValue;
       console.log(value);
@@ -328,19 +332,18 @@ function playNote(midiNoteNumber, velocity) {
     if (player != undefined) {
       player.stopAfterRelease(context.currentTime);
       playerForNote.delete(midiNoteNumber);
-      monitor.release("note");
     }
     // get the pitch and parameters
     const pitchHz = Utility.midiNoteToFreqHz(midiNoteNumber);
     const params = getParametersForGenerator(generator);
     // make a player and store a reference to it so we can stop it later
-    player = new BleepPlayer(context, monitor, generator, pitchHz, velocity, params);
+   // player = new BleepPlayer(context, monitor, generator, pitchHz, velocity, params);
+    player = synthEngine.getPlayer(context, generator, pitchHz, velocity, params);
     if (Flags.VERBOSE) console.log(player);
     playerForNote.set(midiNoteNumber, player);
     player.out.connect(reverb.in);
     player.out.connect(scope.in);
     player.start(context.currentTime);
-    monitor.retain("note");
     scope.resetRMS();
   }
 }
@@ -354,7 +357,6 @@ function stopNote(midiNoteNumber) {
   if (player != undefined) {
     player.stopAfterRelease(context.currentTime);
     playerForNote.delete(midiNoteNumber);
-    monitor.release("note");
   }
 }
 
@@ -394,45 +396,15 @@ function getErrorLineNumber(source) {
 }
 
 // ------------------------------------------------------------
-// parse the description to make a generator
-// ------------------------------------------------------------
-
-function parseGeneratorSpec() {
-  if (Flags.VERBOSE) console.log("parsing");
-  generator = null;
-  let result = synthGrammar.match(GUI.tag("synth-spec").value + "\n");
-  if (result.succeeded()) {
-    try {
-      GUI.tag("parse-errors").value = "OK";
-      const adapter = synthSemantics(result);
-      currentJSON = Grammar.convertToStandardJSON(adapter.interpret());
-      controlMap = createControls(currentJSON);
-      generator = new BleepGenerator(currentJSON);
-      // draw as mermaid graph
-      drawGraphAsMermaid(generator);
-      // was there a warning?
-      if (generator.hasWarning) {
-        GUI.tag("parse-errors").value += "\n" + generator.warningString;
-      }
-    } catch (error) {
-      GUI.tag("parse-errors").value = error.message;
-    }
-  } else {
-    GUI.tag("parse-errors").value = result.message;
-  }
-}
-
-// ------------------------------------------------------------
 // create the controls for this synth
 // ------------------------------------------------------------
 
-function createControls(json) {
-  const obj = JSON.parse(json);
+function createControls(generator) {
   GUI.removeAllSliders();
   const map = new Map();
   let count = 0;
   let row = 1;
-  for (const p of obj.parameters) {
+  for (const p of generator.parameters) {
     // we map the first few sliders to the preferred list of MIDI controllers
     if (count < MIDI_CONTROLLERS.length) {
       map.set(MIDI_CONTROLLERS[count], p.name);
@@ -588,11 +560,16 @@ function getFloatParam(name) {
 async function loadFile() {
   [fileHandle] = await window.showOpenFilePicker();
   const file = await fileHandle.getFile();
-  const contents = await file.text();
-  GUI.tag("synth-spec").value = contents;
+  const spec = await file.text();
+  GUI.tag("synth-spec").value = spec;
   GUI.tag("file-label").textContent = "Current file: " + fileHandle.name;
   wasEdited = false;
-  parseGeneratorSpec();
+  let message;
+  ({ generator: generator, controlMap: controlMap, message: message } = synthEngine.getGenerator(spec));
+  GUI.tag("parse-errors").value = message;
+  console.log(generator);
+  createControls(generator);
+  drawGraphAsMermaid(generator);
 }
 
 // ------------------------------------------------------------
@@ -644,52 +621,4 @@ async function exportAsJSON() {
     await writable.write(currentJSON);
     await writable.close();
   }
-}
-
-// ------------------------------------------------------------
-// TEST HARNESS
-// ------------------------------------------------------------
-
-// ------------------------------------------------------------
-// run a test suite for expression evaluation
-// ------------------------------------------------------------
-
-function runTestSuite() {
-  let infix = [];
-  infix.push("2*param.cutoff");
-  infix.push("2+param.cutoff");
-  infix.push("param.cutoff+param.resonance");
-  infix.push("log(param.cutoff)+exp(param.resonance)");
-  infix.push("2");
-  infix.push("4/5");
-  infix.push("8-5");
-  infix.push("param.cutoff/3");
-  infix.push("param.cutoff+random(0,1)");
-  infix.push("exp(param.cutoff-param.resonance)");
-  infix.push("param.pitch");
-  infix.push("-1200");
-  infix.push("(-1)*2");
-  infix.push("2*-4");
-  let param = { "cutoff": 2, "resonance": 3, "timbre": 4, "pitch": 50, "level": 0.5 };
-  let minima = { "cutoff": 0, "resonance": 0, "timbre": 0, "pitch": 20, "level": 0 };
-  let maxima = { "cutoff": 10, "resonance": 10, "timbre": 5, "pitch": 500, "level": 1 };
-  for (let item of infix)
-    testExpression(item, param, minima, maxima);
-}
-
-// ------------------------------------------------------------
-// for testing, compare an expression in infix and postfix form
-// ------------------------------------------------------------
-
-function testExpression(infix, param, minima, maxima) {
-  console.log(infix);
-  let postfix = Expression.convertToPostfix(infix);
-  console.log("".concat(postfix.map(z => `${z}`)));
-  infix = infix.replace("log", "Math.log");
-  infix = infix.replace("exp", "Math.exp");
-  infix = infix.replace("random", "randomBetween");
-  infixResult = eval(infix);
-  postfixResult = evaluatePostfix(postfix, param, maxima, minima);
-  console.log(`infix=${infixResult} postfix=${postfixResult}`);
-  console.log("");
 }
