@@ -94,6 +94,7 @@ export class PulseOsc extends Oscillator {
       this.osc2 = ctx.createOscillator();
       this.osc2.frequency.value = 0;
       this.osc2.type = "sawtooth"
+      this.monitor.retain("osc");
 
       // set the initial pulsewidth to 50%
       this.#pulsewidth = 0.5;
