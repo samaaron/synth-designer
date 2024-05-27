@@ -21,20 +21,9 @@ const synthEngine = new BleepSynthEngine();
 
 const midiSystem = new MidiSystem();
 
-// midi stuff
-
-const MIDI_NOTE_ON = 0x90;
-const MIDI_NOTE_OFF = 0x80;
-
 // file handle
 
 let fileHandle;
-
-// midi context
-
-let midi = null;
-let midiInputs = null;
-let midiInputEnabled = false;
 
 // this is a map from midi note -> player
 
@@ -50,8 +39,6 @@ let scope;
 
 // global variables (sorry)
 
-// let synthGrammar;
-// let synthSemantics;
 let wasEdited;
 let currentJSON = null;
 let generator = null;
@@ -71,7 +58,6 @@ async function init() {
   // midi
 
   await midiSystem.connect();
-  console.log(midiSystem.inputs);
 
   // initialisation
 
@@ -90,6 +76,8 @@ async function init() {
 
   GUI.disableGUI(true);
   addListenersToGUI();
+  console.log(midiSystem.inputs);
+  console.log(midiSystem.inputs);
   setupMidi();
   setDefaultValues();
 }
@@ -192,25 +180,14 @@ function addListenersToGUI() {
     setReverb(parseFloat(this.value));
   });
 
-  // midi input selector
   GUI.tag("midi-input").addEventListener("change", () => {
-    midiInputEnabled = false;
-    const index = parseInt(GUI.tag("midi-input").value);
-    if (midi != null && index > 0) {
-      let selectedName = midiInputs[index - 1].name;
-      // note that we need to set all callbacks since we might change the midi input while running
-      // and then the previous callback would persist
-      for (let val of midi.inputs.values()) {
-        if (val.name === selectedName)
-          val.onmidimessage = onMIDIMessage;
-        else
-          val.onmidimessage = undefined;
-      }
-      midiInputEnabled = true;
-    }
-  });
+    var selectedIndex = GUI.tag("midi-input").selectedIndex;
+    var selectedName = GUI.tag("midi-input").options[selectedIndex].text;
+    console.log(selectedName);
+    midiSystem.selectInput(selectedName);
+    });
 
-}
+  }
 
 // ------------------------------------------------------------
 // copy parameters to clipboard
@@ -254,79 +231,52 @@ function getParameterListAsString(params) {
 // Set up the MIDI system and find possible input devices
 // ------------------------------------------------------------
 
-function setupMidi() {
-
-  navigator.requestMIDIAccess({ "sysex": "false" }).then((access) => {
-    // Get lists of available MIDI controllers
-    // might need to cache access
-    midi = access;
-    midiInputs = Array.from(access.inputs.values());
-
-    // get the html element for the list of midi inputs
-    const inputSelector = document.getElementById("midi-input");
-
+  function setupMidi() {
+    console.log("Setting up MIDI");
+    console.log(midiSystem);
+    const midiInputs = midiSystem.inputs;
+    console.log(midiInputs);
+    const inputSelector = GUI.tag("midi-input");
     // first element in the list is no input
     let option = document.createElement("option");
     option.text = "None";
     option.value = 0;
     inputSelector.appendChild(option);
-
     // set the options for the remaining html elements
     let index = 1;
-    for (let val of midiInputs) {
+    for (let name of midiInputs) {
       option = document.createElement("option");
-      option.text = val.name;
+      option.text = name;
       option.value = index;
       inputSelector.appendChild(option);
       index++;
-    };
+    }
 
+    // add event listeners
+
+    window.addEventListener('midiNoteOnEvent', (e) => {
+      GUI.blipDot();
+      playNote(e.detail.note, e.detail.velocity);
+    });
+
+    window.addEventListener('midiNoteOffEvent', (e) => {
+      stopNote(e.detail.note);
+    });
+
+    window.addEventListener('midiControllerEvent', (e) => {
+      let param = controlMap.get(e.detail.controller);
+      if (param != undefined) {
+        let el = GUI.tag("slider-" + param);
+        let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * e.detail.value;
+        console.log(value);
+        GUI.setFloatControl(param, value);
+        playerForNote.forEach((player,note) => {
+          player.applyTweakNow(param, value);
+      });
+    }
   });
 }
 
-// ------------------------------------------------------------
-// callback for when a MIDI event is received
-// ------------------------------------------------------------
-
-function onMIDIMessage(message) {
-  // mask the lowest nibble since we don't care about which MIDI channel we receive from
-  const op = message.data[0] & 0xf0;
-  // a note on is only a note on if it has a non-zero velocity
-  if (op === MIDI_NOTE_ON && message.data[2] != 0) {
-    // blip the orange dot
-    GUI.blipDot();
-    // note number
-    const midiNoteNumber = message.data[1];
-    // convert velocity to the range [0,1]
-    const velocity = message.data[2] / 127.0;
-    // play the note
-    playNote(midiNoteNumber, velocity);
-  }
-  // a note off is a note off, or a note on with zero velocity
-  if (op === MIDI_NOTE_OFF || (op === MIDI_NOTE_ON && message.data[2] === 0)) {
-    const midiNoteNumber = message.data[1];
-    stopNote(midiNoteNumber);
-  }
-  // midi controller
-  if (op === 0xB0) {
-    const controllerNumber = message.data[1];
-    const controllerValue = message.data[2] / 127;
-    console.log(`CC ${controllerNumber} ${controllerValue}`);
-    let param = controlMap.get(controllerNumber);
-    console.log(param);
-    if (param != undefined) {
-      let el = GUI.tag("slider-" + param);
-      let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * controllerValue;
-      console.log(value);
-      GUI.setFloatControl(param, value);
-      playerForNote.forEach((player,note) => {
-        player.applyTweakNow(param, value);
-    });
-
-    }
-
-  }
-}
 
 // ------------------------------------------------------------
 // play a note
@@ -428,7 +378,7 @@ function createControls(generator) {
 
 /**
  * draw the generator as a mermaid graph
- * @param {BleepGenerator} generator 
+ * @param {BleepGenerator} generator
  */
 function drawGraphAsMermaid(generator) {
   var element = GUI.tag("mermaid-graph");
