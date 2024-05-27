@@ -8,10 +8,6 @@ export default class MidiSystem {
     #midiInputs = null;
     #inputEnabled = false;
 
-    constructor() {
-
-    }
-
     async connect() {
         const access = await navigator.requestMIDIAccess({ "sysex": "false" });
         this.#midi = access;

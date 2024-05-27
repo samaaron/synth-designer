@@ -102,12 +102,14 @@ function addListenersToGUI() {
   GUI.tag("synth-spec").addEventListener("input", () => {
     if (GUI.tag("synth-spec").value.length > 0) {
       const spec = GUI.tag("synth-spec").value;
-      let message;
-      ({ generator: generator, message: message } = synthEngine.getGenerator(spec));
-      GUI.tag("parse-errors").value = message;
-      console.log(generator);
-      controlMap = createControls(generator);
-      drawGraphAsMermaid(generator);
+      const result = synthEngine.getGenerator(spec);
+      generator = result.generator;
+      GUI.tag("parse-errors").value = result.message;
+      if (generator && generator.isValid) {
+        console.log(generator);
+        controlMap = createControls(generator);
+        drawGraphAsMermaid(generator);
+      }
       if (!wasEdited) {
         GUI.tag("file-label").textContent += "*";
         wasEdited = true;
@@ -231,52 +233,53 @@ function getParameterListAsString(params) {
 // Set up the MIDI system and find possible input devices
 // ------------------------------------------------------------
 
-  function setupMidi() {
-    console.log("Setting up MIDI");
-    console.log(midiSystem);
-    const midiInputs = midiSystem.inputs;
-    console.log(midiInputs);
-    const inputSelector = GUI.tag("midi-input");
-    // first element in the list is no input
-    let option = document.createElement("option");
-    option.text = "None";
-    option.value = 0;
+function setupMidi() {
+  // make the dropdown
+  makeMIDIdropdown();
+  // add event listeners
+  makeMIDIlisteners();
+}
+
+function makeMIDIdropdown() {
+  const midiInputs = midiSystem.inputs;
+  const inputSelector = GUI.tag("midi-input");
+  // first element in the list is no input
+  const noneOption = document.createElement("option");
+  noneOption.text = "None";
+  noneOption.value = 0;
+  inputSelector.appendChild(noneOption);
+  // set the options for the remaining html elements
+  midiInputs.forEach((name, index) => {
+    const option = document.createElement("option");
+    option.text = name;
+    option.value = index + 1;
     inputSelector.appendChild(option);
-    // set the options for the remaining html elements
-    let index = 1;
-    for (let name of midiInputs) {
-      option = document.createElement("option");
-      option.text = name;
-      option.value = index;
-      inputSelector.appendChild(option);
-      index++;
-    }
+  });
+}
 
-    // add event listeners
-
-    window.addEventListener('midiNoteOnEvent', (e) => {
-      GUI.blipDot();
-      playNote(e.detail.note, e.detail.velocity);
-    });
-
-    window.addEventListener('midiNoteOffEvent', (e) => {
-      stopNote(e.detail.note);
-    });
-
-    window.addEventListener('midiControllerEvent', (e) => {
-      let param = controlMap.get(e.detail.controller);
-      if (param != undefined) {
-        let el = GUI.tag("slider-" + param);
-        let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * e.detail.value;
-        console.log(value);
-        GUI.setFloatControl(param, value);
-        playerForNote.forEach((player,note) => {
-          player.applyTweakNow(param, value);
+function makeMIDIlisteners() {
+  // note on
+  window.addEventListener('midiNoteOnEvent', (e) => {
+    GUI.blipDot();
+    playNote(e.detail.note, e.detail.velocity);
+  });
+  // note off
+  window.addEventListener('midiNoteOffEvent', (e) => {
+    stopNote(e.detail.note);
+  });
+  // controller
+  window.addEventListener('midiControllerEvent', (e) => {
+    let param = controlMap.get(e.detail.controller);
+    if (param != undefined) {
+      let el = GUI.tag("slider-" + param);
+      let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * e.detail.value;
+      GUI.setFloatControl(param, value);
+      playerForNote.forEach((player, note) => {
+        player.applyTweakNow(param, value);
       });
     }
   });
 }
-
 
 // ------------------------------------------------------------
 // play a note
