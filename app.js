@@ -7,6 +7,7 @@ import Flags from './bleepsynth/flags.js';
 import BleepGenerator from './bleepsynth/bleep_generator.js';
 import BleepSynthTests from './bleepsynth/bleep_synth_tests.js';
 import BleepSynthEngine from './bleepsynth/bleep_synth_engine.js';
+import MidiSystem from './midi/midi_system.js';
 
 window.addEventListener('DOMContentLoaded', init);
 
@@ -17,6 +18,8 @@ let controlMap;
 // engine
 
 const synthEngine = new BleepSynthEngine();
+
+const midiSystem = new MidiSystem();
 
 // midi stuff
 
@@ -59,11 +62,16 @@ let context = null;
 // initialise the button callbacks etc
 // ------------------------------------------------------------
 
-function init() {
+async function init() {
 
   // tests
 
   // BleepSynthTests.testExpressionEvaluation();
+
+  // midi
+
+  await midiSystem.connect();
+  console.log(midiSystem.inputs);
 
   // initialisation
 
@@ -420,9 +428,9 @@ function createControls(generator) {
 
 /**
  * draw the generator as a mermaid graph
- * @param {BleepGenerator} gen 
+ * @param {BleepGenerator} generator 
  */
-function drawGraphAsMermaid(gen) {
+function drawGraphAsMermaid(generator) {
   var element = GUI.tag("mermaid-graph");
   // get rid of all the kids
   while (element.firstChild) {
@@ -434,7 +442,7 @@ function drawGraphAsMermaid(gen) {
       bindFunctions?.(element);
   };
   // get this generator in mermaid form, with a fishy tail and all
-  var graphDefinition = gen.getGraphAsMermaid();
+  var graphDefinition = generator.getGraphAsMermaid();
   // mermaid transforms our graph description into a svg
   var graph = mermaid.render('graph-id', graphDefinition).then(insertSvg);
 }
