@@ -1,6 +1,5 @@
 import Constants from "./constants"
 import Flags from "./flags"
-import Utility from "./utility"
 import Expression from "./expression"
 
 export default class BleepPlayer {
@@ -69,7 +68,7 @@ export default class BleepPlayer {
       for (let t of this.#generator.tweaks) {
         if (t.expression.includes(`param.${param}`)) {
           let obj = this.#node[t.id];
-          let val = this.evaluatePostfix(t.expression);
+          let val = Expression.evaluatePostfix(t.expression,this.#params, this.#generator.minima, this.#generator.maxima);
           obj[t.param] = val;
         }
       }
@@ -117,60 +116,7 @@ export default class BleepPlayer {
     get out() {
       return this.#node.audio.out;
     }
-  
-    // // evaluate a parameter expression in postfix form
-    // evaluatePostfix(expression) {
-    //   let stack = [];
-    //   const popOperand = () => {
-    //     let op = stack.pop();
-    //     if (Expression.isIdentifier(op)) {
-    //       op = this.#params[op.replace("param.", "")];
-    //     }
-    //     return op;
-    //   }
-    //   for (let t of expression) {
-    //     if (Expression.isNumber(t)) {
-    //       stack.push(parseFloat(t));
-    //     } else if (Expression.isIdentifier(t)) {
-    //       stack.push(t);
-    //     } else if (t === "*" || t === "/" || t === "+" || t == "-") {
-    //       let op2 = popOperand();
-    //       let op1 = popOperand();
-    //       switch (t) {
-    //         case "*": stack.push(op1 * op2); break;
-    //         case "/": stack.push(op1 / op2); break;
-    //         case "+": stack.push(op1 + op2); break;
-    //         case "-": stack.push(op1 - op2); break;
-    //       }
-    //     } else if (t === "log") {
-    //       let op = popOperand();
-    //       stack.push(Math.log(op));
-    //     } else if (t === "exp") {
-    //       let op = popOperand();
-    //       stack.push(Math.exp(op));
-    //     } else if (t === "random") {
-    //       let op1 = stack.pop();
-    //       let op2 = stack.pop();
-    //       let r = Utility.randomBetween(op2, op1);
-    //       stack.push(r);
-    //     } else if (t === "map") {
-    //       let op1 = stack.pop();
-    //       let op2 = stack.pop();
-    //       let op3 = stack.pop();
-    //       let control = op3.replace("param.", "");
-    //       let minval = this.#generator.minima[control];
-    //       let maxval = this.#generator.maxima[control];
-    //       let s = Utility.scaleValue(minval, maxval, op2, op1, this.#params[control]);
-    //       stack.push(s);
-    //     }
-    //   }
-    //   let result = stack[0];
-    //   if (Expression.isIdentifier(result))
-    //     return this.#params[result.replace("param.", "")];
-    //   else
-    //     return result;
-    // }
-  
+    
   }
   
   function getModuleInstance(ctx, monitor, type) {

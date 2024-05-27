@@ -8,7 +8,7 @@ doc : Polymoog Vox Humana patch as used by Gary Numan
 
 @param release
 type: float
-mutable: no
+mutable: yes
 step: 0.01
 min: 0
 max: 1

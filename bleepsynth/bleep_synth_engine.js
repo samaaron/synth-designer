@@ -2,6 +2,7 @@ import Monitor from './monitor.js';
 import Grammar from './grammar.js';
 import BleepGenerator from './bleep_generator.js';
 import BleepPlayer from './bleep_player.js';
+import Reverb from './reverb.js';
 
 export default class BleepSynthEngine {
 
@@ -20,7 +21,6 @@ export default class BleepSynthEngine {
      */
     getGenerator(spec) {
         let generator = null;
-        //let controlMap = null;
         let result = this.#synthGrammar.match(spec + "\n");
         let message = null;
         if (result.succeeded()) {
@@ -28,11 +28,7 @@ export default class BleepSynthEngine {
                 message = "OK";
                 const adapter = this.#synthSemantics(result);
                 let json = Grammar.convertToStandardJSON(adapter.interpret());
-                //controlMap = createControls(currentJSON);
                 generator = new BleepGenerator(json);
-                // draw as mermaid graph
-                //drawGraphAsMermaid(generator);
-                // was there a warning?
                 if (generator.hasWarning) {
                     message += "\n" + generator.warningString;
                 }
@@ -45,8 +41,40 @@ export default class BleepSynthEngine {
         return { generator: generator, message: message };
     }
 
+    /**
+     * get a player from a generator
+     * @param {AudioContext} ctx 
+     * @param {BleepGenerator} generator 
+     * @param {number} pitchHz 
+     * @param {number} level 
+     * @param {object} params 
+     * @returns {BleepPlayer}
+     */
     getPlayer(ctx, generator, pitchHz, level, params) {
         return new BleepPlayer(ctx, this.#monitor, generator, pitchHz, level, params);
+    }
+
+    /**
+     * get an effect
+     * @param {AudioContext} ctx 
+     * @param {string} name 
+     * @returns 
+     */
+    async getEffect(ctx, name) {
+        let effect = null;
+        switch (name) {
+            case "reverb_medium":
+                effect = new Reverb(ctx);
+                await effect.load("./bleepsynth/impulses/medium-hall.wav");
+                break;
+            case "reverb_large":
+                effect = new Reverb(ctx);
+                await effect.load("./bleepsynth/impulses/large-hall.wav");
+                break;
+            default:
+                console.error("unknown effect name: " + name);
+        }
+        return effect;
     }
 
 }

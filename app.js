@@ -157,8 +157,7 @@ function addListenersToGUI() {
   GUI.tag("start-button").onclick = async () => {
     context = new AudioContext();
     GUI.disableGUI(false);
-    connectEffects(context);
-    initialiseEffects();
+    await initialiseEffects(context);
     let view = new ScopeView(GUI.tag("scope-canvas"), {
       lineWidth: 2,
       sync: true
@@ -269,6 +268,7 @@ function makeMIDIlisteners() {
   });
   // controller
   window.addEventListener('midiControllerEvent', (e) => {
+    console.log(e.detail);
     let param = controlMap.get(e.detail.controller);
     if (param != undefined) {
       let el = GUI.tag("slider-" + param);
@@ -404,87 +404,9 @@ function drawGraphAsMermaid(generator) {
 // make a reverb unit and connect it to the audio output
 // ------------------------------------------------------------
 
-async function connectEffects(ctx) {
-  reverb = new Reverb(ctx);
-  await reverb.load("./impulses/medium-hall.wav");
+async function initialiseEffects(ctx) {
+  reverb = await synthEngine.getEffect(ctx, "reverb_medium");
   reverb.out.connect(ctx.destination);
-}
-
-// ------------------------------------------------------------
-// Convolutional reverb class
-// ------------------------------------------------------------
-
-class Reverb {
-
-  #in
-  #out
-  #context
-  #isValid
-  #wetLevel
-  #wetGain
-  #dryGain
-  #reverb
-
-  constructor(ctx) {
-    this.#context = ctx;
-    this.#isValid = false;
-    this.#wetLevel = 0.5
-    this.#reverb = this.#context.createConvolver();
-    this.#wetGain = this.#context.createGain();
-    this.#dryGain = this.#context.createGain();
-    this.#in = this.#context.createGain();
-    this.#in.gain.value = 1;
-    this.#out = this.#context.createGain();
-    this.#out.gain.value = 1;
-    this.#wetGain.gain.value = this.#wetLevel;
-    this.#dryGain.gain.value = 1 - this.#wetLevel;
-    // connect everything up
-    this.#in.connect(this.#reverb);
-    this.#reverb.connect(this.#wetGain);
-    this.#in.connect(this.#dryGain);
-    this.#wetGain.connect(this.#out);
-    this.#dryGain.connect(this.#out);
-  }
-
-  async load(filename) {
-    const impulseResponse = await this.getImpulseResponseFromFile(filename);
-    if (this.#isValid) {
-      this.#reverb.buffer = impulseResponse;
-    }
-  }
-
-  async getImpulseResponseFromFile(filename) {
-    try {
-      let reply = await fetch(filename);
-      this.#isValid = true;
-      return this.#context.decodeAudioData(await reply.arrayBuffer());
-    } catch (err) {
-      this.#isValid = false;
-      console.log("unable to load the impulse response file called " + filename);
-    }
-  }
-
-  set wetLevel(level) {
-    this.#wetLevel = Utility.clamp(level, 0, 1);
-    this.#wetGain.gain.value = this.#wetLevel;
-    this.#dryGain.gain.value = 1 - this.#wetLevel;
-  }
-
-  get in() {
-    return this.#in
-  }
-
-  get out() {
-    return this.#out;
-  }
-
-}
-
-// ------------------------------------------------------------
-// initialise the effects chain and set default parameters
-// ------------------------------------------------------------
-
-function initialiseEffects() {
   setReverb(0.1);
 }
 
@@ -525,11 +447,10 @@ async function loadFile() {
   GUI.tag("synth-spec").value = spec;
   GUI.tag("file-label").textContent = "Current file: " + fileHandle.name;
   wasEdited = false;
-  let message;
-  ({ generator: generator, controlMap: controlMap, message: message } = synthEngine.getGenerator(spec));
-  GUI.tag("parse-errors").value = message;
-  console.log(generator);
-  createControls(generator);
+  const result = synthEngine.getGenerator(spec);
+  generator = result.generator;
+  GUI.tag("parse-errors").value = result.message;
+  controlMap = createControls(generator);
   drawGraphAsMermaid(generator);
 }
 
