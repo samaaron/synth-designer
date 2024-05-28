@@ -1,6 +1,8 @@
 import Constants from "./constants"
 import Flags from "./flags"
 import Expression from "./expression"
+import Monitor from "./monitor"
+import BleepGenerator from "./bleep_generator"
 
 export default class BleepPlayer {
 
@@ -10,6 +12,15 @@ export default class BleepPlayer {
     #params
     #monitor
   
+    /**
+     * constructor
+     * @param {AudioContext} ctx 
+     * @param {Monitor} monitor 
+     * @param {BleepGenerator} generator 
+     * @param {number} pitchHz 
+     * @param {number} level 
+     * @param {object} params 
+     */
     constructor(ctx, monitor, generator, pitchHz, level, params) {
       this.#context = ctx;
       this.#monitor = monitor;
@@ -25,16 +36,21 @@ export default class BleepPlayer {
       this.applyTweaks();
     }
   
+    /**
+     * create all the modules
+     */
     createModules() {
       // make a webaudio object for each node
       for (let m of this.#generator.modules) {
-        this.#node[m.id] = getModuleInstance(this.#context, this.#monitor, m.type);
+        this.#node[m.id] = this.getModuleInstance(m.type);
       }
       // we always need an audio object for output
-      this.#node["audio"] = getModuleInstance(this.#context, this.#monitor, "VCA");
+      this.#node["audio"] = this.getModuleInstance("VCA");
     }
   
-    // connect all the patch cables
+    /**
+     * connect all the patch cables
+     */
     createPatches() {
       for (let p of this.#generator.patches) {
         let fromModule = this.#node[p.from.id];
@@ -43,21 +59,23 @@ export default class BleepPlayer {
       }
     }
   
-    // do all the parameter tweaks
+    /**
+     * apply all the parameter tweaks
+     */
     applyTweaks() {
       for (let t of this.#generator.tweaks) {
         let obj = this.#node[t.id];
         let val = Expression.evaluatePostfix(t.expression, this.#params, this.#generator.minima, this.#generator.maxima);
-        console.log(`applyTweaks param=${t.param} obj=${obj} val=${val}`);
-        console.log(obj);
-        console.log(t.id);
-        console.log(t.expression);
         obj[t.param] = val;
       }
     }
   
-    // apply one tweak now as an instantaneous change
-    // you can only do this to parameters that have been identified as mutable
+    /**
+     * apply a tweak now as an instantaneous change
+     *y ou can only do this to parameters that have been identified as mutable
+     * @param {string} param 
+     * @param {number} value 
+     */
     applyTweakNow(param, value) {
       // is the parameter mutable?
       if (this.#generator.mutable[param] === false)
@@ -74,6 +92,10 @@ export default class BleepPlayer {
       }
     }
   
+    /**
+     * start playing the webaudio network
+     * @param {number} when 
+     */
     start(when) {
       // apply the envelopes
       for (let e of this.#generator.envelopes) {
@@ -87,7 +109,9 @@ export default class BleepPlayer {
       });
     }
   
-    // stop the webaudio network right now
+    /**
+     * stop the webaudio network immediately
+     */
     stopImmediately() {
       if (Flags.VERBOSE) console.log("stopping immediately");
       let now = context.currentTime;
@@ -96,7 +120,10 @@ export default class BleepPlayer {
       });
     }
   
-    // stop the webaudio network only after the release phase of envelopes has completed
+    /**
+     * stop the webaudio network after the release phase of the envelopes has completed
+     * @param {number} when 
+     */
     stopAfterRelease(when) {
       if (Flags.VERBOSE) console.log("stopping after release");
       let longestRelease = 0;
@@ -113,14 +140,23 @@ export default class BleepPlayer {
       });
     }
   
+    /**
+     * get the output node
+     * @returns {AudioNode}
+     */
     get out() {
       return this.#node.audio.out;
     }
     
+    /**
+     * get a module instance
+     * @param {string} type 
+     * @returns {object}
+     */
+    getModuleInstance(type) {
+      return new Constants.MODULE_CONTEXT[Constants.MODULE_CLASSES[type]](this.#context, this.#monitor);
+    }
+
   }
   
-  function getModuleInstance(ctx, monitor, type) {
-    return new Constants.MODULE_CONTEXT[Constants.MODULE_CLASSES[type]](ctx,monitor);
-  }
-
   
