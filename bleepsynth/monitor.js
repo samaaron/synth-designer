@@ -1,4 +1,3 @@
-import GUI from "../js/GUI";
 import Flags from "./flags";
 
 /**
@@ -36,6 +35,7 @@ export default class Monitor {
     static NOISE = "Noise";
     static PANNER = "Panner";
     static WAVE_SHAPER = "Waveshaper";
+    static WAVE_FOLDER = "Wavefolder";
     
     /**
      * @type {Map}

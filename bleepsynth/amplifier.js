@@ -1,4 +1,5 @@
 import Monitor from "./monitor.js";
+import Utility from "./utility.js";
 
 export default class Amplifier {
 
@@ -9,9 +10,7 @@ export default class Amplifier {
   constructor(ctx, monitor) {
     this.#context = ctx;
     this.#monitor = monitor;
-    this.#gain = new GainNode(ctx, {
-      gain: 1
-    });
+    this.#gain = Utility.createUnityGain(this.#context);
     this.#monitor.retain(Monitor.GAIN,Monitor.AMPLIFIER);
   }
 
@@ -28,7 +27,6 @@ export default class Amplifier {
   }
 
   set level(n) {
-    console.log(`level in Amplifier = ${n}`);
     this.#gain.gain.value = n;
   }
 

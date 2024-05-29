@@ -2,6 +2,9 @@ import Monitor from "./monitor.js";
 
 export default class LowpassFilter {
 
+  static DEFAULT_CUTOFF = 1000;
+  static DEFAULT_RESONANCE = 1;
+
     #filter
     #context
     #monitor
@@ -11,8 +14,8 @@ export default class LowpassFilter {
       this.#monitor = monitor;
       this.#filter = new BiquadFilterNode(ctx, {
         type: "lowpass",
-        frequency: 1000,
-        Q: 1
+        frequency: LowpassFilter.DEFAULT_CUTOFF,
+        Q: LowpassFilter.DEFAULT_RESONANCE
       });
       this.#monitor.retain(Monitor.BIQUAD,Monitor.LOW_PASS);
     }

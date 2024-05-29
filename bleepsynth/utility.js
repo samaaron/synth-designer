@@ -55,4 +55,15 @@ export default class Utility {
     return Math.min(Math.max(value, min), max);
   }
 
+  /**
+   * Make a unity gain node
+   * @param {AudioContext} ctx 
+   * @returns {GainNode}
+   */
+  static createUnityGain(ctx) {
+    return new GainNode(ctx, {
+      gain: 1
+    });
+  }
+
 }

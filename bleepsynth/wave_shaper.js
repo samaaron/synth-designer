@@ -37,7 +37,6 @@ export default class Waveshaper {
     makeDistortionCurve(n) {
       const numSamples = 44100;
       const curve = new Float32Array(numSamples);
-      //const deg = Math.PI / 180.0;
       for (let i = 0; i < numSamples; i++) {
         const x = (i * 2) / numSamples - 1;
         curve[i] = (Math.PI + n) * x / (Math.PI + n * Math.abs(x));

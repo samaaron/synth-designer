@@ -21,10 +21,8 @@ export default class Reverb {
         this.#reverb = this.#context.createConvolver();
         this.#wetGain = this.#context.createGain();
         this.#dryGain = this.#context.createGain();
-        this.#in = this.#context.createGain();
-        this.#in.gain.value = 1;
-        this.#out = this.#context.createGain();
-        this.#out.gain.value = 1;
+        this.#in = Utility.createUnityGain(this.#context);
+        this.#out = Utility.createUnityGain(this.#context);
         this.#wetGain.gain.value = this.#wetLevel;
         this.#dryGain.gain.value = 1 - this.#wetLevel;
         // connect everything up

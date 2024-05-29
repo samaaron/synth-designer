@@ -18,16 +18,21 @@ export default class NoiseGenerator {
 
   constructor(ctx, monitor) {
     this.#context = ctx;
-    this.#monitor = monitor
-    let bufferSize = 2 * ctx.sampleRate;
-    let noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    let data = noiseBuffer.getChannelData(0);
+    this.#monitor = monitor;
+    this.#noise = new AudioBufferSourceNode(ctx, {
+      buffer: this.#getNoiseBuffer(),
+      loop: true
+    });
+    this.#monitor.retain(Monitor.AUDIO_SOURCE, Monitor.NOISE);
+  }
+
+  #getNoiseBuffer() {
+    const bufferSize = 2 * this.#context.sampleRate;
+    const noiseBuffer = this.#context.createBuffer(1, bufferSize, this.#context.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
     for (let i = 0; i < bufferSize; i++)
       data[i] = Math.random() * 2 - 1;
-    this.#noise = ctx.createBufferSource();
-    this.#noise.buffer = noiseBuffer;
-    this.#noise.loop = true;
-    this.#monitor.retain(Monitor.AUDIO_SOURCE, Monitor.NOISE);
+    return noiseBuffer;
   }
 
   get out() {
