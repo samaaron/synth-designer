@@ -1,4 +1,4 @@
-import Flags from "./flags.js"
+import Monitor from "./monitor.js";
 
 export default class Waveshaper {
 
@@ -12,7 +12,7 @@ export default class Waveshaper {
       this.#shaper = ctx.createWaveShaper();
       this.#shaper.curve = this.makeDistortionCurve(100);
       this.#shaper.oversample = "4x";
-      this.#monitor.retain("shaper");
+      this.#monitor.retain(Monitor.SHAPER,Monitor.WAVE_SHAPER);
     }
 
     get in() {
@@ -46,15 +46,11 @@ export default class Waveshaper {
     }
 
     stop(tim) {
-      if (Flags.VERBOSE) console.log("stopping Shaper");
       let stopTime = tim - this.#context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (Flags.VERBOSE) console.log("disconnecting Shaper");
         this.#shaper.disconnect();
-        this.#shaper = null;
-        this.#context = null;
-        this.#monitor.release("shaper");
+        this.#monitor.release(Monitor.SHAPER,Monitor.WAVE_SHAPER);
       }, (stopTime + 0.1) * 1000);
     }
 

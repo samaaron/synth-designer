@@ -1,4 +1,5 @@
 import Flags from "./flags.js";
+import Monitor from "./monitor.js";
 
 // ------------------------------------------------------------
 // Prototype oscillator class
@@ -17,11 +18,7 @@ class Oscillator {
     this._monitor = monitor
     this._osc = ctx.createOscillator(ctx);
     this._osc.frequency.value = Oscillator.MIDDLE_C;
-    this._osc.onended = () => {
-      this._osc.disconnect();
-      this._monitor.release("osc");
-    }
-    this._monitor.retain("osc");
+    this._monitor.retain(Monitor.OSC, Monitor.OSCILLATOR);
   }
 
   set detune(n) {
@@ -49,13 +46,19 @@ class Oscillator {
   }
 
   start(tim) {
-    if (Flags.VERBOSE) console.log("starting oscillator");
+    if (Flags.DEBUG_START_STOP) console.log("starting oscillator");
     this._osc.start(tim);
   }
 
   stop(tim) {
-    if (Flags.VERBOSE) console.log("stopping Oscillator");
+    if (Flags.DEBUG_START_STOP) console.log("stopping Oscillator");
     this._osc.stop(tim);
+    let stopTime = tim - this._context.currentTime;
+    if (stopTime < 0) stopTime = 0;
+    setTimeout(() => {
+      this._osc.disconnect();
+      this._monitor.release(Monitor.OSC, Monitor.OSCILLATOR);
+    }, (stopTime + 0.1) * 1000);
   }
 
 }
@@ -94,7 +97,6 @@ export class PulseOsc extends Oscillator {
     this.#osc2 = ctx.createOscillator();
     this.#osc2.frequency.value = 0;
     this.#osc2.type = "sawtooth"
-    this._monitor.retain("osc");
 
     // set the initial pulsewidth to 50%
     this.#pulsewidth = 0.5;
@@ -131,6 +133,15 @@ export class PulseOsc extends Oscillator {
     this.#delay.connect(this.#inverter);
     this.#inverter.connect(this.#out);
     this.#osc2.connect(this.#out);
+
+    this._monitor.retainGroup([
+      Monitor.OSC,
+      Monitor.CONSTANT,
+      Monitor.CONSTANT,
+      Monitor.GAIN,
+      Monitor.DELAY,
+      Monitor.GAIN,
+      Monitor.GAIN], Monitor.PULSE);
 
   }
 
@@ -183,6 +194,7 @@ export class PulseOsc extends Oscillator {
 
   // start everything, including the source nodes
   start(tim) {
+    if (Flags.DEBUG_START_STOP) console.log("starting Pulse");
     this.#freqNode.start(tim);
     this.#detuneNode.start(tim);
     this._osc.start(tim);
@@ -191,16 +203,14 @@ export class PulseOsc extends Oscillator {
 
   // stop everything
   stop(tim) {
-    if (Flags.VERBOSE) console.log("stopping Pulse");
-    this._osc.stop(tim);
+    if (Flags.DEBUG_START_STOP) console.log("stopping Pulse");
+    super.stop(tim);
     this.#osc2.stop(tim);
     this.#freqNode.stop(tim);
     this.#detuneNode.stop(tim);
     let stopTime = tim - this._context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
-      if (Flags.VERBOSE) console.log("disconnecting Pulse");
-      this._osc.disconnect();
       this.#osc2.disconnect();
       this.#freqNode.disconnect();
       this.#detuneNode.disconnect();
@@ -208,16 +218,14 @@ export class PulseOsc extends Oscillator {
       this.#delay.disconnect();
       this.#inverter.disconnect();
       this.#pwm.disconnect();
-      this._osc = null;
-      this.#osc2 = null;
-      this.#freqNode = null;
-      this.#detuneNode = null;
-      this.#out = null;
-      this.#delay = null;
-      this.#inverter = null;
-      this.#pwm = null;
-      this._context = null;
-      this._monitor.release("osc");
+      this._monitor.releaseGroup([
+        Monitor.OSC,
+        Monitor.CONSTANT,
+        Monitor.CONSTANT,
+        Monitor.GAIN,
+        Monitor.DELAY,
+        Monitor.GAIN,
+        Monitor.GAIN], Monitor.PULSE);
     }, (stopTime + 0.1) * 1000);
   }
 

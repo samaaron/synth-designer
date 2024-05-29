@@ -1,4 +1,4 @@
-import Flags from "./flags.js";
+import Monitor from "./monitor.js";
 
 export default class Amplifier {
 
@@ -12,7 +12,7 @@ export default class Amplifier {
     this.#gain = new GainNode(ctx, {
       gain: 1
     });
-    this.#monitor.retain("amp");
+    this.#monitor.retain(Monitor.GAIN,Monitor.AMPLIFIER);
   }
 
   get in() {
@@ -37,15 +37,11 @@ export default class Amplifier {
   }
 
   stop(tim) {
-    if (Flags.VERBOSE) console.log("stopping Amplifier");
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
-      if (Flags.VERBOSE) console.log("disconnecting Amplifier");
       this.#gain.disconnect();
-      this.#gain = null;
-      this.#context = null;
-      this.#monitor.release("amp");
+      this.#monitor.release(Monitor.GAIN,Monitor.AMPLIFIER);
     }, (stopTime + 0.1) * 1000);
   }
 

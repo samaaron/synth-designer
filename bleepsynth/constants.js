@@ -1,6 +1,6 @@
 import Amplifier from './amplifier.js';
 import Decay from './decay.js';
-import Delay from './delay.js';
+import DelayLine from './delayline.js';
 import Envelope from './envelope.js';
 import HighpassFilter from './highpass_filter.js';
 import LFO from './lfo.js';
@@ -18,7 +18,7 @@ const MIN_LEVEL = 0;
 const MODULE_CONTEXT = {
     Amplifier : Amplifier,
     Decay : Decay,
-    Delay : Delay,
+    DelayLine : DelayLine,
     Envelope : Envelope,
     HighpassFilter : HighpassFilter,
     LFO : LFO,
@@ -51,7 +51,7 @@ const MODULE_CLASSES = {
     "ADSR": "Envelope",
     "DECAY": "Decay",
     "AUDIO": "Audio",
-    "DELAY": "Delay"
+    "DELAY": "DelayLine"
   };
   
   // valid tweaks, used for error checking

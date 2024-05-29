@@ -1,6 +1,6 @@
-import Flags from "./flags.js";
+import Monitor from "./monitor.js";
 
-export default class Delay {
+export default class DelayLine {
 
     #delay
     #context
@@ -10,7 +10,7 @@ export default class Delay {
       this.#context = ctx;
       this.#monitor = monitor;
       this.#delay = ctx.createDelay(10);
-      this.#monitor.retain("delay");
+      this.#monitor.retain(Monitor.DELAY,Monitor.DELAY_LINE);
     }
 
     set lag(t) {
@@ -34,15 +34,11 @@ export default class Delay {
     }
 
     stop(tim) {
-      if (Flags.VERBOSE) console.log("stopping Delay");
       let stopTime = tim - this.#context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (Flags.VERBOSE) console.log("disconnecting Delay");
         this.#delay.disconnect();
-        this.#delay = null;
-        this.#context = null;
-        this.#monitor.release("delay");
+        this.#monitor.release(Monitor.DELAY,Monitor.DELAY_LINE);
       }, (stopTime + 0.1) * 1000);
     }
 

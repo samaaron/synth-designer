@@ -1,4 +1,4 @@
-import Flags from "./flags.js";
+import Monitor from "./monitor.js";
 
 export default class LowpassFilter {
 
@@ -14,7 +14,7 @@ export default class LowpassFilter {
         frequency: 1000,
         Q: 1
       });
-      this.#monitor.retain("lowpass");
+      this.#monitor.retain(Monitor.BIQUAD,Monitor.LOW_PASS);
     }
 
     get cutoff() {
@@ -46,15 +46,11 @@ export default class LowpassFilter {
     }
 
     stop(tim) {
-      if (Flags.VERBOSE) console.log("stopping LPF");
       let stopTime = tim - this.#context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (Flags.VERBOSE) console.log("disconnecting LPF");
         this.#filter.disconnect();
-        this.#filter = null;
-        this.#context = null;
-        this.#monitor.release("lowpass");
+        this.#monitor.release(Monitor.BIQUAD,Monitor.LOW_PASS);
       }, (stopTime + 0.1) * 1000);
     }
 

@@ -1,4 +1,5 @@
 import Flags from "./flags.js";
+import Monitor from "./monitor.js";
 
 // ------------------------------------------------------------
 // Noise generator class
@@ -26,7 +27,7 @@ export default class NoiseGenerator {
     this.#noise = ctx.createBufferSource();
     this.#noise.buffer = noiseBuffer;
     this.#noise.loop = true;
-    this.#monitor.retain("noise");
+    this.#monitor.retain(Monitor.AUDIO_SOURCE, Monitor.NOISE);
   }
 
   get out() {
@@ -34,20 +35,18 @@ export default class NoiseGenerator {
   }
 
   start(tim) {
+    if (Flags.DEBUG_START_STOP) console.log("starting Noise");
     this.#noise.start(tim);
   }
 
   stop(tim) {
-    if (Flags.VERBOSE) console.log("stopping Noise");
+    if (Flags.DEBUG_START_STOP) console.log("stopping Noise");
     this.#noise.stop(tim);
     let stopTime = tim - this.#context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
-      if (Flags.VERBOSE) console.log("disconnecting Noise");
       this.#noise.disconnect();
-      this.#noise = null;
-      this.#context = null;
-      this.#monitor.release("noise");
+      this.#monitor.release(Monitor.AUDIO_SOURCE, Monitor.NOISE);
     }, (stopTime + 0.1) * 1000);
   }
 

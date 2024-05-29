@@ -1,18 +1,21 @@
 import Utility from "./utility"
+import Monitor from "./monitor"
 
 export default class Reverb {
 
     #in
     #out
     #context
+    #monitor
     #isValid
     #wetLevel
     #wetGain
     #dryGain
     #reverb
 
-    constructor(ctx) {
+    constructor(ctx,monitor) {
         this.#context = ctx;
+        this.#monitor = monitor;
         this.#isValid = false;
         this.#wetLevel = 0.5
         this.#reverb = this.#context.createConvolver();
@@ -30,6 +33,12 @@ export default class Reverb {
         this.#in.connect(this.#dryGain);
         this.#wetGain.connect(this.#out);
         this.#dryGain.connect(this.#out);
+        this.#monitor.retainGroup([
+            Monitor.CONVOLVER,
+            Monitor.GAIN,
+            Monitor.GAIN,
+            Monitor.GAIN,
+            Monitor.GAIN], Monitor.REVERB);
     }
 
     async load(filename) {
@@ -51,6 +60,24 @@ export default class Reverb {
         }
     }
 
+    stop() {
+        this.#reverb.disconnect();
+        this.#wetGain.disconnect();
+        this.#dryGain.disconnect();
+        this.#in.disconnect();
+        this.#out.disconnect();
+        this.#monitor.releaseGroup([
+            Monitor.CONVOLVER,
+            Monitor.GAIN,
+            Monitor.GAIN,
+            Monitor.GAIN,
+            Monitor.GAIN], Monitor.REVERB);
+    }
+
+    /**
+     * set the wet level
+     * @param {number} level 
+     */
     set wetLevel(level) {
         this.#wetLevel = Utility.clamp(level, 0, 1);
         this.#wetGain.gain.value = this.#wetLevel;

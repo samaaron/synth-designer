@@ -12,6 +12,7 @@ import MidiSystem from './midi/midi_system.js';
 window.addEventListener('DOMContentLoaded', init);
 
 const MIDI_CONTROLLERS = [74, 71, 76, 77, 93, 18, 19, 16];
+const MONITOR_UPDATE_INTERVAL = 100; // msec
 
 let controlMap;
 
@@ -80,6 +81,13 @@ async function init() {
   console.log(midiSystem.inputs);
   setupMidi();
   setDefaultValues();
+  startMonitorTimer();
+}
+
+function startMonitorTimer() {
+  setInterval(() => {
+    GUI.tag("monitor").textContent = synthEngine.monitor.summaryString;
+  }, MONITOR_UPDATE_INTERVAL);
 }
 
 // ------------------------------------------------------------

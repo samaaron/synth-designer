@@ -1,4 +1,5 @@
 import Flags from "./flags.js"
+import Monitor from "./monitor.js"
 
 export default class LFO {
 
@@ -33,7 +34,7 @@ export default class LFO {
       this.#sinGain.connect(this.#mixer);
       this.#cosGain.connect(this.#mixer);
 
-      this.#monitor.retain("lfo");
+      this.#monitor.retainGroup([Monitor.OSC, Monitor.OSC, Monitor.GAIN, Monitor.GAIN, Monitor.GAIN], Monitor.LFO);
 
     }
 
@@ -57,30 +58,24 @@ export default class LFO {
     }
 
     start(tim) {
+      if (Flags.DEBUG_START_STOP) console.log("starting LFO");
       this.#sinOsc.start(tim);
       this.#cosOsc.start(tim);
     }
 
     stop(tim) {
-      if (Flags.VERBOSE) console.log("stopping LFO");
+      if (Flags.DEBUG_START_STOP) console.log("stopping LFO");
       this.#sinOsc.stop(tim);
       this.#cosOsc.stop(tim);
       let stopTime = tim - this.#context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (Flags.VERBOSE) console.log("disconnecting LFO");
         this.#sinOsc.disconnect();
         this.#cosOsc.disconnect();
         this.#sinGain.disconnect();
         this.#cosGain.disconnect();
         this.#mixer.disconnect();
-        this.#sinOsc = null;
-        this.#cosOsc = null;
-        this.#sinGain = null;
-        this.#cosGain = null;
-        this.#mixer = null;
-        this.#context = null;
-        this.#monitor.release("lfo");
+        this.#monitor.releaseGroup([Monitor.OSC, Monitor.OSC, Monitor.GAIN, Monitor.GAIN, Monitor.GAIN], Monitor.LFO);
       }, (stopTime + 0.1) * 1000);
     }
 

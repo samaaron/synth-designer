@@ -1,4 +1,4 @@
-import Flags from "./flags.js";
+import Monitor from "./monitor.js";
 
 export default class HighpassFilter {
 
@@ -14,7 +14,7 @@ export default class HighpassFilter {
         frequency: 1000,
         Q: 1
       });
-      this.#monitor.retain("highpass");
+      this.#monitor.retain(Monitor.BIQUAD,Monitor.HIGH_PASS);
     }
 
     get cutoff() {
@@ -46,15 +46,11 @@ export default class HighpassFilter {
     }
 
     stop(tim) {
-      if (Flags.VERBOSE) console.log("stopping HPF");
       let stopTime = tim - this.#context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (Flags.VERBOSE) console.log("disconnecting HPF");
         this.#filter.disconnect();
-        this.#filter = null;
-        this.#context = null;
-        this.#monitor.release("highpass");
+        this.#monitor.release(Monitor.BIQUAD,Monitor.HIGH_PASS);
       }, (stopTime + 0.1) * 1000);
     }
 

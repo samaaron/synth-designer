@@ -1,4 +1,4 @@
-import Flags from "./flags.js";
+import Monitor from "./monitor.js";
 
 export default class Panner {
 
@@ -10,7 +10,7 @@ export default class Panner {
       this.#context = ctx;
       this.#monitor = monitor;
       this.#pan = ctx.createStereoPanner();
-      this.#monitor.retain("panner");
+      this.#monitor.retain(Monitor.PAN, Monitor.PANNER);
     }
 
     // stereo position between -1 and 1
@@ -36,15 +36,11 @@ export default class Panner {
     }
 
     stop(tim) {
-      if (Flags.VERBOSE) console.log("stopping Panner");
       let stopTime = tim - this.#context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
-        if (Flags.VERBOSE) console.log("disconnecting Panner");
         this.#pan.disconnect();
-        this.#pan = null;
-        this.#context = null;
-        this.#monitor.release("panner");
+        this.#monitor.release(Monitor.PAN, Monitor.PANNER);
       }, (stopTime + 0.1) * 1000);
     }
 

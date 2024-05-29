@@ -64,11 +64,11 @@ export default class BleepSynthEngine {
         let effect = null;
         switch (name) {
             case "reverb_medium":
-                effect = new Reverb(ctx);
+                effect = new Reverb(ctx,this.#monitor);
                 await effect.load("./bleepsynth/impulses/medium-hall.wav");
                 break;
             case "reverb_large":
-                effect = new Reverb(ctx);
+                effect = new Reverb(ctx,this.#monitor);
                 await effect.load("./bleepsynth/impulses/large-hall.wav");
                 break;
             default:
@@ -77,4 +77,8 @@ export default class BleepSynthEngine {
         return effect;
     }
 
+    get monitor() {
+        return this.#monitor;
+    }
+    
 }
