@@ -1,13 +1,12 @@
-import Monitor from "./monitor"
-import Utility from "./utility"
+import BleepSynthModule from "./bleep_synth_module.js"
+import Monitor from "./monitor.js"
+import Utility from "./utility.js"
 
-export default class Wavefolder {
+export default class Wavefolder extends BleepSynthModule {
 
     static NUM_FOLDS = 4
 
     #folders
-    #context
-    #monitor
     #in
     #out
     #symmetry
@@ -16,12 +15,11 @@ export default class Wavefolder {
 
     /**
      * constructor
-     * @param {AudioContext} ctx
+     * @param {AudioContext} context
      * @param {Monitor} monitor
      */
-    constructor(ctx, monitor) {
-        this.#context = ctx;
-        this.#monitor = monitor;
+    constructor(context, monitor) {
+        super(context, monitor);
         this.#numFolds = Wavefolder.NUM_FOLDS;
         this.#makeGains();
         this.#makeFolders();
@@ -35,12 +33,12 @@ export default class Wavefolder {
     #makeFolders() {
         this.#folders = [];
         for (let i = 0; i < this.#numFolds; i++) {
-            let fold = new WaveShaperNode(this.#context, {
+            let fold = new WaveShaperNode(this._context, {
                 curve: this.#createFoldingCurve(4096),
                 oversample: "4x"
             });
             this.#folders.push(fold);
-            this.#monitor.retain(Monitor.SHAPER, Monitor.CLASS_WAVE_FOLDER);
+            this._monitor.retain(Monitor.SHAPER, Monitor.CLASS_WAVE_FOLDER);
         }
     }
 
@@ -48,10 +46,10 @@ export default class Wavefolder {
      * create the gain nodes
      */
     #makeGains() {
-        this.#in = Utility.createUnityGain(this.#context);
-        this.#out = Utility.createUnityGain(this.#context);
-        this.#mix = Utility.createUnityGain(this.#context);
-        this.#monitor.retainGroup([
+        this.#in = Utility.createUnityGain(this._context);
+        this.#out = Utility.createUnityGain(this._context);
+        this.#mix = Utility.createUnityGain(this._context);
+        this._monitor.retainGroup([
             Monitor.GAIN,
             Monitor.GAIN,
             Monitor.GAIN], Monitor.CLASS_WAVE_FOLDER);
@@ -61,11 +59,11 @@ export default class Wavefolder {
      * create the node to control the symmetry
      */
     #makeSymmetry() {
-        this.#symmetry = this.#context.createConstantSource();
+        this.#symmetry = this._context.createConstantSource();
         this.#symmetry.offset.value = 0;
         this.#symmetry.connect(this.#mix);
         this.#symmetry.start();
-        this.#monitor.retain(Monitor.CONSTANT, Monitor.CLASS_WAVE_FOLDER);
+        this._monitor.retain(Monitor.CONSTANT, Monitor.CLASS_WAVE_FOLDER);
     }
 
     /**
@@ -147,14 +145,14 @@ export default class Wavefolder {
      */
     stop(tim) {
         this.#symmetry.stop(tim);
-        let stopTime = tim - this.#context.currentTime;
+        let stopTime = tim - this._context.currentTime;
         if (stopTime < 0) stopTime = 0;
         setTimeout(() => {
             this.#symmetry.disconnect();
             this.#in.disconnect();
             this.#out.disconnect();
             this.#mix.disconnect();
-            this.#monitor.releaseGroup([
+            this._monitor.releaseGroup([
                 Monitor.GAIN,
                 Monitor.GAIN,
                 Monitor.GAIN,
@@ -162,7 +160,7 @@ export default class Wavefolder {
             ], Monitor.CLASS_WAVE_FOLDER);
             for (let i = 0; i < this.#numFolds; i++) {
                 this.#folders[i].disconnect();
-                this.#monitor.release(Monitor.SHAPER, Monitor.CLASS_WAVE_FOLDER);
+                this._monitor.release(Monitor.SHAPER, Monitor.CLASS_WAVE_FOLDER);
             }
         }, (stopTime + 0.1) * 1000);
     }

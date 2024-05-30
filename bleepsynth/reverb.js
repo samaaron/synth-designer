@@ -1,28 +1,26 @@
-import Utility from "./utility"
-import Monitor from "./monitor"
+import Utility from "./utility.js"
+import Monitor from "./monitor.js"
+import BleepSynthModule from "./bleep_synth_module.js"
 
-export default class Reverb {
+export default class Reverb extends BleepSynthModule {
 
     #in
     #out
-    #context
-    #monitor
     #isValid
     #wetLevel
     #wetGain
     #dryGain
     #reverb
 
-    constructor(ctx,monitor) {
-        this.#context = ctx;
-        this.#monitor = monitor;
+    constructor(context,monitor) {
+        super(context, monitor);
         this.#isValid = false;
         this.#wetLevel = 0.5
-        this.#reverb = this.#context.createConvolver();
-        this.#wetGain = this.#context.createGain();
-        this.#dryGain = this.#context.createGain();
-        this.#in = Utility.createUnityGain(this.#context);
-        this.#out = Utility.createUnityGain(this.#context);
+        this.#reverb = this._context.createConvolver();
+        this.#wetGain = this._context.createGain();
+        this.#dryGain = this._context.createGain();
+        this.#in = Utility.createUnityGain(this._context);
+        this.#out = Utility.createUnityGain(this._context);
         this.#wetGain.gain.value = this.#wetLevel;
         this.#dryGain.gain.value = 1 - this.#wetLevel;
         // connect everything up
@@ -31,7 +29,7 @@ export default class Reverb {
         this.#in.connect(this.#dryGain);
         this.#wetGain.connect(this.#out);
         this.#dryGain.connect(this.#out);
-        this.#monitor.retainGroup([
+        this._monitor.retainGroup([
             Monitor.CONVOLVER,
             Monitor.GAIN,
             Monitor.GAIN,
@@ -51,7 +49,7 @@ export default class Reverb {
         try {
             let reply = await fetch(filename);
             this.#isValid = true;
-            return this.#context.decodeAudioData(await reply.arrayBuffer());
+            return this._context.decodeAudioData(await reply.arrayBuffer());
         } catch (err) {
             this.#isValid = false;
             console.log("unable to load the impulse response file called " + filename);
@@ -64,7 +62,7 @@ export default class Reverb {
         this.#dryGain.disconnect();
         this.#in.disconnect();
         this.#out.disconnect();
-        this.#monitor.releaseGroup([
+        this._monitor.releaseGroup([
             Monitor.CONVOLVER,
             Monitor.GAIN,
             Monitor.GAIN,

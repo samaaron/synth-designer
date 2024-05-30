@@ -1,15 +1,14 @@
-export default class Decay {
+import BleepSynthModule from "./bleep_synth_module.js";
+
+export default class Decay extends BleepSynthModule {
 
     #attack
     #decay
     #level
     #param
-    #context
-    #monitor
 
-    constructor(ctx,monitor) {
-      this.#context = ctx;
-      this.#monitor = monitor;
+    constructor(context,monitor) {
+      super(context, monitor);
       this.#attack = 0.1;
       this.#decay = 0.5;
       this.#level = 1.0;

@@ -1,3 +1,4 @@
+import BleepSynthModule from "./bleep_synth_module.js";
 import Flags from "./flags.js";
 import Monitor from "./monitor.js";
 
@@ -10,25 +11,22 @@ import Monitor from "./monitor.js";
 // all players
 // ------------------------------------------------------------
 
-export default class NoiseGenerator {
+export default class NoiseGenerator extends BleepSynthModule {
 
   #noise
-  #context
-  #monitor
 
-  constructor(ctx, monitor) {
-    this.#context = ctx;
-    this.#monitor = monitor;
-    this.#noise = new AudioBufferSourceNode(ctx, {
+  constructor(context, monitor) {
+    super(context, monitor);
+    this.#noise = new AudioBufferSourceNode(this._context, {
       buffer: this.#getNoiseBuffer(),
       loop: true
     });
-    this.#monitor.retain(Monitor.AUDIO_SOURCE, Monitor.CLASS_NOISE);
+    this._monitor.retain(Monitor.AUDIO_SOURCE, Monitor.CLASS_NOISE);
   }
 
   #getNoiseBuffer() {
-    const bufferSize = 2 * this.#context.sampleRate;
-    const noiseBuffer = this.#context.createBuffer(1, bufferSize, this.#context.sampleRate);
+    const bufferSize = 2 * this._context.sampleRate;
+    const noiseBuffer = this._context.createBuffer(1, bufferSize, this._context.sampleRate);
     const data = noiseBuffer.getChannelData(0);
     for (let i = 0; i < bufferSize; i++)
       data[i] = Math.random() * 2 - 1;
@@ -47,11 +45,11 @@ export default class NoiseGenerator {
   stop(tim) {
     if (Flags.DEBUG_START_STOP) console.log("stopping Noise");
     this.#noise.stop(tim);
-    let stopTime = tim - this.#context.currentTime;
+    let stopTime = tim - this._context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
       this.#noise.disconnect();
-      this.#monitor.release(Monitor.AUDIO_SOURCE, Monitor.CLASS_NOISE);
+      this._monitor.release(Monitor.AUDIO_SOURCE, Monitor.CLASS_NOISE);
     }, (stopTime + 0.1) * 1000);
   }
 

@@ -1,16 +1,14 @@
+import BleepSynthModule from "./bleep_synth_module.js";
 import Monitor from "./monitor.js";
 
-export default class DelayLine {
+export default class DelayLine extends BleepSynthModule {
 
     #delay
-    #context
-    #monitor
 
-    constructor(ctx,monitor) {
-      this.#context = ctx;
-      this.#monitor = monitor;
-      this.#delay = ctx.createDelay(10);
-      this.#monitor.retain(Monitor.DELAY,Monitor.CLASS_DELAY_LINE);
+    constructor(context,monitor) {
+      super(context, monitor);
+      this.#delay = this._context.createDelay(10);
+      this._monitor.retain(Monitor.DELAY,Monitor.CLASS_DELAY_LINE);
     }
 
     set lag(t) {
@@ -34,11 +32,11 @@ export default class DelayLine {
     }
 
     stop(tim) {
-      let stopTime = tim - this.#context.currentTime;
+      let stopTime = tim - this._context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
         this.#delay.disconnect();
-        this.#monitor.release(Monitor.DELAY,Monitor.CLASS_DELAY_LINE);
+        this._monitor.release(Monitor.DELAY,Monitor.CLASS_DELAY_LINE);
       }, (stopTime + 0.1) * 1000);
     }
 

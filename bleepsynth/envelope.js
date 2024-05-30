@@ -1,4 +1,6 @@
-export default class Envelope {
+import BleepSynthModule from "./bleep_synth_module.js"
+
+export default class Envelope extends BleepSynthModule {
 
     #attack
     #decay
@@ -6,12 +8,9 @@ export default class Envelope {
     #release
     #level
     #controlledParam
-    #context
-    #monitor
 
-    constructor(ctx,monitor) {
-      this.#context = ctx;
-      this.#monitor = monitor;
+    constructor(context,monitor) {
+      super(context, monitor);
       this.#attack = 0.1;
       this.#decay = 0.5;
       this.#sustain = 0.5;
@@ -43,7 +42,7 @@ export default class Envelope {
       this.#level = v;
       // this next bit only takes effect when the audio network is connected and playing
       if (this.#controlledParam != undefined)
-        this.#controlledParam.setValueAtTime(v, this.#context.currentTime);
+        this.#controlledParam.setValueAtTime(v, this._context.currentTime);
     }
 
     releaseOnNoteOff(when) {

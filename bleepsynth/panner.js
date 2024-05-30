@@ -1,16 +1,14 @@
+import BleepSynthModule from "./bleep_synth_module.js";
 import Monitor from "./monitor.js";
 
-export default class Panner {
+export default class Panner extends BleepSynthModule {
 
     #pan
-    #context
-    #monitor
 
-    constructor(ctx,monitor) {
-      this.#context = ctx;
-      this.#monitor = monitor;
-      this.#pan = ctx.createStereoPanner();
-      this.#monitor.retain(Monitor.PAN, Monitor.CLASS_PANNER);
+    constructor(context,monitor) {
+      super(context, monitor);
+      this.#pan = this._context.createStereoPanner();
+      this._monitor.retain(Monitor.PAN, Monitor.CLASS_PANNER);
     }
 
     // stereo position between -1 and 1
@@ -36,11 +34,11 @@ export default class Panner {
     }
 
     stop(tim) {
-      let stopTime = tim - this.#context.currentTime;
+      let stopTime = tim - this._context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
         this.#pan.disconnect();
-        this.#monitor.release(Monitor.PAN, Monitor.CLASS_PANNER);
+        this._monitor.release(Monitor.PAN, Monitor.CLASS_PANNER);
       }, (stopTime + 0.1) * 1000);
     }
 

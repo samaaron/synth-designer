@@ -1,7 +1,8 @@
+import BleepSynthModule from "./bleep_synth_module.js"
 import Flags from "./flags.js"
 import Monitor from "./monitor.js"
 
-export default class LFO {
+export default class LFO extends BleepSynthModule {
 
   #sinOsc
   #cosOsc
@@ -9,36 +10,33 @@ export default class LFO {
   #cosGain
   #mixer
   #freqHz
-  #context
-  #monitor
 
   /**
    * constructor
-   * @param {AudioContext} ctx
+   * @param {AudioContext} context
    * @param {Monitor} monitor
    */
-  constructor(ctx, monitor) {
-    this.#context = ctx;
-    this.#monitor = monitor;
+  constructor(context, monitor) {
+    super(context, monitor);
     this.#freqHz = 5; // Hz
-    this.#sinOsc = new OscillatorNode(ctx, {
+    this.#sinOsc = new OscillatorNode(this._context, {
       type: "sine",
       frequency: this.#freqHz
     });
-    this.#cosOsc = new OscillatorNode(ctx, {
+    this.#cosOsc = new OscillatorNode(this._context, {
       type: "sine",
       frequency: this.#freqHz
     });
-    this.#sinGain = new GainNode(ctx);
-    this.#cosGain = new GainNode(ctx);
-    this.#mixer = new GainNode(ctx);
+    this.#sinGain = new GainNode(this._context);
+    this.#cosGain = new GainNode(this._context);
+    this.#mixer = new GainNode(this._context);
     // connect up the nodes
     this.#sinOsc.connect(this.#sinGain);
     this.#cosOsc.connect(this.#cosGain);
     this.#sinGain.connect(this.#mixer);
     this.#cosGain.connect(this.#mixer);
     // monitoring
-    this.#monitor.retainGroup([
+    this._monitor.retainGroup([
       Monitor.OSC,
       Monitor.OSC,
       Monitor.GAIN,
@@ -99,7 +97,7 @@ export default class LFO {
     if (Flags.DEBUG_START_STOP) console.log("stopping LFO");
     this.#sinOsc.stop(tim);
     this.#cosOsc.stop(tim);
-    let stopTime = tim - this.#context.currentTime;
+    let stopTime = tim - this._context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
       this.#sinOsc.disconnect();
@@ -107,7 +105,7 @@ export default class LFO {
       this.#sinGain.disconnect();
       this.#cosGain.disconnect();
       this.#mixer.disconnect();
-      this.#monitor.releaseGroup([
+      this._monitor.releaseGroup([
         Monitor.OSC,
         Monitor.OSC,
         Monitor.GAIN,

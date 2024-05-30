@@ -442,3 +442,22 @@ export default class Grammar {
 }
 
 }
+
+// ------------------------------------------------------------
+// work out the line number where the error occurred, by counting newlines
+// ------------------------------------------------------------
+
+function getErrorLineNumber(source) {
+  const textBeforeInterval = source.sourceString.substring(0, source.startIdx);
+  const lineCount = (textBeforeInterval.match(/\n/g) || []).length;
+  return lineCount + 1;
+}
+
+// ------------------------------------------------------------
+// throw an error message with a line number
+// ------------------------------------------------------------
+
+function throwError(msg, source) {
+  var line = getErrorLineNumber(source);
+  throw new Error(`Line ${line}:\n${msg}`);
+}

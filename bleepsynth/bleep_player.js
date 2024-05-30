@@ -1,8 +1,8 @@
-import Constants from "./constants"
-import Flags from "./flags"
-import Expression from "./expression"
-import Monitor from "./monitor"
-import BleepGenerator from "./bleep_generator"
+import Constants from "./constants.js"
+import Flags from "./flags.js"
+import Expression from "./expression.js"
+import Monitor from "./monitor.js"
+import BleepGenerator from "./bleep_generator.js"
 
 export default class BleepPlayer {
 

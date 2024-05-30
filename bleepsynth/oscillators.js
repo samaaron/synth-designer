@@ -1,3 +1,4 @@
+import BleepSynthModule from "./bleep_synth_module.js";
 import Flags from "./flags.js";
 import Monitor from "./monitor.js";
 
@@ -5,18 +6,15 @@ import Monitor from "./monitor.js";
 // Prototype oscillator class
 // ------------------------------------------------------------
 
-class Oscillator {
+class Oscillator extends BleepSynthModule {
 
   static MIDDLE_C = 261.63; // Hz
 
   _osc
-  _context
-  _monitor
 
-  constructor(ctx, monitor) {
-    this._context = ctx;
-    this._monitor = monitor
-    this._osc = ctx.createOscillator(ctx);
+  constructor(context, monitor) {
+    super(context, monitor);
+    this._osc = this._context.createOscillator(this._context);
     this._osc.frequency.value = Oscillator.MIDDLE_C;
     this._monitor.retain(Monitor.OSC, Monitor.CLASS_OSCILLATOR);
   }
@@ -83,8 +81,8 @@ export class PulseOsc extends Oscillator {
   #pulsewidth
   #pwm
 
-  constructor(ctx, monitor) {
-    super(ctx, monitor);
+  constructor(context, monitor) {
+    super(context, monitor);
 
     // set the parameters of oscillator 1
     // we set the oscillator value to 0 to avoid an offset since we will control the
@@ -94,7 +92,7 @@ export class PulseOsc extends Oscillator {
     this._osc.type = "sawtooth"
 
     // set the parameters of oscillator 2
-    this.#osc2 = ctx.createOscillator();
+    this.#osc2 = this._context.createOscillator();
     this.#osc2.frequency.value = 0;
     this.#osc2.type = "sawtooth"
 
@@ -102,12 +100,12 @@ export class PulseOsc extends Oscillator {
     this.#pulsewidth = 0.5;
 
     // the inverter, which subtracts one saw from the other
-    this.#inverter = ctx.createGain(ctx);
+    this.#inverter = new GainNode(this._context);
     this.#inverter.gain.value = -1;
 
     // constant source node to change frequency and detune of both oscillators
-    this.#freqNode = new ConstantSourceNode(ctx);
-    this.#detuneNode = new ConstantSourceNode(ctx);
+    this.#freqNode = new ConstantSourceNode(this._context);
+    this.#detuneNode = new ConstantSourceNode(this._context);
 
     // connect them up
     this.#freqNode.connect(this._osc.frequency);
@@ -116,15 +114,15 @@ export class PulseOsc extends Oscillator {
     this.#detuneNode.connect(this.#osc2.detune);
 
     // sum the outputs into this gain
-    this.#out = ctx.createGain();
+    this.#out = this._context.createGain();
     this.#out.gain.value = 0.5;
 
     // the delay is a fraction of the period, given by the pulse width
-    this.#delay = ctx.createDelay();
+    this.#delay = this._context.createDelay();
     this.#delay.delayTime.value = this.#pulsewidth / this.#freqHz;
 
     // pulse width modulation
-    this.#pwm = ctx.createGain();
+    this.#pwm = this._context.createGain();
     this.#pwm.gain.value = 1 / this.#freqHz;
     this.#pwm.connect(this.#delay.delayTime);
 
@@ -236,8 +234,8 @@ export class PulseOsc extends Oscillator {
 // ------------------------------------------------------------
 
 export class SawOsc extends Oscillator {
-  constructor(ctx, monitor) {
-    super(ctx, monitor);
+  constructor(context, monitor) {
+    super(context, monitor);
     this._osc.type = "sawtooth";
   }
 }
@@ -247,8 +245,8 @@ export class SawOsc extends Oscillator {
 // ------------------------------------------------------------
 
 export class SinOsc extends Oscillator {
-  constructor(ctx, monitor) {
-    super(ctx, monitor);
+  constructor(context, monitor) {
+    super(context, monitor);
     this._osc.type = "sine";
   }
 }
@@ -258,8 +256,8 @@ export class SinOsc extends Oscillator {
 // ------------------------------------------------------------
 
 export class TriOsc extends Oscillator {
-  constructor(ctx, monitor) {
-    super(ctx, monitor);
+  constructor(context, monitor) {
+    super(context, monitor);
     this._osc.type = "triangle";
   }
 }
@@ -269,8 +267,8 @@ export class TriOsc extends Oscillator {
 // ------------------------------------------------------------
 
 export class SquareOsc extends Oscillator {
-  constructor(ctx, monitor) {
-    super(ctx, monitor);
+  constructor(context, monitor) {
+    super(context, monitor);
     this._osc.type = "square";
   }
 }

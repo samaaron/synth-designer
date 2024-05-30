@@ -1,6 +1,7 @@
+import BleepSynthModule from "./bleep_synth_module.js";
 import Monitor from "./monitor.js";
 
-export default class LowpassFilter {
+export default class LowpassFilter extends BleepSynthModule {
 
   static DEFAULT_CUTOFF = 1000;
   static DEFAULT_RESONANCE = 1;
@@ -9,15 +10,14 @@ export default class LowpassFilter {
     #context
     #monitor
 
-    constructor(ctx,monitor) {
-      this.#context = ctx;
-      this.#monitor = monitor;
-      this.#filter = new BiquadFilterNode(ctx, {
+    constructor(context,monitor) {
+      super(context, monitor);
+      this.#filter = new BiquadFilterNode(this._context, {
         type: "lowpass",
         frequency: LowpassFilter.DEFAULT_CUTOFF,
         Q: LowpassFilter.DEFAULT_RESONANCE
       });
-      this.#monitor.retain(Monitor.BIQUAD,Monitor.CLASS_LOW_PASS);
+      this._monitor.retain(Monitor.BIQUAD,Monitor.CLASS_LOW_PASS);
     }
 
     get cutoff() {
@@ -49,11 +49,11 @@ export default class LowpassFilter {
     }
 
     stop(tim) {
-      let stopTime = tim - this.#context.currentTime;
+      let stopTime = tim - this._context.currentTime;
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
         this.#filter.disconnect();
-        this.#monitor.release(Monitor.BIQUAD,Monitor.CLASS_LOW_PASS);
+        this._monitor.release(Monitor.BIQUAD,Monitor.CLASS_LOW_PASS);
       }, (stopTime + 0.1) * 1000);
     }
 

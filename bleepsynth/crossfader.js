@@ -1,10 +1,9 @@
-import Monitor from "./monitor";
-import Utility from "./utility";
+import BleepSynthModule from "./bleep_synth_module.js";
+import Monitor from "./monitor.js";
+import Utility from "./utility.js";
 
-export default class CrossFader {
+export default class CrossFader extends BleepSynthModule {
 
-  #context
-  #monitor
   #inA
   #inB
   #balance
@@ -13,22 +12,21 @@ export default class CrossFader {
 
   /**
    * constructor
-   * @param {AudioContext} ctx
+   * @param {AudioContext} context
    * @param {Monitor} monitor
    */
-  constructor(ctx, monitor) {
-    this.#context = ctx;
-    this.#monitor = monitor;
+  constructor(context, monitor) {
+    super(context, monitor);
     // inputs
-    this.#inA = new GainNode(ctx, {
+    this.#inA = new GainNode(this._context, {
       gain: 0
     });
-    this.#inB = Utility.createUnityGain(ctx);
+    this.#inB = Utility.createUnityGain(this._context);
     // mix the two outputs
-    this.#mix = Utility.createUnityGain(ctx);
+    this.#mix = Utility.createUnityGain(this._context);
     // balance control
-    this.#balance = ctx.createConstantSource();
-    this.#inverter = new GainNode(ctx, {
+    this.#balance = this._context.createConstantSource();
+    this.#inverter = new GainNode(this._context, {
       gain: -1
     });
     // connect the nodes
@@ -38,7 +36,7 @@ export default class CrossFader {
     this.#inA.connect(this.#mix);
     this.#inB.connect(this.#mix);
     // monitor the nodes
-    this.#monitor.retainGroup([
+    this._monitor.retainGroup([
       Monitor.GAIN,
       Monitor.GAIN,
       Monitor.GAIN,
@@ -84,7 +82,7 @@ export default class CrossFader {
    */
   stop(tim) {
     this.#balance.stop(tim);
-    let stopTime = tim - this.#context.currentTime;
+    let stopTime = tim - this._context.currentTime;
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
       this.#inA.disconnect();
@@ -92,7 +90,7 @@ export default class CrossFader {
       this.#mix.disconnect();
       this.#balance.disconnect();
       this.#inverter.disconnect();
-      this.#monitor.releaseGroup([
+      this._monitor.releaseGroup([
         Monitor.GAIN,
         Monitor.GAIN,
         Monitor.GAIN,
