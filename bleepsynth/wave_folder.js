@@ -1,7 +1,9 @@
 import Monitor from "./monitor"
 import Utility from "./utility"
 
-class Wavefolder {
+export default class Wavefolder {
+
+    static NUM_FOLDS = 4
 
     #folders
     #context
@@ -12,13 +14,10 @@ class Wavefolder {
     #mix
     #numFolds
 
-    constructor(ctx, monitor, numFolds) {
-        if (numFolds < 1) {
-            throw new Error("Wavefolder: cannot have less than one folding stage");
-        }
+    constructor(ctx, monitor) {
         this.#context = ctx;
         this.#monitor = monitor;
-        this.#numFolds = numFolds;
+        this.#numFolds = Wavefolder.NUM_FOLDS;
         this.#makeGains();
         this.#makeFolders();
         this.#makeSymmetry();
@@ -72,12 +71,28 @@ class Wavefolder {
         return this.#out;
     }
 
+    /**
+     * gain that affects degree of folding, should be in range [0,1]
+     * @param {number} v 
+     */
     set gain(v) {
         this.#mix.gain.value = v;
     }
 
+    /**
+     * offset that affects symmetry, should be in range [-1,1]
+     * @param {number} s 
+     */
     set symmetry(s) {
         this.#symmetry.offset.value = s;
+    }
+
+    get gainCV() {
+        return this.#mix.gain;
+    }
+
+    get symmetryCV() {
+        return this.#symmetry.offset;
     }
 
     #createFoldingCurve(length) {

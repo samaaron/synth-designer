@@ -306,7 +306,7 @@ export default class Grammar {
       
         patchinput = varname "." inputparam
       
-        inputparam = "in" | "levelCV" | "pitchCV" | "cutoffCV" | "pulsewidthCV" | "angleCV" | "lagCV" | "thresholdCV" | "symmetryCV" | "gainCV"
+        inputparam = "in" | "levelCV" | "pitchCV" | "cutoffCV" | "pulsewidthCV" | "angleCV" | "lagCV" | "symmetryCV" | "gainCV"
       
         outputparam = "out"
       
@@ -370,7 +370,7 @@ export default class Grammar {
         tweakable
         = varname "." parameter
       
-        parameter = "pitch" | "detune" | "level" | "lag" | "phase" | "angle" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release" | "fuzz" | "pulsewidth" | "threshold" | "symmetry" | "gain" | "stages"
+        parameter = "pitch" | "detune" | "level" | "lag" | "phase" | "angle" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release" | "fuzz" | "pulsewidth" | "symmetry" | "gain"
       
         varname (a module name)
         = lower alnum*

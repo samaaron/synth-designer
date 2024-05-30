@@ -9,6 +9,7 @@ import NoiseGenerator from './noise.js';
 import Panner from './panner.js';
 import Waveshaper from './wave_shaper.js';
 import {SinOsc, SawOsc, SquareOsc, TriOsc, PulseOsc} from './oscillators.js';
+import Wavefolder from './wave_folder.js';
 
 const MAX_MIDI_FREQ = 4186; // C8
 const MIN_MIDI_FREQ = 27.5;  // A0
@@ -30,87 +31,89 @@ const MODULE_CONTEXT = {
     SinOsc : SinOsc,
     SquareOsc : SquareOsc,
     TriOsc : TriOsc,
+    Wavefolder : Wavefolder,
     Waveshaper : Waveshaper
   };
   
 // mapping between grammar names for modules and class names
 
 const MODULE_CLASSES = {
-    "SAW-OSC": "SawOsc",
-    "SIN-OSC": "SinOsc",
-    "TRI-OSC": "TriOsc",
-    "SQR-OSC": "SquareOsc",
-    "PULSE-OSC": "PulseOsc",
-    "LFO": "LFO",
-    "PAN": "Panner",
-    "NOISE": "Noise",
-    "LPF": "LowpassFilter",
-    "HPF": "HighpassFilter",
-    "VCA": "Amplifier",
-    "SHAPER": "Waveshaper",
     "ADSR": "Envelope",
-    "DECAY": "Decay",
     "AUDIO": "Audio",
-    "DELAY": "DelayLine"
+    "DECAY": "Decay",
+    "DELAY": "DelayLine",
+    "FOLDER": "Wavefolder",
+    "HPF": "HighpassFilter",
+    "LFO": "LFO",
+    "LPF": "LowpassFilter",
+    "NOISE": "Noise",
+    "PAN": "Panner",
+    "PULSE-OSC": "PulseOsc",
+    "SAW-OSC": "SawOsc",
+    "SHAPER": "Waveshaper",
+    "SIN-OSC": "SinOsc",
+    "SQR-OSC": "SquareOsc",
+    "TRI-OSC": "TriOsc",
+    "VCA": "Amplifier"
   };
   
   // valid tweaks, used for error checking
   
   const VALID_TWEAKS = {
+    "ADSR": ["attack", "decay", "sustain", "release", "level"],
+    "DECAY": ["attack", "decay", "level"],
+    "DELAY": ["lag"],
+    "FOLDER": ["symmetry", "gain"],
+    "HPF": ["cutoff", "resonance"],
+    "LFO": ["pitch", "phase"],
+    "LPF": ["cutoff", "resonance"],
+    "PAN": ["angle"],
+    "PULSE-OSC": ["detune", "pitch", "pulsewidth"],
     "SAW-OSC": ["detune", "pitch"],
+    "SHAPER": ["fuzz"],
     "SIN-OSC": ["detune", "pitch"],
     "SQR-OSC": ["detune", "pitch"],
     "TRI-OSC": ["detune", "pitch"],
-    "PULSE-OSC": ["detune", "pitch", "pulsewidth"],
-    "LFO": ["pitch", "phase"],
-    "LPF": ["cutoff", "resonance"],
-    "HPF": ["cutoff", "resonance"],
-    "VCA": ["level"],
-    "SHAPER": ["fuzz"],
-    "ADSR": ["attack", "decay", "sustain", "release", "level"],
-    "DECAY": ["attack", "decay", "level"],
-    "PAN": ["angle"],
-    "DELAY": ["lag"],
-    "FOLDER": ["threshold", "symmetry", "gain", "level", "stages"]
+    "VCA": ["level"]
   };
   
   // valid patch inputs, used for error checking
   
   const VALID_PATCH_INPUTS = {
     "AUDIO": ["in"],
+    "DELAY": ["in", "lagCV"],
+    "FOLDER": ["in", "symmetryCV", "gainCV"],
+    "HPF": ["in", "cutoffCV"],
+    "LPF": ["in", "cutoffCV"],
+    "PAN": ["in", "angleCV"],
+    "PULSE-OSC": ["pitchCV", "pulsewidthCV"],
     "SAW-OSC": ["pitchCV"],
+    "SHAPER": ["in"],
     "SIN-OSC": ["pitchCV"],
     "SQR-OSC": ["pitchCV"],
     "TRI-OSC": ["pitchCV"],
-    "PULSE-OSC": ["pitchCV", "pulsewidthCV"],
-    "LPF": ["in", "cutoffCV"],
-    "HPF": ["in", "cutoffCV"],
-    "VCA": ["in", "levelCV"],
-    "SHAPER": ["in"],
-    "PAN": ["in", "angleCV"],
-    "DELAY": ["in", "lagCV"],
-    "FOLDER": ["in", "thresholdCV", "symmetryCV", "levelCV", "gainCV"]
+    "VCA": ["in", "levelCV"]
   };
   
   // valid patch outputs - pointless at the moment but in future modules may have more than one output
   
   const VALID_PATCH_OUTPUTS = {
+    "ADSR": ["out"],
+    "DECAY": ["out"],
+    "DELAY": ["out"],
+    "FOLDER": ["out"],
+    "HPF": ["out"],
+    "LFO": ["out"],
+    "LPF": ["out"],
+    "NOISE": ["out"],
+    "PAN": ["out"],
+    "PULSE-OSC": ["out"],
     "SAW-OSC": ["out"],
+    "SHAPER": ["out"],
     "SIN-OSC": ["out"],
     "SQR-OSC": ["out"],
     "TRI-OSC": ["out"],
-    "PULSE-OSC": ["out"],
-    "LFO": ["out"],
-    "NOISE": ["out"],
-    "LPF": ["out"],
-    "HPF": ["out"],
-    "VCA": ["out"],
-    "SHAPER": ["out"],
-    "ADSR": ["out"],
-    "DECAY": ["out"],
-    "PAN": ["out"],
-    "DELAY": ["out"],
-    "FOLDER": ["out"]
+    "VCA": ["out"]
   };
   
 const Constants = {

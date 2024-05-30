@@ -1,0 +1,99 @@
+@synth default
+longname : Default patch
+type : synth
+author : Guy J Brown
+version : 1.0
+doc : A very simple default patch
+@end
+
+# parameters
+
+@param cutoff
+type : float
+mutable: yes
+step : 0.01
+min : 100
+max : 8000
+default : 2000
+doc : cutoff frequency
+@end
+
+@param symmetry
+type : float
+mutable : yes
+step : 0.01
+min : -1
+max : 1
+default : 0
+doc : wavefolder symmetry
+@end
+
+@param boost
+type : float
+mutable : yes
+step : 0.01
+min : 0
+max : 1
+default : 0.5
+doc : wavefolder gain
+@end
+
+@param mod_level
+type : float
+mutable : yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : wavefolder symmetry modulation level
+@end
+
+@param mod_rate
+type : float
+mutable : yes
+step : 0.01
+min : 0.01
+max : 0.5
+default : 0.1
+doc : wavefolder symmetry modulation rate
+@end
+
+# modules
+
+SIN-OSC : osc
+LPF : lowpass
+FOLDER : folder
+VCA : vca
+ADSR : env
+SIN-OSC : lfo
+VCA : modgain
+
+# patch
+
+osc.out -> folder.in
+folder.out -> lowpass.in
+lowpass.out -> vca.in
+vca.out -> audio.in
+env.out -> folder.gainCV
+lfo.out -> modgain.in
+modgain.out -> folder.symmetryCV
+
+# tweak
+
+osc.pitch = param.pitch
+vca.level = param.level
+lowpass.cutoff = param.cutoff
+folder.symmetry = param.symmetry
+folder.gain = param.boost
+modgain.level = param.mod_level
+lfo.pitch = param.mod_rate
+
+# envelope
+
+env.attack = 0
+env.decay = 4
+env.sustain = 0
+env.release = 0.01
+env.level = 1
+
+# end
