@@ -23,7 +23,7 @@ export default class NoiseGenerator {
       buffer: this.#getNoiseBuffer(),
       loop: true
     });
-    this.#monitor.retain(Monitor.AUDIO_SOURCE, Monitor.NOISE);
+    this.#monitor.retain(Monitor.AUDIO_SOURCE, Monitor.CLASS_NOISE);
   }
 
   #getNoiseBuffer() {
@@ -51,7 +51,7 @@ export default class NoiseGenerator {
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
       this.#noise.disconnect();
-      this.#monitor.release(Monitor.AUDIO_SOURCE, Monitor.NOISE);
+      this.#monitor.release(Monitor.AUDIO_SOURCE, Monitor.CLASS_NOISE);
     }, (stopTime + 0.1) * 1000);
   }
 

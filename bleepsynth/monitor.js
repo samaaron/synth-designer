@@ -22,24 +22,23 @@ export default class Monitor {
 
     // classes
 
-    static AMPLIFIER = "Amplifier";
-    static DELAY_LINE = "DelayLine";
-    static REVERB = "Reverb";
-    static DISTORTION = "Distort";
-    static EFFECT = "Effect";
-    static MONO_DELAY = "MonoDelay";
-    static RING_MOD = "RingModulator";
-    static HIGH_PASS = "HighpassFilter";
-    static LOW_PASS = "LowpassFilter";
-    static OSCILLATOR = "Oscillator";
-    static PULSE = "PulseOscillator";
-    static LFO = "LFO";
-    static NOISE = "Noise";
-    static PANNER = "Panner";
-    static WAVE_SHAPER = "Waveshaper";
-    static WAVE_FOLDER = "Wavefolder";
+    static CLASS_AMPLIFIER = "Amplifier";
+    static CLASS_DELAY_LINE = "DelayLine";
+    static CLASS_REVERB = "Reverb";
+    static CLASS_DISTORTION = "Distort";
+    static CLASS_MONO_DELAY = "MonoDelay";
+    static CLASS_RING_MOD = "RingModulator";
+    static CLASS_HIGH_PASS = "HighpassFilter";
+    static CLASS_LOW_PASS = "LowpassFilter";
+    static CLASS_OSCILLATOR = "Oscillator";
+    static CLASS_PULSE = "PulseOscillator";
+    static CLASS_LFO = "LFO";
+    static CLASS_NOISE = "Noise";
+    static CLASS_PANNER = "Panner";
+    static CLASS_WAVE_SHAPER = "Waveshaper";
+    static CLASS_WAVE_FOLDER = "Wavefolder";
     static CROSS_FADER = "Crossfader";
-    
+
     /**
      * @type {Map}
      */
@@ -137,12 +136,11 @@ export default class Monitor {
 
     /**
      * crop a key name so that it contains the web audio object name only, and not the class
-     * @param {object} key 
+     * @param {object} key
      * @returns {string}
      */
     #cropName(key) {
-        const str = key.toString();
-        return str.substring(0,str.indexOf(' '));
+        return key.split(' ')[0];
     }
 
     /**

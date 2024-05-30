@@ -10,7 +10,7 @@ export default class DelayLine {
       this.#context = ctx;
       this.#monitor = monitor;
       this.#delay = ctx.createDelay(10);
-      this.#monitor.retain(Monitor.DELAY,Monitor.DELAY_LINE);
+      this.#monitor.retain(Monitor.DELAY,Monitor.CLASS_DELAY_LINE);
     }
 
     set lag(t) {
@@ -38,7 +38,7 @@ export default class DelayLine {
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
         this.#delay.disconnect();
-        this.#monitor.release(Monitor.DELAY,Monitor.DELAY_LINE);
+        this.#monitor.release(Monitor.DELAY,Monitor.CLASS_DELAY_LINE);
       }, (stopTime + 0.1) * 1000);
     }
 

@@ -17,7 +17,7 @@ export default class LowpassFilter {
         frequency: LowpassFilter.DEFAULT_CUTOFF,
         Q: LowpassFilter.DEFAULT_RESONANCE
       });
-      this.#monitor.retain(Monitor.BIQUAD,Monitor.LOW_PASS);
+      this.#monitor.retain(Monitor.BIQUAD,Monitor.CLASS_LOW_PASS);
     }
 
     get cutoff() {
@@ -53,7 +53,7 @@ export default class LowpassFilter {
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
         this.#filter.disconnect();
-        this.#monitor.release(Monitor.BIQUAD,Monitor.LOW_PASS);
+        this.#monitor.release(Monitor.BIQUAD,Monitor.CLASS_LOW_PASS);
       }, (stopTime + 0.1) * 1000);
     }
 

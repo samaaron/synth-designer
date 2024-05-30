@@ -18,7 +18,7 @@ class Oscillator {
     this._monitor = monitor
     this._osc = ctx.createOscillator(ctx);
     this._osc.frequency.value = Oscillator.MIDDLE_C;
-    this._monitor.retain(Monitor.OSC, Monitor.OSCILLATOR);
+    this._monitor.retain(Monitor.OSC, Monitor.CLASS_OSCILLATOR);
   }
 
   set detune(n) {
@@ -57,7 +57,7 @@ class Oscillator {
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
       this._osc.disconnect();
-      this._monitor.release(Monitor.OSC, Monitor.OSCILLATOR);
+      this._monitor.release(Monitor.OSC, Monitor.CLASS_OSCILLATOR);
     }, (stopTime + 0.1) * 1000);
   }
 
@@ -141,7 +141,7 @@ export class PulseOsc extends Oscillator {
       Monitor.GAIN,
       Monitor.DELAY,
       Monitor.GAIN,
-      Monitor.GAIN], Monitor.PULSE);
+      Monitor.GAIN], Monitor.CLASS_PULSE);
 
   }
 
@@ -225,7 +225,7 @@ export class PulseOsc extends Oscillator {
         Monitor.GAIN,
         Monitor.DELAY,
         Monitor.GAIN,
-        Monitor.GAIN], Monitor.PULSE);
+        Monitor.GAIN], Monitor.CLASS_PULSE);
     }, (stopTime + 0.1) * 1000);
   }
 

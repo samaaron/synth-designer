@@ -40,7 +40,7 @@ export default class Wavefolder {
                 oversample: "4x"
             });
             this.#folders.push(fold);
-            this.#monitor.retain(Monitor.SHAPER, Monitor.WAVE_FOLDER);
+            this.#monitor.retain(Monitor.SHAPER, Monitor.CLASS_WAVE_FOLDER);
         }
     }
 
@@ -54,7 +54,7 @@ export default class Wavefolder {
         this.#monitor.retainGroup([
             Monitor.GAIN,
             Monitor.GAIN,
-            Monitor.GAIN], Monitor.WAVE_FOLDER);
+            Monitor.GAIN], Monitor.CLASS_WAVE_FOLDER);
     }
 
     /**
@@ -65,7 +65,7 @@ export default class Wavefolder {
         this.#symmetry.offset.value = 0;
         this.#symmetry.connect(this.#mix);
         this.#symmetry.start();
-        this.#monitor.retain(Monitor.CONSTANT, Monitor.WAVE_FOLDER);
+        this.#monitor.retain(Monitor.CONSTANT, Monitor.CLASS_WAVE_FOLDER);
     }
 
     /**
@@ -159,10 +159,10 @@ export default class Wavefolder {
                 Monitor.GAIN,
                 Monitor.GAIN,
                 Monitor.CONSTANT,
-            ], Monitor.WAVE_FOLDER);
+            ], Monitor.CLASS_WAVE_FOLDER);
             for (let i = 0; i < this.#numFolds; i++) {
                 this.#folders[i].disconnect();
-                this.#monitor.release(Monitor.SHAPER, Monitor.WAVE_FOLDER);
+                this.#monitor.release(Monitor.SHAPER, Monitor.CLASS_WAVE_FOLDER);
             }
         }, (stopTime + 0.1) * 1000);
     }

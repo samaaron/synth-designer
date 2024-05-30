@@ -12,7 +12,7 @@ export default class Waveshaper {
       this.#shaper = ctx.createWaveShaper();
       this.#shaper.curve = this.makeDistortionCurve(100);
       this.#shaper.oversample = "4x";
-      this.#monitor.retain(Monitor.SHAPER,Monitor.WAVE_SHAPER);
+      this.#monitor.retain(Monitor.SHAPER,Monitor.CLASS_WAVE_SHAPER);
     }
 
     get in() {
@@ -49,7 +49,7 @@ export default class Waveshaper {
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
         this.#shaper.disconnect();
-        this.#monitor.release(Monitor.SHAPER,Monitor.WAVE_SHAPER);
+        this.#monitor.release(Monitor.SHAPER,Monitor.CLASS_WAVE_SHAPER);
       }, (stopTime + 0.1) * 1000);
     }
 

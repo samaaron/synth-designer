@@ -36,7 +36,7 @@ export default class Reverb {
             Monitor.GAIN,
             Monitor.GAIN,
             Monitor.GAIN,
-            Monitor.GAIN], Monitor.REVERB);
+            Monitor.GAIN], Monitor.CLASS_REVERB);
     }
 
     async load(filename) {
@@ -69,12 +69,12 @@ export default class Reverb {
             Monitor.GAIN,
             Monitor.GAIN,
             Monitor.GAIN,
-            Monitor.GAIN], Monitor.REVERB);
+            Monitor.GAIN], Monitor.CLASS_REVERB);
     }
 
     /**
      * set the wet level
-     * @param {number} level 
+     * @param {number} level
      */
     set wetLevel(level) {
         this.#wetLevel = Utility.clamp(level, 0, 1);

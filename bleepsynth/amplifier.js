@@ -11,7 +11,7 @@ export default class Amplifier {
     this.#context = ctx;
     this.#monitor = monitor;
     this.#gain = Utility.createUnityGain(this.#context);
-    this.#monitor.retain(Monitor.GAIN,Monitor.AMPLIFIER);
+    this.#monitor.retain(Monitor.GAIN,Monitor.CLASS_AMPLIFIER);
   }
 
   get in() {
@@ -39,7 +39,7 @@ export default class Amplifier {
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
       this.#gain.disconnect();
-      this.#monitor.release(Monitor.GAIN,Monitor.AMPLIFIER);
+      this.#monitor.release(Monitor.GAIN,Monitor.CLASS_AMPLIFIER);
     }, (stopTime + 0.1) * 1000);
   }
 

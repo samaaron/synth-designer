@@ -10,7 +10,7 @@ export default class Panner {
       this.#context = ctx;
       this.#monitor = monitor;
       this.#pan = ctx.createStereoPanner();
-      this.#monitor.retain(Monitor.PAN, Monitor.PANNER);
+      this.#monitor.retain(Monitor.PAN, Monitor.CLASS_PANNER);
     }
 
     // stereo position between -1 and 1
@@ -40,7 +40,7 @@ export default class Panner {
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
         this.#pan.disconnect();
-        this.#monitor.release(Monitor.PAN, Monitor.PANNER);
+        this.#monitor.release(Monitor.PAN, Monitor.CLASS_PANNER);
       }, (stopTime + 0.1) * 1000);
     }
 
