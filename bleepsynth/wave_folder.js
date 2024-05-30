@@ -14,6 +14,11 @@ export default class Wavefolder {
     #mix
     #numFolds
 
+    /**
+     * constructor
+     * @param {AudioContext} ctx
+     * @param {Monitor} monitor
+     */
     constructor(ctx, monitor) {
         this.#context = ctx;
         this.#monitor = monitor;
@@ -24,6 +29,9 @@ export default class Wavefolder {
         this.#makeConnections();
     }
 
+    /**
+     * create the folding nodes
+     */
     #makeFolders() {
         this.#folders = [];
         for (let i = 0; i < this.#numFolds; i++) {
@@ -36,6 +44,9 @@ export default class Wavefolder {
         }
     }
 
+    /**
+     * create the gain nodes
+     */
     #makeGains() {
         this.#in = Utility.createUnityGain(this.#context);
         this.#out = Utility.createUnityGain(this.#context);
@@ -46,6 +57,9 @@ export default class Wavefolder {
             Monitor.GAIN], Monitor.WAVE_FOLDER);
     }
 
+    /**
+     * create the node to control the symmetry
+     */
     #makeSymmetry() {
         this.#symmetry = this.#context.createConstantSource();
         this.#symmetry.offset.value = 0;
@@ -54,6 +68,9 @@ export default class Wavefolder {
         this.#monitor.retain(Monitor.CONSTANT, Monitor.WAVE_FOLDER);
     }
 
+    /**
+     * connect the nodes
+     */
     #makeConnections() {
         this.#in.connect(this.#mix);
         this.#mix.connect(this.#folders[0]);
@@ -63,38 +80,59 @@ export default class Wavefolder {
         this.#folders[this.#numFolds - 1].connect(this.#out);
     }
 
+    /**
+     * get the input node
+     * @returns {GainNode}
+     */
     get in() {
         return this.#in;
     }
 
+    /**
+     * get the output node
+     * @returns {GainNode}
+     */
     get out() {
         return this.#out;
     }
 
     /**
-     * gain that affects degree of folding, should be in range [0,1]
-     * @param {number} v 
+     * set the gain that affects degree of folding, should be in range [0,1]
+     * @param {number} v
      */
     set gain(v) {
         this.#mix.gain.value = v;
     }
 
     /**
-     * offset that affects symmetry, should be in range [-1,1]
-     * @param {number} s 
+     * set the offset that affects symmetry, should be in range [-1,1]
+     * @param {number} s
      */
     set symmetry(s) {
         this.#symmetry.offset.value = s;
     }
 
+    /**
+     * get the gain control
+     * @returns {AudioParam}
+     */
     get gainCV() {
         return this.#mix.gain;
     }
 
+    /**
+     * get the symmetry control
+     * @returns {AudioParam}
+     */
     get symmetryCV() {
         return this.#symmetry.offset;
     }
 
+    /**
+     * create a sinusoidal wavefolding curve
+     * @param {number} length
+     * @returns
+     */
     #createFoldingCurve(length) {
         const curve = new Float32Array(length);
         for (let i = 0; i < length; i++) {
@@ -103,6 +141,10 @@ export default class Wavefolder {
         return curve;
     }
 
+    /**
+     * stop the wavefolder
+     * @param {number} tim
+     */
     stop(tim) {
         this.#symmetry.stop(tim);
         let stopTime = tim - this.#context.currentTime;
