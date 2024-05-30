@@ -1,4 +1,5 @@
 import Amplifier from './amplifier.js';
+import CrossFader from './crossfader.js';
 import Decay from './decay.js';
 import DelayLine from './delayline.js';
 import Envelope from './envelope.js';
@@ -18,6 +19,7 @@ const MIN_LEVEL = 0;
 
 const MODULE_CONTEXT = {
     Amplifier : Amplifier,
+    CrossFader : CrossFader,
     Decay : Decay,
     DelayLine : DelayLine,
     Envelope : Envelope,
@@ -42,6 +44,7 @@ const MODULE_CLASSES = {
     "AUDIO": "Audio",
     "DECAY": "Decay",
     "DELAY": "DelayLine",
+    "FADER": "CrossFader",
     "FOLDER": "Wavefolder",
     "HPF": "HighpassFilter",
     "LFO": "LFO",
@@ -63,6 +66,7 @@ const MODULE_CLASSES = {
     "ADSR": ["attack", "decay", "sustain", "release", "level"],
     "DECAY": ["attack", "decay", "level"],
     "DELAY": ["lag"],
+    "FADER": ["balance"],
     "FOLDER": ["symmetry", "gain"],
     "HPF": ["cutoff", "resonance"],
     "LFO": ["pitch", "phase"],
@@ -82,6 +86,7 @@ const MODULE_CLASSES = {
   const VALID_PATCH_INPUTS = {
     "AUDIO": ["in"],
     "DELAY": ["in", "lagCV"],
+    "FADER": ["inA","inB","balanceCV"],
     "FOLDER": ["in", "symmetryCV", "gainCV"],
     "HPF": ["in", "cutoffCV"],
     "LPF": ["in", "cutoffCV"],
@@ -101,6 +106,7 @@ const MODULE_CLASSES = {
     "ADSR": ["out"],
     "DECAY": ["out"],
     "DELAY": ["out"],
+    "FADER": ["out"],
     "FOLDER": ["out"],
     "HPF": ["out"],
     "LFO": ["out"],

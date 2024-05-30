@@ -58,9 +58,21 @@ default : 0.1
 doc : wavefolder symmetry modulation rate
 @end
 
+@param balance
+type : float
+mutable : yes
+step : 0.01
+min : 0
+max : 1
+default : 0.5
+doc : crossfader balance
+@end
+
 # modules
 
-SIN-OSC : osc
+SIN-OSC : sin
+SAW-OSC : saw
+FADER : fader
 LPF : lowpass
 FOLDER : folder
 VCA : vca
@@ -70,7 +82,8 @@ VCA : modgain
 
 # patch
 
-osc.out -> folder.in
+sin.out -> fader.inA
+fader.out -> folder.in
 folder.out -> lowpass.in
 lowpass.out -> vca.in
 vca.out -> audio.in
@@ -80,13 +93,14 @@ modgain.out -> folder.symmetryCV
 
 # tweak
 
-osc.pitch = param.pitch
+sin.pitch = param.pitch
 vca.level = param.level
 lowpass.cutoff = param.cutoff
 folder.symmetry = param.symmetry
 folder.gain = param.boost
 modgain.level = param.mod_level
 lfo.pitch = param.mod_rate
+fader.balance = param.balance
 
 # envelope
 

@@ -17,6 +17,8 @@ export default class Monitor {
     static CONVOLVER = "ConvolverNode";
     static DELAY = "DelayNode";
     static CONSTANT = "ConstantSourceNode";
+    static SPLITTER = "ChannelSplitterNode";
+    static MERGER = "ChannelMergerNode";
 
     // classes
 
@@ -36,6 +38,7 @@ export default class Monitor {
     static PANNER = "Panner";
     static WAVE_SHAPER = "Waveshaper";
     static WAVE_FOLDER = "Wavefolder";
+    static CROSS_FADER = "Crossfader";
     
     /**
      * @type {Map}
