@@ -11,11 +11,14 @@ import Panner from './panner.js';
 import Waveshaper from './wave_shaper.js';
 import {SinOsc, SawOsc, SquareOsc, TriOsc, PulseOsc} from './oscillators.js';
 import Wavefolder from './wave_folder.js';
+import SuperSaw from './supersaw.js';
 
 const MAX_MIDI_FREQ = 4186; // C8
 const MIN_MIDI_FREQ = 27.5;  // A0
 const MAX_LEVEL = 1;
 const MIN_LEVEL = 0;
+
+const MIDDLE_C = 261.63; // Hz
 
 const MODULE_CONTEXT = {
     Amplifier : Amplifier,
@@ -32,6 +35,7 @@ const MODULE_CONTEXT = {
     SawOsc : SawOsc,
     SinOsc : SinOsc,
     SquareOsc : SquareOsc,
+    SuperSaw : SuperSaw,
     TriOsc : TriOsc,
     Wavefolder : Wavefolder,
     Waveshaper : Waveshaper
@@ -56,6 +60,7 @@ const MODULE_CLASSES = {
     "SHAPER": "Waveshaper",
     "SIN-OSC": "SinOsc",
     "SQR-OSC": "SquareOsc",
+    "SUPERSAW": "SuperSaw",
     "TRI-OSC": "TriOsc",
     "VCA": "Amplifier"
   };
@@ -77,6 +82,7 @@ const MODULE_CLASSES = {
     "SHAPER": ["fuzz"],
     "SIN-OSC": ["detune", "pitch"],
     "SQR-OSC": ["detune", "pitch"],
+    "SUPERSAW": ["detune", "level", "pitch", "spread"],
     "TRI-OSC": ["detune", "pitch"],
     "VCA": ["level"]
   };
@@ -96,6 +102,7 @@ const MODULE_CLASSES = {
     "SHAPER": ["in"],
     "SIN-OSC": ["pitchCV"],
     "SQR-OSC": ["pitchCV"],
+    "SUPERSAW": ["pitchCV"],
     "TRI-OSC": ["pitchCV"],
     "VCA": ["in", "levelCV"]
   };
@@ -118,6 +125,7 @@ const MODULE_CLASSES = {
     "SHAPER": ["out"],
     "SIN-OSC": ["out"],
     "SQR-OSC": ["out"],
+    "SUPERSAW": ["out"],
     "TRI-OSC": ["out"],
     "VCA": ["out"]
   };
@@ -127,6 +135,7 @@ const Constants = {
     MIN_MIDI_FREQ,
     MIN_LEVEL,
     MAX_LEVEL,
+    MIDDLE_C,
     MODULE_CLASSES: MODULE_CLASSES,
     VALID_TWEAKS: VALID_TWEAKS,
     VALID_PATCH_INPUTS: VALID_PATCH_INPUTS,

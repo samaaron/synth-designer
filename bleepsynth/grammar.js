@@ -326,6 +326,7 @@ export default class Grammar {
         | "SQR-OSC"
         | "TRI-OSC"
         | "PULSE-OSC"
+        | "SUPERSAW"
         | "LFO"
         | "NOISE"
         | "LPF"
@@ -371,7 +372,7 @@ export default class Grammar {
         tweakable
         = varname "." parameter
       
-        parameter = "pitch" | "detune" | "level" | "lag" | "phase" | "angle" | "balance" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release" | "fuzz" | "pulsewidth" | "symmetry" | "gain"
+        parameter = "pitch" | "detune" | "level" | "lag" | "phase" | "angle" | "balance" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release" | "fuzz" | "pulsewidth" | "symmetry" | "spread" | "gain"
       
         varname (a module name)
         = lower alnum*

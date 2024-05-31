@@ -1,7 +1,13 @@
-import BleepSynthModule from "./bleep_synth_module.js";
-import Flags from "./flags.js";
-import Monitor from "./monitor.js";
-import { MonitoredConstantSourceNode, MonitoredDelayNode, MonitoredGainNode, MonitoredOscillatorNode } from "./monitored_components.js";
+import BleepSynthModule from "./bleep_synth_module.js"
+import Flags from "./flags.js"
+import Monitor from "./monitor.js"
+import {
+  MonitoredConstantSourceNode,
+  MonitoredDelayNode,
+  MonitoredGainNode,
+  MonitoredOscillatorNode
+} from "./monitored_components.js"
+import Constants from "./constants.js"
 
 // ------------------------------------------------------------
 // Prototype oscillator class
@@ -9,14 +15,12 @@ import { MonitoredConstantSourceNode, MonitoredDelayNode, MonitoredGainNode, Mon
 
 class Oscillator extends BleepSynthModule {
 
-  static MIDDLE_C = 261.63; // Hz
-
   _osc
 
   constructor(context, monitor) {
     super(context, monitor);
     this._osc = new MonitoredOscillatorNode(context, monitor, {
-      frequency: Oscillator.MIDDLE_C
+      frequency: Constants.MIDDLE_C
     });
   }
 
@@ -87,7 +91,7 @@ export class PulseOsc extends Oscillator {
     // set the parameters of oscillator 1
     // we set the oscillator value to 0 to avoid an offset since we will control the
     // frequency of the two oscillatoes via the ConstantSourceNode
-    this.#freqHz = Oscillator.MIDDLE_C;
+    this.#freqHz = Constants.MIDDLE_C;
     this._osc.frequency.value = 0;
     this._osc.type = "sawtooth";
 
