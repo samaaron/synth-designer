@@ -54,6 +54,7 @@ osc.pitch = param.pitch
 vca.level = param.level*0.5
 lowpass.cutoff = param.cutoff
 osc.detune = param.detune
-osc.spread=1
+osc.spread = param.spread
+osc.level = 1
 
 # end
