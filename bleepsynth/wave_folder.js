@@ -1,6 +1,6 @@
 import BleepSynthModule from "./bleep_synth_module.js"
 import Monitor from "./monitor.js"
-import Utility from "./utility.js"
+import { MonitoredConstantSourceNode, MonitoredGainNode, MonitoredWaveShaperNode } from "./monitored_components.js"
 
 export default class Wavefolder extends BleepSynthModule {
 
@@ -33,12 +33,11 @@ export default class Wavefolder extends BleepSynthModule {
     #makeFolders() {
         this.#folders = [];
         for (let i = 0; i < this.#numFolds; i++) {
-            let fold = new WaveShaperNode(this._context, {
+            let fold = new MonitoredWaveShaperNode(this._context, this._monitor, {
                 curve: this.#createFoldingCurve(4096),
                 oversample: "4x"
             });
             this.#folders.push(fold);
-            this._monitor.retain(Monitor.SHAPER, Monitor.CLASS_WAVE_FOLDER);
         }
     }
 
@@ -46,24 +45,26 @@ export default class Wavefolder extends BleepSynthModule {
      * create the gain nodes
      */
     #makeGains() {
-        this.#in = Utility.createUnityGain(this._context);
-        this.#out = Utility.createUnityGain(this._context);
-        this.#mix = Utility.createUnityGain(this._context);
-        this._monitor.retainGroup([
-            Monitor.GAIN,
-            Monitor.GAIN,
-            Monitor.GAIN], Monitor.CLASS_WAVE_FOLDER);
+        this.#in = new MonitoredGainNode(this._context, this._monitor, {
+            gain: 1
+        });
+        this.#out = new MonitoredGainNode(this._context, this._monitor, {
+            gain: 1
+        });
+        this.#mix = new MonitoredGainNode(this._context, this._monitor, {
+            gain: 1
+        });
     }
 
     /**
      * create the node to control the symmetry
      */
     #makeSymmetry() {
-        this.#symmetry = this._context.createConstantSource();
-        this.#symmetry.offset.value = 0;
+        this.#symmetry = new MonitoredConstantSourceNode(this._context, this._monitor, {
+            offset: 0
+        });
         this.#symmetry.connect(this.#mix);
         this.#symmetry.start();
-        this._monitor.retain(Monitor.CONSTANT, Monitor.CLASS_WAVE_FOLDER);
     }
 
     /**
@@ -152,15 +153,8 @@ export default class Wavefolder extends BleepSynthModule {
             this.#in.disconnect();
             this.#out.disconnect();
             this.#mix.disconnect();
-            this._monitor.releaseGroup([
-                Monitor.GAIN,
-                Monitor.GAIN,
-                Monitor.GAIN,
-                Monitor.CONSTANT,
-            ], Monitor.CLASS_WAVE_FOLDER);
             for (let i = 0; i < this.#numFolds; i++) {
                 this.#folders[i].disconnect();
-                this._monitor.release(Monitor.SHAPER, Monitor.CLASS_WAVE_FOLDER);
             }
         }, (stopTime + 0.1) * 1000);
     }

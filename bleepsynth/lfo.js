@@ -1,6 +1,7 @@
 import BleepSynthModule from "./bleep_synth_module.js"
 import Flags from "./flags.js"
 import Monitor from "./monitor.js"
+import { MonitoredGainNode, MonitoredOscillatorNode } from "./monitored_components.js"
 
 export default class LFO extends BleepSynthModule {
 
@@ -19,29 +20,22 @@ export default class LFO extends BleepSynthModule {
   constructor(context, monitor) {
     super(context, monitor);
     this.#freqHz = 5; // Hz
-    this.#sinOsc = new OscillatorNode(this._context, {
+    this.#sinOsc = new MonitoredOscillatorNode(context, monitor, {
       type: "sine",
       frequency: this.#freqHz
     });
-    this.#cosOsc = new OscillatorNode(this._context, {
+    this.#cosOsc = new MonitoredOscillatorNode(context, monitor, {
       type: "sine",
       frequency: this.#freqHz
     });
-    this.#sinGain = new GainNode(this._context);
-    this.#cosGain = new GainNode(this._context);
-    this.#mixer = new GainNode(this._context);
+    this.#sinGain = new MonitoredGainNode(context, monitor);
+    this.#cosGain = new MonitoredGainNode(context, monitor);
+    this.#mixer = new MonitoredGainNode(context, monitor);
     // connect up the nodes
     this.#sinOsc.connect(this.#sinGain);
     this.#cosOsc.connect(this.#cosGain);
     this.#sinGain.connect(this.#mixer);
     this.#cosGain.connect(this.#mixer);
-    // monitoring
-    this._monitor.retainGroup([
-      Monitor.OSC,
-      Monitor.OSC,
-      Monitor.GAIN,
-      Monitor.GAIN,
-      Monitor.GAIN], Monitor.CLASS_LFO);
   }
 
   /**
@@ -105,12 +99,6 @@ export default class LFO extends BleepSynthModule {
       this.#sinGain.disconnect();
       this.#cosGain.disconnect();
       this.#mixer.disconnect();
-      this._monitor.releaseGroup([
-        Monitor.OSC,
-        Monitor.OSC,
-        Monitor.GAIN,
-        Monitor.GAIN,
-        Monitor.GAIN], Monitor.CLASS_LFO);
     }, (stopTime + 0.1) * 1000);
   }
 

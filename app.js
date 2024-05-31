@@ -77,8 +77,6 @@ async function init() {
 
   GUI.disableGUI(true);
   addListenersToGUI();
-  console.log(midiSystem.inputs);
-  console.log(midiSystem.inputs);
   setupMidi();
   setDefaultValues();
   startMonitorTimer();

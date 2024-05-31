@@ -1,16 +1,22 @@
 import BleepSynthModule from "./bleep_synth_module.js";
 import Monitor from "./monitor.js";
+import { MonitoredWaveShaperNode } from "./monitored_components.js";
 
 export default class Waveshaper extends BleepSynthModule {
 
     #shaper
 
+    /**
+     * constructor
+     * @param {AudioContext} context
+     * @param {Monitor} monitor
+     */
     constructor(context,monitor) {
       super(context, monitor);
-      this.#shaper = this._context.createWaveShaper();
-      this.#shaper.curve = this.makeDistortionCurve(100);
-      this.#shaper.oversample = "4x";
-      this._monitor.retain(Monitor.SHAPER,Monitor.CLASS_WAVE_SHAPER);
+      this.#shaper = new MonitoredWaveShaperNode(context,monitor,{
+        curve : this.makeDistortionCurve(100),
+        oversample : "4x"
+      });
     }
 
     get in() {
@@ -47,7 +53,6 @@ export default class Waveshaper extends BleepSynthModule {
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
         this.#shaper.disconnect();
-        this._monitor.release(Monitor.SHAPER,Monitor.CLASS_WAVE_SHAPER);
       }, (stopTime + 0.1) * 1000);
     }
 

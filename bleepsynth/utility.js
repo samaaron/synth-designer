@@ -2,7 +2,7 @@ export default class Utility {
 
   /**
    * get the midi note name for a note number
-   * @param {number} m 
+   * @param {number} m
    * @returns {string}
    */
   static midiToNoteName(m) {
@@ -12,7 +12,7 @@ export default class Utility {
 
   /**
    * get the frequency in Hz for a midi note number
-   * @param {number} m 
+   * @param {number} m
    * @returns {number}
    */
   static midiNoteToFreqHz(m) {
@@ -21,11 +21,11 @@ export default class Utility {
 
   /**
    * scale a value p in the range (low,high) to a new range (min,max)
-   * @param {number} low 
-   * @param {number} high 
-   * @param {number} min 
-   * @param {number} max 
-   * @param {number} p 
+   * @param {number} low
+   * @param {number} high
+   * @param {number} min
+   * @param {number} max
+   * @param {number} p
    * @returns {number}
    */
   static scaleValue(low, high, min, max, p) {
@@ -35,8 +35,8 @@ export default class Utility {
 
   /**
    * make a random number between two values
-   * @param {number} min 
-   * @param {number} max 
+   * @param {number} min
+   * @param {number} max
    * @returns {number}
    */
   static randomBetween(min, max) {
@@ -46,24 +46,13 @@ export default class Utility {
   /**
    * Clamp a value to a maximum and minimum
    * https://www.youtube.com/watch?v=g2_zb6oyep8
-   * @param {number} value 
-   * @param {number} min 
+   * @param {number} value
+   * @param {number} min
    * @param {number} max
    * @returns {number}
    */
   static clamp(value, min, max) {
     return Math.min(Math.max(value, min), max);
-  }
-
-  /**
-   * Make a unity gain node
-   * @param {AudioContext} ctx 
-   * @returns {GainNode}
-   */
-  static createUnityGain(ctx) {
-    return new GainNode(ctx, {
-      gain: 1
-    });
   }
 
 }

@@ -1,6 +1,7 @@
 import Utility from "./utility.js"
 import Monitor from "./monitor.js"
 import BleepSynthModule from "./bleep_synth_module.js"
+import { MonitoredConvolverNode, MonitoredGainNode } from "./monitored_components.js"
 
 export default class Reverb extends BleepSynthModule {
 
@@ -16,11 +17,15 @@ export default class Reverb extends BleepSynthModule {
         super(context, monitor);
         this.#isValid = false;
         this.#wetLevel = 0.5
-        this.#reverb = this._context.createConvolver();
-        this.#wetGain = this._context.createGain();
-        this.#dryGain = this._context.createGain();
-        this.#in = Utility.createUnityGain(this._context);
-        this.#out = Utility.createUnityGain(this._context);
+        this.#reverb = new MonitoredConvolverNode(context,monitor);
+        this.#wetGain = new MonitoredGainNode(context,monitor);
+        this.#dryGain = new MonitoredGainNode(context,monitor);
+        this.#in = new MonitoredGainNode(context,monitor,{
+            gain : 1
+        });
+        this.#out = new MonitoredGainNode(context,monitor,{
+            gain : 1
+        });
         this.#wetGain.gain.value = this.#wetLevel;
         this.#dryGain.gain.value = 1 - this.#wetLevel;
         // connect everything up
@@ -29,12 +34,6 @@ export default class Reverb extends BleepSynthModule {
         this.#in.connect(this.#dryGain);
         this.#wetGain.connect(this.#out);
         this.#dryGain.connect(this.#out);
-        this._monitor.retainGroup([
-            Monitor.CONVOLVER,
-            Monitor.GAIN,
-            Monitor.GAIN,
-            Monitor.GAIN,
-            Monitor.GAIN], Monitor.CLASS_REVERB);
     }
 
     async load(filename) {
@@ -45,7 +44,6 @@ export default class Reverb extends BleepSynthModule {
     }
 
     async getImpulseResponseFromFile(filename) {
-        console.log("loading impulse response from " + filename);
         try {
             let reply = await fetch(filename);
             this.#isValid = true;
@@ -62,12 +60,6 @@ export default class Reverb extends BleepSynthModule {
         this.#dryGain.disconnect();
         this.#in.disconnect();
         this.#out.disconnect();
-        this._monitor.releaseGroup([
-            Monitor.CONVOLVER,
-            Monitor.GAIN,
-            Monitor.GAIN,
-            Monitor.GAIN,
-            Monitor.GAIN], Monitor.CLASS_REVERB);
     }
 
     /**

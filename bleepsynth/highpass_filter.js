@@ -1,5 +1,5 @@
 import BleepSynthModule from "./bleep_synth_module.js";
-import Monitor from "./monitor.js";
+import { MonitoredBiquadFilterNode } from "./monitored_components.js";
 
 export default class HighpassFilter extends BleepSynthModule {
 
@@ -10,12 +10,11 @@ export default class HighpassFilter extends BleepSynthModule {
 
   constructor(context, monitor) {
     super(context, monitor);
-    this.#filter = new BiquadFilterNode(this._context, {
+    this.#filter = new MonitoredBiquadFilterNode(context, monitor, {
       type: "highpass",
       frequency: HighpassFilter.DEFAULT_CUTOFF,
       Q: HighpassFilter.DEFAULT_RESONANCE
     });
-    this._monitor.retain(Monitor.BIQUAD, Monitor.CLASS_HIGH_PASS);
   }
 
   get cutoff() {
@@ -51,7 +50,6 @@ export default class HighpassFilter extends BleepSynthModule {
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
       this.#filter.disconnect();
-      this._monitor.release(Monitor.BIQUAD, Monitor.CLASS_HIGH_PASS);
     }, (stopTime + 0.1) * 1000);
   }
 

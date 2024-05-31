@@ -1,6 +1,6 @@
 import BleepSynthModule from "./bleep_synth_module.js";
 import Flags from "./flags.js";
-import Monitor from "./monitor.js";
+import { MonitoredAudioBufferSourceNode } from "./monitored_components.js";
 
 // ------------------------------------------------------------
 // Noise generator class
@@ -17,11 +17,10 @@ export default class NoiseGenerator extends BleepSynthModule {
 
   constructor(context, monitor) {
     super(context, monitor);
-    this.#noise = new AudioBufferSourceNode(this._context, {
+    this.#noise = new MonitoredAudioBufferSourceNode(context, monitor, {
       buffer: this.#getNoiseBuffer(),
       loop: true
     });
-    this._monitor.retain(Monitor.AUDIO_SOURCE, Monitor.CLASS_NOISE);
   }
 
   #getNoiseBuffer() {
@@ -49,7 +48,6 @@ export default class NoiseGenerator extends BleepSynthModule {
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
       this.#noise.disconnect();
-      this._monitor.release(Monitor.AUDIO_SOURCE, Monitor.CLASS_NOISE);
     }, (stopTime + 0.1) * 1000);
   }
 

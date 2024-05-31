@@ -1,6 +1,7 @@
 import BleepSynthModule from "./bleep_synth_module.js";
 import Flags from "./flags.js";
 import Monitor from "./monitor.js";
+import { MonitoredConstantSourceNode, MonitoredDelayNode, MonitoredGainNode, MonitoredOscillatorNode } from "./monitored_components.js";
 
 // ------------------------------------------------------------
 // Prototype oscillator class
@@ -14,9 +15,9 @@ class Oscillator extends BleepSynthModule {
 
   constructor(context, monitor) {
     super(context, monitor);
-    this._osc = this._context.createOscillator(this._context);
-    this._osc.frequency.value = Oscillator.MIDDLE_C;
-    this._monitor.retain(Monitor.OSC, Monitor.CLASS_OSCILLATOR);
+    this._osc = new MonitoredOscillatorNode(context, monitor, {
+      frequency: Oscillator.MIDDLE_C
+    });
   }
 
   set detune(n) {
@@ -55,7 +56,6 @@ class Oscillator extends BleepSynthModule {
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
       this._osc.disconnect();
-      this._monitor.release(Monitor.OSC, Monitor.CLASS_OSCILLATOR);
     }, (stopTime + 0.1) * 1000);
   }
 
@@ -89,23 +89,24 @@ export class PulseOsc extends Oscillator {
     // frequency of the two oscillatoes via the ConstantSourceNode
     this.#freqHz = Oscillator.MIDDLE_C;
     this._osc.frequency.value = 0;
-    this._osc.type = "sawtooth"
+    this._osc.type = "sawtooth";
 
     // set the parameters of oscillator 2
-    this.#osc2 = this._context.createOscillator();
-    this.#osc2.frequency.value = 0;
-    this.#osc2.type = "sawtooth"
+    this.#osc2 = new MonitoredOscillatorNode(context, monitor, {
+      frequency: 0,
+      type: "sawtooth"
+    });
 
     // set the initial pulsewidth to 50%
     this.#pulsewidth = 0.5;
 
     // the inverter, which subtracts one saw from the other
-    this.#inverter = new GainNode(this._context);
+    this.#inverter = new MonitoredGainNode(context, monitor);
     this.#inverter.gain.value = -1;
 
     // constant source node to change frequency and detune of both oscillators
-    this.#freqNode = new ConstantSourceNode(this._context);
-    this.#detuneNode = new ConstantSourceNode(this._context);
+    this.#freqNode = new MonitoredConstantSourceNode(context, monitor);
+    this.#detuneNode = new MonitoredConstantSourceNode(context, monitor);
 
     // connect them up
     this.#freqNode.connect(this._osc.frequency);
@@ -114,16 +115,19 @@ export class PulseOsc extends Oscillator {
     this.#detuneNode.connect(this.#osc2.detune);
 
     // sum the outputs into this gain
-    this.#out = this._context.createGain();
-    this.#out.gain.value = 0.5;
+    this.#out = new MonitoredGainNode(context,monitor,{
+      gain : 0.5
+    });
 
     // the delay is a fraction of the period, given by the pulse width
-    this.#delay = this._context.createDelay();
-    this.#delay.delayTime.value = this.#pulsewidth / this.#freqHz;
+    this.#delay = new MonitoredDelayNode(context, monitor, {
+      delayTime: this.#pulsewidth / this.#freqHz
+    });
 
     // pulse width modulation
-    this.#pwm = this._context.createGain();
-    this.#pwm.gain.value = 1 / this.#freqHz;
+    this.#pwm = new MonitoredGainNode(context, monitor, {
+      gain: 1 / this.#freqHz
+    });
     this.#pwm.connect(this.#delay.delayTime);
 
     // connect everything else
@@ -131,15 +135,6 @@ export class PulseOsc extends Oscillator {
     this.#delay.connect(this.#inverter);
     this.#inverter.connect(this.#out);
     this.#osc2.connect(this.#out);
-
-    this._monitor.retainGroup([
-      Monitor.OSC,
-      Monitor.CONSTANT,
-      Monitor.CONSTANT,
-      Monitor.GAIN,
-      Monitor.DELAY,
-      Monitor.GAIN,
-      Monitor.GAIN], Monitor.CLASS_PULSE);
 
   }
 
@@ -216,14 +211,6 @@ export class PulseOsc extends Oscillator {
       this.#delay.disconnect();
       this.#inverter.disconnect();
       this.#pwm.disconnect();
-      this._monitor.releaseGroup([
-        Monitor.OSC,
-        Monitor.CONSTANT,
-        Monitor.CONSTANT,
-        Monitor.GAIN,
-        Monitor.DELAY,
-        Monitor.GAIN,
-        Monitor.GAIN], Monitor.CLASS_PULSE);
     }, (stopTime + 0.1) * 1000);
   }
 

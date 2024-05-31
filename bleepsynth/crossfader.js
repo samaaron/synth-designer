@@ -1,6 +1,6 @@
 import BleepSynthModule from "./bleep_synth_module.js";
 import Monitor from "./monitor.js";
-import Utility from "./utility.js";
+import { MonitoredConstantSourceNode, MonitoredGainNode } from "./monitored_components.js";
 
 export default class CrossFader extends BleepSynthModule {
 
@@ -18,15 +18,19 @@ export default class CrossFader extends BleepSynthModule {
   constructor(context, monitor) {
     super(context, monitor);
     // inputs
-    this.#inA = new GainNode(this._context, {
+    this.#inA = new MonitoredGainNode(context, monitor, {
       gain: 0
     });
-    this.#inB = Utility.createUnityGain(this._context);
+    this.#inB = new MonitoredGainNode(context, monitor, {
+      gain: 1
+    });
     // mix the two outputs
-    this.#mix = Utility.createUnityGain(this._context);
+    this.#mix = new MonitoredGainNode(context, monitor, {
+      gain: 1
+    });
     // balance control
-    this.#balance = this._context.createConstantSource();
-    this.#inverter = new GainNode(this._context, {
+    this.#balance = new MonitoredConstantSourceNode(context, monitor);
+    this.#inverter = new MonitoredGainNode(context, monitor, {
       gain: -1
     });
     // connect the nodes
@@ -35,13 +39,6 @@ export default class CrossFader extends BleepSynthModule {
     this.#inverter.connect(this.#inB.gain);
     this.#inA.connect(this.#mix);
     this.#inB.connect(this.#mix);
-    // monitor the nodes
-    this._monitor.retainGroup([
-      Monitor.GAIN,
-      Monitor.GAIN,
-      Monitor.GAIN,
-      Monitor.GAIN,
-      Monitor.CONSTANT], Monitor.CROSS_FADER);
   }
 
   /**
@@ -90,12 +87,6 @@ export default class CrossFader extends BleepSynthModule {
       this.#mix.disconnect();
       this.#balance.disconnect();
       this.#inverter.disconnect();
-      this._monitor.releaseGroup([
-        Monitor.GAIN,
-        Monitor.GAIN,
-        Monitor.GAIN,
-        Monitor.GAIN,
-        Monitor.CONSTANT], Monitor.CROSS_FADER);
     }, (stopTime + 0.1) * 1000);
   }
 

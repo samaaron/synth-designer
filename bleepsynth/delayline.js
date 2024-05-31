@@ -1,5 +1,5 @@
 import BleepSynthModule from "./bleep_synth_module.js";
-import Monitor from "./monitor.js";
+import { MonitoredDelayNode } from "./monitored_components.js";
 
 export default class DelayLine extends BleepSynthModule {
 
@@ -7,8 +7,9 @@ export default class DelayLine extends BleepSynthModule {
 
     constructor(context,monitor) {
       super(context, monitor);
-      this.#delay = this._context.createDelay(10);
-      this._monitor.retain(Monitor.DELAY,Monitor.CLASS_DELAY_LINE);
+      this.#delay = new MonitoredDelayNode(context,monitor,{
+        delay : 10
+      });
     }
 
     set lag(t) {
@@ -36,7 +37,6 @@ export default class DelayLine extends BleepSynthModule {
       if (stopTime < 0) stopTime = 0;
       setTimeout(() => {
         this.#delay.disconnect();
-        this._monitor.release(Monitor.DELAY,Monitor.CLASS_DELAY_LINE);
       }, (stopTime + 0.1) * 1000);
     }
 

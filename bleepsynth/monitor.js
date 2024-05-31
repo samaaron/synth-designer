@@ -6,39 +6,6 @@ import Flags from "./flags";
 
 export default class Monitor {
 
-    // components
-
-    static BIQUAD = "BiquadFilterNode";
-    static GAIN = "GainNode";
-    static OSC = "OscillatorNode";
-    static PAN = "StereoPannerNode";
-    static AUDIO_SOURCE = "AudioBufferSourceNode";
-    static SHAPER = "WaveShaperNode";
-    static CONVOLVER = "ConvolverNode";
-    static DELAY = "DelayNode";
-    static CONSTANT = "ConstantSourceNode";
-    static SPLITTER = "ChannelSplitterNode";
-    static MERGER = "ChannelMergerNode";
-
-    // classes
-
-    static CLASS_AMPLIFIER = "Amplifier";
-    static CLASS_DELAY_LINE = "DelayLine";
-    static CLASS_REVERB = "Reverb";
-    static CLASS_DISTORTION = "Distort";
-    static CLASS_MONO_DELAY = "MonoDelay";
-    static CLASS_RING_MOD = "RingModulator";
-    static CLASS_HIGH_PASS = "HighpassFilter";
-    static CLASS_LOW_PASS = "LowpassFilter";
-    static CLASS_OSCILLATOR = "Oscillator";
-    static CLASS_PULSE = "PulseOscillator";
-    static CLASS_LFO = "LFO";
-    static CLASS_NOISE = "Noise";
-    static CLASS_PANNER = "Panner";
-    static CLASS_WAVE_SHAPER = "Waveshaper";
-    static CLASS_WAVE_FOLDER = "Wavefolder";
-    static CROSS_FADER = "Crossfader";
-
     /**
      * @type {Map}
      */
@@ -56,13 +23,11 @@ export default class Monitor {
     * If the module is not already in the map, it is added with a count of 1
     *
     * @param {string} key - The identifier of the module to retain
-    * @param {string} source - the name of the object that called the method
     */
-    retain(node,source) {
+    retain(key) {
         if (Flags.DEBUG_MONITOR) {
-            console.log(`retain ${node} for ${source}`);
+            console.log(`retain ${key}`);
         }
-        const key = `${node} [${source}]`;
         if (this.#map.has(key)) {
             this.#map.set(key, this.#map.get(key) + 1);
         } else {
@@ -75,11 +40,9 @@ export default class Monitor {
      * If the module's count reaches 0, it is removed from the map
      *
      * @param {string} key - The identifier of the module to release
-     * @param {string} source - the name of the object that called the method
      */
-    release(node,source) {
-        console.log(`release ${node} for ${source}`);
-        const key = `${node} [${source}]`;
+    release(key) {
+        console.log(`release ${key}`);
         if (this.#map.has(key)) {
             const newVal = this.#map.get(key) - 1;
             if (newVal <= 0) {
@@ -119,7 +82,7 @@ export default class Monitor {
     }
 
     /**
-     * Gets a string containing the detailed monitor state, with class names
+     * Gets a string containing the multi-line monitor state
      * @returns {string} - the monitor state as a string
      */
     get detailString() {
@@ -127,20 +90,11 @@ export default class Monitor {
     }
 
     /**
-     * Get a string containing a single line summary of the monitor state, without class names
+     * Get a string containing a single line summary of the monitor state
      * @returns {string}
      */
     get summaryString() {
-        return Array.from(this.#map).map(([key, value]) => `${this.#cropName(key)} : ${value}`).join(', ');
-    }
-
-    /**
-     * crop a key name so that it contains the web audio object name only, and not the class
-     * @param {object} key
-     * @returns {string}
-     */
-    #cropName(key) {
-        return key.split(' ')[0];
+        return Array.from(this.#map).map(([key, value]) => `${key} : ${value}`).join(', ');
     }
 
     /**

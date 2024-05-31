@@ -39,7 +39,6 @@ export default class MidiSystem {
     }
 
     onMidiMessage(message) {
-        console.log(message);
         const op = message.data[0] & 0xf0;
         // note on
         if (op === MidiSystem.MIDI_NOTE_ON && message.data[2] != 0) {

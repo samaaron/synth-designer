@@ -1,6 +1,5 @@
-import Monitor from "./monitor.js";
-import Utility from "./utility.js";
 import BleepSynthModule from "./bleep_synth_module.js";
+import { MonitoredGainNode } from "./monitored_components.js";
 
 export default class Amplifier extends BleepSynthModule {
 
@@ -8,8 +7,9 @@ export default class Amplifier extends BleepSynthModule {
 
   constructor(context, monitor) {
     super(context, monitor);
-    this.#gain = Utility.createUnityGain(this._context);
-    this._monitor.retain(Monitor.GAIN,Monitor.CLASS_AMPLIFIER);
+    this.#gain = new MonitoredGainNode(context, monitor, {
+      gain: 1
+    });
   }
 
   get in() {
@@ -37,7 +37,6 @@ export default class Amplifier extends BleepSynthModule {
     if (stopTime < 0) stopTime = 0;
     setTimeout(() => {
       this.#gain.disconnect();
-      this._monitor.release(Monitor.GAIN,Monitor.CLASS_AMPLIFIER);
     }, (stopTime + 0.1) * 1000);
   }
 
