@@ -1,5 +1,6 @@
 import Amplifier from './amplifier.js';
 import CrossFader from './crossfader.js';
+import CombFilter from './comb_filter.js';
 import Decay from './decay.js';
 import DelayLine from './delayline.js';
 import Envelope from './envelope.js';
@@ -22,6 +23,7 @@ const MIDDLE_C = 261.63; // Hz
 
 const MODULE_CONTEXT = {
     Amplifier : Amplifier,
+    CombFilter : CombFilter,
     CrossFader : CrossFader,
     Decay : Decay,
     DelayLine : DelayLine,
@@ -46,6 +48,7 @@ const MODULE_CONTEXT = {
 const MODULE_CLASSES = {
     "ADSR": "Envelope",
     "AUDIO": "Audio",
+    "COMB" : "CombFilter",
     "DECAY": "Decay",
     "DELAY": "DelayLine",
     "FADER": "CrossFader",
@@ -69,6 +72,7 @@ const MODULE_CLASSES = {
   
   const VALID_TWEAKS = {
     "ADSR": ["attack", "decay", "sustain", "release", "level"],
+    "COMB": ["cutoff","resonance"],
     "DECAY": ["attack", "decay", "level"],
     "DELAY": ["lag"],
     "FADER": ["balance"],
@@ -91,6 +95,7 @@ const MODULE_CLASSES = {
   
   const VALID_PATCH_INPUTS = {
     "AUDIO": ["in"],
+    "COMB": ["in"],
     "DELAY": ["in", "lagCV"],
     "FADER": ["inA","inB","balanceCV"],
     "FOLDER": ["in", "symmetryCV", "gainCV"],
@@ -111,6 +116,7 @@ const MODULE_CLASSES = {
   
   const VALID_PATCH_OUTPUTS = {
     "ADSR": ["out"],
+    "COMB": ["out"],
     "DECAY": ["out"],
     "DELAY": ["out"],
     "FADER": ["out"],

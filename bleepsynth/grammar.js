@@ -339,6 +339,7 @@ export default class Grammar {
         | "DELAY"
         | "FOLDER"
         | "FADER"
+        | "COMB"
       
         Exp
           = AddExp

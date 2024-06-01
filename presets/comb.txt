@@ -1,9 +1,9 @@
-@synth buzzer
-longname : Simple buzzer
+@synth comb
+longname : demo of the comb filter module
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : A very simple buzzer with no envelopes for testing
+doc : A demo of the comb filter module
 @end
 
 @param cutoff
@@ -15,6 +15,17 @@ max: 8000
 default: 4000
 doc: changes the filter cutoff
 @end
+
+@param resonance
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.3
+doc: changes the filter resonance
+@end
+
 
 @param detune
 type: float
@@ -39,20 +50,20 @@ doc: changes the stereo spread
 # modules
 
 SUPERSAW : osc
-LPF : lowpass
+COMB : comb
 VCA : vca
 
 # patch
 
-osc.out -> lowpass.in
-lowpass.out -> vca.in
+osc.out -> comb.in
+comb.out -> vca.in
 vca.out -> audio.in
 
 # tweak
 
 osc.pitch = param.pitch
 vca.level = param.level*0.5
-lowpass.cutoff = param.cutoff
+comb.cutoff = param.cutoff
 osc.detune = param.detune
 osc.spread = param.spread
 osc.level = 1
