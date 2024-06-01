@@ -64,6 +64,7 @@ vca.out -> audio.in
 osc.pitch = param.pitch
 vca.level = param.level*0.5
 comb.cutoff = param.cutoff
+comb.resonance = param.resonance
 osc.detune = param.detune
 osc.spread = param.spread
 osc.level = 1

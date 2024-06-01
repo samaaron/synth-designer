@@ -339,6 +339,7 @@ export default class Grammar {
         | "DELAY"
         | "FOLDER"
         | "FADER"
+        | "FORMANT"
         | "COMB"
       
         Exp
@@ -373,7 +374,7 @@ export default class Grammar {
         tweakable
         = varname "." parameter
       
-        parameter = "pitch" | "detune" | "level" | "lag" | "phase" | "angle" | "balance" | "cutoff" | "resonance" | "attack" | "decay" | "sustain" | "release" | "fuzz" | "pulsewidth" | "symmetry" | "spread" | "gain"
+        parameter = "pitch" | "detune" | "level" | "lag" | "phase" | "angle" | "balance" | "cutoff" | "resonance" | "vowel" | "attack" | "decay" | "sustain" | "release" | "fuzz" | "pulsewidth" | "symmetry" | "spread" | "gain"
       
         varname (a module name)
         = lower alnum*

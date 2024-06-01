@@ -4,15 +4,15 @@ import CombFilter from './comb_filter.js';
 import Decay from './decay.js';
 import DelayLine from './delayline.js';
 import Envelope from './envelope.js';
-import HighpassFilter from './highpass_filter.js';
+import {LowpassFilter, HighpassFilter} from './filters.js';
 import LFO from './lfo.js';
-import LowpassFilter from './lowpass_filter.js';
 import NoiseGenerator from './noise.js';
 import Panner from './panner.js';
 import Waveshaper from './wave_shaper.js';
 import {SinOsc, SawOsc, SquareOsc, TriOsc, PulseOsc} from './oscillators.js';
 import Wavefolder from './wave_folder.js';
 import SuperSaw from './supersaw.js';
+import FormantFilter from './formant_filter.js';
 
 const MAX_MIDI_FREQ = 4186; // C8
 const MIN_MIDI_FREQ = 27.5;  // A0
@@ -28,6 +28,7 @@ const MODULE_CONTEXT = {
     Decay : Decay,
     DelayLine : DelayLine,
     Envelope : Envelope,
+    FormantFilter : FormantFilter,
     HighpassFilter : HighpassFilter,
     LFO : LFO,
     LowpassFilter : LowpassFilter,
@@ -53,6 +54,7 @@ const MODULE_CLASSES = {
     "DELAY": "DelayLine",
     "FADER": "CrossFader",
     "FOLDER": "Wavefolder",
+    "FORMANT" : "FormantFilter",
     "HPF": "HighpassFilter",
     "LFO": "LFO",
     "LPF": "LowpassFilter",
@@ -77,6 +79,7 @@ const MODULE_CLASSES = {
     "DELAY": ["lag"],
     "FADER": ["balance"],
     "FOLDER": ["symmetry", "gain"],
+    "FORMANT": ["vowel","resonance"],
     "HPF": ["cutoff", "resonance"],
     "LFO": ["pitch", "phase"],
     "LPF": ["cutoff", "resonance"],
@@ -99,6 +102,7 @@ const MODULE_CLASSES = {
     "DELAY": ["in", "lagCV"],
     "FADER": ["inA","inB","balanceCV"],
     "FOLDER": ["in", "symmetryCV", "gainCV"],
+    "FORMANT": ["in"],
     "HPF": ["in", "cutoffCV"],
     "LPF": ["in", "cutoffCV"],
     "PAN": ["in", "angleCV"],
@@ -121,6 +125,7 @@ const MODULE_CLASSES = {
     "DELAY": ["out"],
     "FADER": ["out"],
     "FOLDER": ["out"],
+    "FORMANT": ["out"],
     "HPF": ["out"],
     "LFO": ["out"],
     "LPF": ["out"],
