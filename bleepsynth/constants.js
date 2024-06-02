@@ -72,27 +72,27 @@ const MODULE_CLASSES = {
   
   // valid tweaks, used for error checking
   
-  const VALID_TWEAKS = {
-    "ADSR": ["attack", "decay", "sustain", "release", "level"],
-    "COMB": ["cutoff","resonance"],
-    "DECAY": ["attack", "decay", "level"],
-    "DELAY": ["lag"],
-    "FADER": ["balance"],
-    "FOLDER": ["symmetry", "gain"],
-    "FORMANT": ["vowel","resonance"],
-    "HPF": ["cutoff", "resonance"],
-    "LFO": ["pitch", "phase"],
-    "LPF": ["cutoff", "resonance"],
-    "PAN": ["angle"],
-    "PULSE-OSC": ["detune", "pitch", "pulsewidth"],
-    "SAW-OSC": ["detune", "pitch"],
-    "SHAPER": ["fuzz"],
-    "SIN-OSC": ["detune", "pitch"],
-    "SQR-OSC": ["detune", "pitch"],
-    "SUPERSAW": ["detune", "level", "pitch", "spread"],
-    "TRI-OSC": ["detune", "pitch"],
-    "VCA": ["level"]
-  };
+const VALID_TWEAKS = {
+  "ADSR": ["attack", "decay", "sustain", "release", "level"],
+  "COMB": ["cutoff", "resonance"],
+  "DECAY": ["attack", "decay", "level"],
+  "DELAY": ["lag"],
+  "FADER": ["balance"],
+  "FOLDER": ["symmetry", "gain"],
+  "FORMANT": ["vowel", "gain"],
+  "HPF": ["cutoff", "resonance"],
+  "LFO": ["pitch", "phase"],
+  "LPF": ["cutoff", "resonance"],
+  "PAN": ["angle"],
+  "PULSE-OSC": ["detune", "pitch", "pulsewidth"],
+  "SAW-OSC": ["detune", "pitch"],
+  "SHAPER": ["fuzz"],
+  "SIN-OSC": ["detune", "pitch"],
+  "SQR-OSC": ["detune", "pitch"],
+  "SUPERSAW": ["detune", "level", "pitch", "spread"],
+  "TRI-OSC": ["detune", "pitch"],
+  "VCA": ["level"]
+};
   
   // valid patch inputs, used for error checking
   
@@ -102,7 +102,7 @@ const MODULE_CLASSES = {
     "DELAY": ["in", "lagCV"],
     "FADER": ["inA","inB","balanceCV"],
     "FOLDER": ["in", "symmetryCV", "gainCV"],
-    "FORMANT": ["in"],
+    "FORMANT": ["in", "vowelCV"],
     "HPF": ["in", "cutoffCV"],
     "LPF": ["in", "cutoffCV"],
     "PAN": ["in", "angleCV"],

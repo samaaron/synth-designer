@@ -10,20 +10,30 @@ doc : A demo of the formant filter module
 type: float
 mutable: yes
 step: 0.01
-min: 0
+min: -1
 max: 1
-default: 0.5
+default: 0
 doc: changes the vowel quality
 @end
 
-@param resonance
+@param mod_rate
 type: float
 mutable: yes
 step: 0.01
-min: 0.1
-max: 2
-default: 1
-doc: changes the filter resonance
+min: 0.01
+max: 10
+default: 0.1
+doc: changes the modulation rate
+@end
+
+@param mod_level
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0
+doc: changes the modulation level
 @end
 
 # modules
@@ -31,18 +41,24 @@ doc: changes the filter resonance
 SAW-OSC : osc
 FORMANT : formant
 VCA : vca
+SIN-OSC : lfo
+VCA : modgain
 
 # patch
 
 osc.out -> formant.in
 formant.out -> vca.in
 vca.out -> audio.in
+lfo.out -> modgain.in
+modgain.out -> formant.vowelCV
 
 # tweak
 
 osc.pitch = param.pitch
-vca.level = param.level*0.5
+vca.level = param.level
 formant.vowel = param.vowel
-formant.resonance = param.resonance
+modgain.level = param.mod_level
+lfo.pitch = param.mod_rate
+
 
 # end

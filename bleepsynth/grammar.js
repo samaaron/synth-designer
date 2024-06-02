@@ -306,7 +306,7 @@ export default class Grammar {
       
         patchinput = varname "." inputparam
       
-        inputparam = "inA" | "inB" | "in" | "balanceCV" | "levelCV" | "pitchCV" | "cutoffCV" | "pulsewidthCV" | "angleCV" | "lagCV" | "symmetryCV" | "gainCV"
+        inputparam = "inA" | "inB" | "in" | "balanceCV" | "levelCV" | "vowelCV" | "pitchCV" | "cutoffCV" | "pulsewidthCV" | "angleCV" | "lagCV" | "symmetryCV" | "gainCV"
       
         outputparam = "out"
       

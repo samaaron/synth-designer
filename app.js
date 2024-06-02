@@ -392,7 +392,7 @@ function drawGraphAsMermaid(generator) {
 // ------------------------------------------------------------
 
 async function initialiseEffects(ctx) {
-  reverb = await synthEngine.getEffect(ctx, "reverb_medium");
+  reverb = await synthEngine.getEffect(ctx, "reverb_large");
   reverb.out.connect(ctx.destination);
   setReverb(0.1);
 }
