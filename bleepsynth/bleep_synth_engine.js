@@ -71,7 +71,19 @@ export default class BleepSynthEngine {
             case "reverb_large":
             case "reverb_small":
             case "reverb_massive":
-                effect = await this.#getReverb(context, this.#monitor, Constants.REVERB_IMPULSES[name]);
+            case "room_large":
+            case "room_small":
+            case "plate_drums":
+            case "plate_vocal":
+            case "plate_large":
+            case "plate_small":
+            case "ambience_large":
+            case "ambience_medium":
+            case "ambience_small":
+            case "ambience_gated":
+                const impulseFilename = `${Constants.IMPULSE_PATH}${Constants.REVERB_IMPULSES[name]}`;
+                console.log(impulseFilename);
+                effect = await this.#getReverb(context, this.#monitor, impulseFilename);
                 break;
             default:
                 console.error("unknown effect name: " + name);
@@ -105,7 +117,7 @@ export default class BleepSynthEngine {
      * @returns {Array<string>} 
      */
     static getEffectNames() {
-        return Object.keys(Constants.EFFECT_CLASSES);
+        return Constants.EFFECT_CLASSES;
     }
 
     /**
