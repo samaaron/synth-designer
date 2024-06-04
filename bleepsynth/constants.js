@@ -55,6 +55,13 @@ const EFFECT_CLASSES = {
   "reverb_massive": Reverb
 }
 
+const REVERB_IMPULSES = {
+  "reverb_large": "./bleepsynth/impulses/hall-large.flac",
+  "reverb_medium": "./bleepsynth/impulses/hall-medium.flac",
+  "reverb_small": "./bleepsynth/impulses/hall-small.flac",
+  "reverb_massive": "./bleepsynth/impulses/reactor-hall.flac"
+};
+
 const Constants = {
   MAX_MIDI_FREQ,
   MIN_MIDI_FREQ,
@@ -62,7 +69,8 @@ const Constants = {
   MAX_LEVEL,
   MIDDLE_C,
   MODULE_CLASSES,
-  EFFECT_CLASSES
+  EFFECT_CLASSES,
+  REVERB_IMPULSES
 };
 
 export default Constants;

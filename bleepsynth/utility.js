@@ -29,7 +29,6 @@ export default class Utility {
    * @returns {number}
    */
   static scaleValue(low, high, min, max, p) {
-    console.log(p);
     return min + (p - low) * (max - min) / (high - low);
   }
 

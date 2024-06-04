@@ -47,15 +47,15 @@ export default class BleepSynthEngine {
 
     /**
      * get a player from a generator
-     * @param {AudioContext} ctx 
+     * @param {AudioContext} context 
      * @param {BleepGenerator} generator 
      * @param {number} pitchHz 
      * @param {number} level 
      * @param {object} params 
      * @returns {BleepPlayer}
      */
-    getPlayer(ctx, generator, pitchHz, level, params) {
-        return new BleepPlayer(ctx, this.#monitor, generator, pitchHz, level, params);
+    getPlayer(context, generator, pitchHz, level, params) {
+        return new BleepPlayer(context, this.#monitor, generator, pitchHz, level, params);
     }
 
     /**
@@ -64,29 +64,32 @@ export default class BleepSynthEngine {
      * @param {string} name 
      * @returns 
      */
-    async getEffect(ctx, name) {
+    async getEffect(context, name) {
         let effect = null;
         switch (name) {
             case "reverb_medium":
-                effect = new Reverb(ctx, this.#monitor);
-                await effect.load("./bleepsynth/impulses/hall-medium.flac");
-                break;
             case "reverb_large":
-                effect = new Reverb(ctx, this.#monitor);
-                await effect.load("./bleepsynth/impulses/hall-large.flac");
-                break;
             case "reverb_small":
-                effect = new Reverb(ctx, this.#monitor);
-                await effect.load("./bleepsynth/impulses/hall-small.flac");
-                break;
             case "reverb_massive":
-                effect = new Reverb(ctx, this.#monitor);
-                await effect.load("./bleepsynth/impulses/reactor-hall.flac");
+                effect = await this.#getReverb(context, this.#monitor, Constants.REVERB_IMPULSES[name]);
                 break;
             default:
                 console.error("unknown effect name: " + name);
         }
         return effect;
+    }
+
+    /**
+     * reverbs are special since we need to load an impulse response
+     * @param {AudioContext} context 
+     * @param {Monitor} monitor 
+     * @param {string} impulse 
+     * @returns {Reverb}
+     */
+    async #getReverb(context, monitor, impulse) {
+        const reverb = new Reverb(context, monitor);
+        await reverb.load(impulse);
+        return reverb;
     }
 
     /**
