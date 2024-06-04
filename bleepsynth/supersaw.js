@@ -11,10 +11,11 @@
 
 import BleepSynthModule from "./bleep_synth_module.js"
 import Constants from "./constants.js"
-import {
-    MonitoredGainNode, MonitoredBiquadFilterNode, MonitoredConstantSourceNode,
-    MonitoredOscillatorNode, MonitoredStereoPannerNode
-} from "./monitored_components"
+import { MonitoredGainNode, 
+    MonitoredBiquadFilterNode, 
+    MonitoredConstantSourceNode, 
+    MonitoredOscillatorNode, 
+    MonitoredStereoPannerNode } from "./monitored_components"
 
 export default class SuperSaw extends BleepSynthModule {
 

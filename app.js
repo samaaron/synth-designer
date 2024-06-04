@@ -164,7 +164,7 @@ function addListenersToGUI() {
   GUI.tag("start-button").onclick = async () => {
     context = new AudioContext();
     GUI.disableGUI(false);
-    await initialiseEffects(context);
+    await loadSelectedEffect(context);
     let view = new ScopeView(GUI.tag("scope-canvas"), {
       lineWidth: 2,
       sync: true
@@ -196,12 +196,7 @@ function addListenersToGUI() {
   });
 
   GUI.tag("fx-select").addEventListener("change", async () => {
-    const selectedIndex = GUI.tag("fx-select").selectedIndex;
-    const selectedName = GUI.tag("fx-select").options[selectedIndex].text;
-    console.log(selectedName);
-    fx.stop();
-    fx = await synthEngine.getEffect(context, selectedName);
-    fx.out.connect(context.destination);
+    await loadSelectedEffect(context);
   });
 
 }
@@ -408,13 +403,15 @@ function drawGraphAsMermaid(generator) {
 }
 
 // ------------------------------------------------------------
-// make a reverb unit and connect it to the audio output
+// make a effects unit and connect it to the audio output
 // ------------------------------------------------------------
 
-async function initialiseEffects(ctx) {
-  fx = await synthEngine.getEffect(ctx, "reverb_large");
-  fx.out.connect(ctx.destination);
-  setReverb(0.1);
+async function loadSelectedEffect(context) {
+  const selectedIndex = GUI.tag("fx-select").selectedIndex;
+  const selectedName = GUI.tag("fx-select").options[selectedIndex].text;
+  if (fx != null) fx.stop();
+  fx = await synthEngine.getEffect(context, selectedName);
+  fx.out.connect(context.destination);
 }
 
 // ------------------------------------------------------------
