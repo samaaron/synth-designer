@@ -1,7 +1,7 @@
 const VERBOSE = false;
 const DEBUG_MONITOR = false;
 const DEBUG_START_STOP = false;
-const DEBUG_EFFECTS = true;
+const DEBUG_EFFECTS = false;
 
 const Flags = {
     VERBOSE,

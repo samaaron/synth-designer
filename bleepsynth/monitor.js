@@ -42,7 +42,9 @@ export default class Monitor {
      * @param {string} key - The identifier of the module to release
      */
     release(key) {
-        console.log(`release ${key}`);
+        if (Flags.DEBUG_MONITOR) {
+            console.log(`release ${key}`);
+        }
         if (this.#map.has(key)) {
             const newVal = this.#map.get(key) - 1;
             if (newVal <= 0) {
@@ -58,12 +60,12 @@ export default class Monitor {
      * @param {object} nodeList
      * @param {string} source - the name of the object that called the method
      */
-    retainGroup(nodeList,source) {
+    retainGroup(nodeList, source) {
         if (Flags.DEBUG_MONITOR) {
             console.log(`retain ${nodeList} for ${source}`);
         }
         for (let node of nodeList) {
-            this.retain(node,source);
+            this.retain(node, source);
         }
     }
 
@@ -72,12 +74,12 @@ export default class Monitor {
      * @param {object} nodeList
      * @param {string} source - the name of the object that called the method
      */
-    releaseGroup(nodeList,source) {
+    releaseGroup(nodeList, source) {
         if (Flags.DEBUG_MONITOR) {
             console.log(`release ${nodeList} for ${source}`);
         }
         for (let node of nodeList) {
-            this.release(node,source);
+            this.release(node, source);
         }
     }
 

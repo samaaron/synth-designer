@@ -51,7 +51,8 @@ const MODULE_CLASSES = {
 const EFFECT_CLASSES = {
   "reverb_large": Reverb,
   "reverb_medium": Reverb,
-  "reverb_small": Reverb
+  "reverb_small": Reverb,
+  "reverb_massive": Reverb
 }
 
 const Constants = {

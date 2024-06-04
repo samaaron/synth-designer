@@ -79,6 +79,10 @@ export default class BleepSynthEngine {
                 effect = new Reverb(ctx, this.#monitor);
                 await effect.load("./bleepsynth/impulses/hall-small.flac");
                 break;
+            case "reverb_massive":
+                effect = new Reverb(ctx, this.#monitor);
+                await effect.load("./bleepsynth/impulses/reactor-hall.flac");
+                break;
             default:
                 console.error("unknown effect name: " + name);
         }
@@ -92,7 +96,7 @@ export default class BleepSynthEngine {
     get monitor() {
         return this.#monitor;
     }
-    
+
     /**
      * get the effect names
      * @returns {Array<string>} 

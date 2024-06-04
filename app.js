@@ -95,7 +95,7 @@ function startMonitorTimer() {
 
 function setDefaultValues() {
   GUI.setFloatControl("level", 0.8);
-  GUI.setFloatControl("fx", 0.1);
+  GUI.setFloatControl("fx_level", 0.1);
 }
 
 // ------------------------------------------------------------
@@ -113,7 +113,6 @@ function addListenersToGUI() {
       generator = result.generator;
       GUI.tag("parse-errors").value = result.message;
       if (generator && generator.isValid) {
-        console.log(generator);
         controlMap = createControls(generator);
         drawGraphAsMermaid(generator);
       }
@@ -165,6 +164,7 @@ function addListenersToGUI() {
     context = new AudioContext();
     GUI.disableGUI(false);
     await loadSelectedEffect(context);
+    setWetLevel(0.1);
     let view = new ScopeView(GUI.tag("scope-canvas"), {
       lineWidth: 2,
       sync: true
@@ -184,14 +184,13 @@ function addListenersToGUI() {
   });
 
   // reverb slider
-  GUI.tag("slider-fx").addEventListener("input", function () {
-    setReverb(parseFloat(this.value));
+  GUI.tag("slider-fx_level").addEventListener("input", function () {
+    setWetLevel(parseFloat(this.value));
   });
 
   GUI.tag("midi-input").addEventListener("change", () => {
     var selectedIndex = GUI.tag("midi-input").selectedIndex;
     var selectedName = GUI.tag("midi-input").options[selectedIndex].text;
-    console.log(selectedName);
     midiSystem.selectInput(selectedName);
   });
 
@@ -289,7 +288,6 @@ function makeMIDIlisteners() {
   });
   // controller
   window.addEventListener('midiControllerEvent', (e) => {
-    console.log(e.detail);
     let param = controlMap.get(e.detail.controller);
     if (param != undefined) {
       let el = GUI.tag("slider-" + param);
@@ -418,9 +416,9 @@ async function loadSelectedEffect(context) {
 // Set the reverb to a given level
 // ------------------------------------------------------------
 
-function setReverb(w) {
+function setWetLevel(w) {
   fx.wetLevel = w;
-  GUI.setFloatControl("fx", w);
+  GUI.setFloatControl("fx_level", w);
 }
 
 // ------------------------------------------------------------
