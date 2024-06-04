@@ -76,7 +76,6 @@ FADER : fader
 LPF : lowpass
 FOLDER : folder
 VCA : vca
-ADSR : env
 SIN-OSC : lfo
 VCA : modgain
 
@@ -87,7 +86,6 @@ fader.out -> folder.in
 folder.out -> lowpass.in
 lowpass.out -> vca.in
 vca.out -> audio.in
-env.out -> folder.gainCV
 lfo.out -> modgain.in
 modgain.out -> folder.symmetryCV
 
@@ -101,13 +99,5 @@ folder.gain = param.boost
 modgain.level = param.mod_level
 lfo.pitch = param.mod_rate
 fader.balance = param.balance
-
-# envelope
-
-env.attack = 0
-env.decay = 4
-env.sustain = 0
-env.release = 0.01
-env.level = 1
 
 # end

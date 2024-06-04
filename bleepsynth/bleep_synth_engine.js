@@ -3,6 +3,7 @@ import Grammar from './grammar.js';
 import BleepGenerator from './bleep_generator.js';
 import BleepPlayer from './bleep_player.js';
 import Reverb from './reverb.js';
+import Constants from './constants.js';
 
 export default class BleepSynthEngine {
 
@@ -10,6 +11,9 @@ export default class BleepSynthEngine {
     #synthSemantics
     #synthGrammar
 
+    /**
+     * make a bleep synth engine
+     */
     constructor() {
         this.#monitor = new Monitor();
         ({ synthSemantics: this.#synthSemantics, synthGrammar: this.#synthGrammar } = Grammar.makeGrammar());
@@ -64,12 +68,16 @@ export default class BleepSynthEngine {
         let effect = null;
         switch (name) {
             case "reverb_medium":
-                effect = new Reverb(ctx,this.#monitor);
-                await effect.load("./bleepsynth/impulses/medium-hall.wav");
+                effect = new Reverb(ctx, this.#monitor);
+                await effect.load("./bleepsynth/impulses/hall-medium.flac");
                 break;
             case "reverb_large":
-                effect = new Reverb(ctx,this.#monitor);
-                await effect.load("./bleepsynth/impulses/large-hall.wav");
+                effect = new Reverb(ctx, this.#monitor);
+                await effect.load("./bleepsynth/impulses/hall-large.flac");
+                break;
+            case "reverb_small":
+                effect = new Reverb(ctx, this.#monitor);
+                await effect.load("./bleepsynth/impulses/hall-small.flac");
                 break;
             default:
                 console.error("unknown effect name: " + name);
@@ -77,8 +85,28 @@ export default class BleepSynthEngine {
         return effect;
     }
 
+    /**
+     * get the monitor
+     * @returns {Monitor}
+     */
     get monitor() {
         return this.#monitor;
     }
     
+    /**
+     * get the effect names
+     * @returns {Array<string>} 
+     */
+    static getEffectNames() {
+        return Object.keys(Constants.EFFECT_CLASSES);
+    }
+
+    /**
+     * get the module names
+     * @returns {Array<string>}
+     */
+    static getModuleNames() {
+        return Object.keys(Constants.MODULE_CLASSES);
+    }
+
 }

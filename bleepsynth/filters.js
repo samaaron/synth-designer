@@ -32,6 +32,10 @@ class FilterPrototype extends BleepSynthModule {
     return this._filter.Q.value;
   }
 
+  get resonanceCV() {
+    return this._filter.Q;
+  }
+
   set resonance(r) {
     this._filter.Q.value = r;
   }
@@ -50,6 +54,18 @@ class FilterPrototype extends BleepSynthModule {
     setTimeout(() => {
       this._filter.disconnect();
     }, (stopTime + 0.1) * 1000);
+  }
+
+  static getTweaks() {
+    return ["cutoff", "resonance"];
+  }
+
+  static getInputs() {
+    return ["in", "cutoffCV", "resonanceCV"];
+  }
+
+  static getOutputs() {
+    return ["out"];
   }
 
 }

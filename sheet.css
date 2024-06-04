@@ -116,14 +116,14 @@ label {
   opacity: 1
 }
 
-.midiinput {
+.dropdown {
   background-color: #4f4f4f;
   color: #ffffff;
   border:0px;
   padding: 5px;
 }
 
-.midiinput:focus {
+.dropdown:focus {
   outline: none;
 }
 
@@ -167,8 +167,6 @@ textarea:focus {
 .playbutton:hover {
   opacity: 1
 }
-
-
 
 .body-container {
   display: flex;

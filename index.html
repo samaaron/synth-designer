@@ -17,7 +17,8 @@
     <button class="greybutton" id="export-button">Export As JSON</button>
     <button class="greybutton" id="clip-button">Copy Params to Clipboard</button>
     <button class="greybutton" id="docs-button">Copy Docs to Clipboard</button>
-    <span id="midi-label">&nbsp;Midi input:&nbsp;</span><select class="midiinput" id="midi-input"></select>
+    <span id="midi-label">&nbsp;Midi input:&nbsp;</span><select class="dropdown" id="midi-input"></select>
+    <span id="fx-label">&nbsp;Effect:&nbsp;</span><select class="dropdown" id="fx-select"></select>
     <span id="dot" style="color:#e6983f; opacity:0;">&nbsp;&#x25C9;</span>
   </p>
 
@@ -61,8 +62,8 @@
             </div>
 
             <div class="slider-container">
-              <input class="slider" type="range" id="slider-reverb" min="0" max="1" value="0.1" step="0.01">
-              <label id="label-reverb" for="slider-reverb">reverb [1]</label>
+              <input class="slider" type="range" id="slider-fx" min="0" max="1" value="0.1" step="0.01">
+              <label id="label-fx" for="slider-fx">fx [1]</label>
             </div>
 
             <button class="playbutton" id="play-button">Play</button>

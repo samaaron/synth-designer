@@ -56,4 +56,16 @@ export default class Waveshaper extends BleepSynthModule {
       }, (stopTime + 0.1) * 1000);
     }
 
+    static getTweaks() {
+      return ["fuzz"];
+    }
+
+    static getInputs() {
+      return ["in"];
+    }
+
+    static getOutputs() {
+      return ["out"];
+    }
+    
   }

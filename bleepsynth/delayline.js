@@ -40,4 +40,16 @@ export default class DelayLine extends BleepSynthModule {
       }, (stopTime + 0.1) * 1000);
     }
 
+    static getTweaks() {
+      return ["lag"];
+    }
+    
+    static getInputs() {
+      return ["in", "lagCV"];
+    }
+
+    static getOutputs() {
+      return ["out"];
+    }
+
   }

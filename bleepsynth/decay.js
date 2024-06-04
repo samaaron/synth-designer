@@ -47,4 +47,12 @@ export default class Decay extends BleepSynthModule {
       }
     }
 
+    static getTweaks() {
+      return ["attack", "decay", "level"];
+    }
+
+    static getOutputs() {
+      return ["out"];
+    }
+    
   }

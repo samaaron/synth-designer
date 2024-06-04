@@ -32,7 +32,7 @@ let playerForNote = new Map();
 
 // effects
 
-let reverb;
+let fx;
 
 // scope
 
@@ -76,6 +76,7 @@ async function init() {
   });
 
   GUI.disableGUI(true);
+  makeFXdropdown();
   addListenersToGUI();
   setupMidi();
   setDefaultValues();
@@ -94,7 +95,7 @@ function startMonitorTimer() {
 
 function setDefaultValues() {
   GUI.setFloatControl("level", 0.8);
-  GUI.setFloatControl("reverb", 0.1);
+  GUI.setFloatControl("fx", 0.1);
 }
 
 // ------------------------------------------------------------
@@ -183,7 +184,7 @@ function addListenersToGUI() {
   });
 
   // reverb slider
-  GUI.tag("slider-reverb").addEventListener("input", function () {
+  GUI.tag("slider-fx").addEventListener("input", function () {
     setReverb(parseFloat(this.value));
   });
 
@@ -192,9 +193,18 @@ function addListenersToGUI() {
     var selectedName = GUI.tag("midi-input").options[selectedIndex].text;
     console.log(selectedName);
     midiSystem.selectInput(selectedName);
-    });
+  });
 
-  }
+  GUI.tag("fx-select").addEventListener("change", async () => {
+    const selectedIndex = GUI.tag("fx-select").selectedIndex;
+    const selectedName = GUI.tag("fx-select").options[selectedIndex].text;
+    console.log(selectedName);
+    fx.stop();
+    fx = await synthEngine.getEffect(context, selectedName);
+    fx.out.connect(context.destination);
+  });
+
+}
 
 // ------------------------------------------------------------
 // copy parameters to clipboard
@@ -232,6 +242,16 @@ function getParameterListAsString(params) {
   str += Object.entries(params).map(([key, value]) => `${key}=${value}`).join(',');
   str += "})";
   return str;
+}
+
+function makeFXdropdown() {
+  const fxSelector = GUI.tag("fx-select");
+  BleepSynthEngine.getEffectNames().forEach((name, index) => {
+    const option = document.createElement("option");
+    option.text = name;
+    option.value = index;
+    fxSelector.appendChild(option);
+  });
 }
 
 // ------------------------------------------------------------
@@ -308,7 +328,7 @@ function playNote(midiNoteNumber, velocity) {
     player = synthEngine.getPlayer(context, generator, pitchHz, velocity, params);
     if (Flags.VERBOSE) console.log(player);
     playerForNote.set(midiNoteNumber, player);
-    player.out.connect(reverb.in);
+    player.out.connect(fx.in);
     player.out.connect(scope.in);
     player.start(context.currentTime);
     scope.resetRMS();
@@ -392,8 +412,8 @@ function drawGraphAsMermaid(generator) {
 // ------------------------------------------------------------
 
 async function initialiseEffects(ctx) {
-  reverb = await synthEngine.getEffect(ctx, "reverb_large");
-  reverb.out.connect(ctx.destination);
+  fx = await synthEngine.getEffect(ctx, "reverb_large");
+  fx.out.connect(ctx.destination);
   setReverb(0.1);
 }
 
@@ -402,8 +422,8 @@ async function initialiseEffects(ctx) {
 // ------------------------------------------------------------
 
 function setReverb(w) {
-  reverb.wetLevel = w;
-  GUI.setFloatControl("reverb", w);
+  fx.wetLevel = w;
+  GUI.setFloatControl("fx", w);
 }
 
 // ------------------------------------------------------------

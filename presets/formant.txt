@@ -38,7 +38,7 @@ doc: changes the modulation level
 
 # modules
 
-SAW-OSC : osc
+PULSE-OSC : osc
 FORMANT : formant
 VCA : vca
 SIN-OSC : lfo
@@ -59,6 +59,7 @@ vca.level = param.level
 formant.vowel = param.vowel
 modgain.level = param.mod_level
 lfo.pitch = param.mod_rate
+osc.pulsewidth = 0.1
 
 
 # end

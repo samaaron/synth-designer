@@ -51,4 +51,8 @@ export default class NoiseGenerator extends BleepSynthModule {
     }, (stopTime + 0.1) * 1000);
   }
 
+  static getOutputs() {
+    return ["out"];
+  } 
+
 }

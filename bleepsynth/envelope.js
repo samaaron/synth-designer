@@ -59,4 +59,12 @@ export default class Envelope extends BleepSynthModule {
       param.linearRampToValueAtTime(this.#sustain, when + this.#attack + this.#decay);
     }
 
+    static getTweaks() {
+      return ["attack", "decay", "sustain", "release", "level"];
+    }
+
+    static getOutputs() {
+      return ["out"];
+    }
+    
   }

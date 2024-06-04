@@ -96,4 +96,16 @@ export default class CombFilter extends BleepSynthModule {
         return this.#delay.delayTime;
     }
 
+    static getTweaks() {
+        return ["cutoff", "resonance"];
+    }
+    
+    static getInputs() {
+        return ["in", "cutoffCV", "resonanceCV"];
+    }
+
+    static getOutputs() {
+        return ["out"];
+    }
+
 }

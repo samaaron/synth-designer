@@ -102,4 +102,16 @@ export default class LFO extends BleepSynthModule {
     }, (stopTime + 0.1) * 1000);
   }
 
+  static getTweaks() {
+    return ["pitch", "phase"];
+  }
+
+  static getInputs() {
+    return ["pitch", "phase"];
+  }
+
+  static getOutputs() {
+    return ["out"];
+  }
+  
 }

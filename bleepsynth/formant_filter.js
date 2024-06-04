@@ -1,4 +1,5 @@
 import BleepSynthModule from "./bleep_synth_module";
+import Monitor from "./monitor";
 import { MonitoredBiquadFilterNode, MonitoredConstantSourceNode, MonitoredGainNode, MonitoredWaveShaperNode } from "./monitored_components";
 
 export default class FormantFilter extends BleepSynthModule {
@@ -16,6 +17,11 @@ export default class FormantFilter extends BleepSynthModule {
     #formant_amp
     #formant_bw
 
+    /**
+     * make a formant filter
+     * @param {AudioContext} context 
+     * @param {Monitor} monitor 
+     */
     constructor(context, monitor) {
         super(context, monitor);
         // setup the tables
@@ -52,6 +58,10 @@ export default class FormantFilter extends BleepSynthModule {
         }
     }
 
+    /**
+     * create the formant tables
+     * https://www.classes.cs.uchicago.edu/archive/1999/spring/CS295/Computing_Resources/Csound/CsManual3.48b1.HTML/Appendices/table3.html
+     */
     #createFormantTables() {
         this.#formant_freq = [
             this.#createLookupTable([650, 400, 290, 400, 350]),
@@ -64,22 +74,35 @@ export default class FormantFilter extends BleepSynthModule {
             this.#createLookupTable([-7, -12, -18, -12, -17])
         ]
         this.#formant_bw = [
-            this.#createLookupTable([4.86, 3.42, 4.32, 6, 5.22]),
-            this.#createLookupTable([7.2, 12.72, 12.42, 6, 6]),
-            this.#createLookupTable([13.2, 15.6, 16.8, 15.6, 16.2])
+            this.#createLookupTable([8.1, 5.7, 7.2, 10, 8.7]),
+            this.#createLookupTable([12, 21.2, 20.7, 10, 10]),
+            this.#createLookupTable([22, 26, 28, 26, 27])
         ]
     }
 
+    /**
+     * create a lookup table for formant parameters
+     * @param {Array} array 
+     * @returns {MonitoredWaveShaperNode}
+     */
     #createLookupTable(array) {
         return new MonitoredWaveShaperNode(this._context, this._monitor, {
             curve: new Float32Array(array)
         });
     }
     
+    /**
+     * start the formant filter
+     * @param {number} tim
+     */
     start(tim) {
         this.#vowel.start(tim);
     }
 
+    /**
+     * stop the formant filter
+     * @param {number} tim 
+     */
     stop(tim) {
         this.#vowel.stop(tim);
         let stopTime = tim - this._context.currentTime;
@@ -97,24 +120,55 @@ export default class FormantFilter extends BleepSynthModule {
         }, (stopTime + 0.1) * 1000);
     }
 
+    /**
+     * get the input node
+     * @returns {MonitoredGainNode}
+     */
     get in() {
         return this.#in;
     }
 
+    /**
+     * get the output node
+     * @returns {MonitoredGainNode}
+     */
     get out() {
         return this.#out;
     }
 
+    /**
+     * set the vowel quality
+     */
     set vowel(v) {
         this.#vowel.offset.value = v;
     }
 
+    /**
+     * get the control for the vowel quality
+     * @returns {MonitoredConstantSourceNode}
+     */
     get vowelCV() {
         return this.#vowel.offset;
     }
 
+    /**
+     * set the gain
+     * @param {number} n
+     */
     set gain(n) {
         this.#in.gain.value = n;
+    }
+
+    static getTweaks() {
+        return ["vowel", "gain"];
+    }
+    
+    static getInputs() {
+        return ["in","vowelCV"];
+    }
+
+    static getOutputs() {
+        return ["out"];
     }
 
 }

@@ -105,4 +105,17 @@ export default class CrossFader extends BleepSynthModule {
   get balanceCV() {
     return this.#balance.offset;
   }
+
+  static getTweaks() {
+    return ["balance"];
+  }
+  
+  static getInputs() {
+    return ["inA", "inB", "balanceCV"];
+  }
+
+  static getOutputs() {
+    return ["out"];
+  }
+
 }

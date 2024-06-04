@@ -40,4 +40,16 @@ export default class Panner extends BleepSynthModule {
       }, (stopTime + 0.1) * 1000);
     }
 
+    static getTweaks() {
+      return ["angle"];
+    }
+
+    static getInputs() {
+      return ["in", "angleCV"];
+    }
+
+    static getOutputs() {
+      return ["out"];
+    }
+    
   }

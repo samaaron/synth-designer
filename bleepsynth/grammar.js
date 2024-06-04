@@ -112,7 +112,9 @@ export default class Grammar {
           if (!modules.has(id))
             throwError(`a module called "${id}" has not been defined"`, this.source);
           const type = modules.get(id);
-          if (!Constants.VALID_PATCH_OUTPUTS[type].includes(param))
+          const validOutputs = Constants.MODULE_CLASSES[type].getOutputs();
+          //if (!Constants.VALID_PATCH_OUTPUTS[type].includes(param))
+          if (!validOutputs.includes(param))
             throwError(`cannot patch the parameter "${param}" of module "${id}"`, this.source);
         }
         return `{"id":"${id}","param":"${param}"}`;
@@ -124,7 +126,9 @@ export default class Grammar {
           if (!modules.has(id))
             throwError(`a module called "${id}" has not been defined`, this.source);
           const type = modules.get(id);
-          if (!Constants.VALID_PATCH_INPUTS[type].includes(param))
+          const validInputs = Constants.MODULE_CLASSES[type].getInputs();
+          //if (!Constants.VALID_PATCH_INPUTS[type].includes(param))
+          if (!validInputs.includes(param))
             throwError(`cannot patch the parameter "${param}" of module "${id}"`, this.source);
         }
         return `{"id":"${id}","param":"${param}"}`;
@@ -135,7 +139,8 @@ export default class Grammar {
         let twk = `${obj.id}.${obj.param}`;
         // check that this is a valid tweak
         let type = modules.get(obj.id);
-        if (!Constants.VALID_TWEAKS[type].includes(obj.param))
+        const validTweaks = Constants.MODULE_CLASSES[type].getTweaks();
+        if (!validTweaks.includes(obj.param))
           throwError(`cannot set the parameter "${obj.param}" of module "${obj.id}"`, this.source);
         if (tweaks.includes(twk))
           throwError(`you cannot set the value of ${twk} more than once`, this.source);

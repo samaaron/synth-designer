@@ -159,4 +159,16 @@ export default class Wavefolder extends BleepSynthModule {
         }, (stopTime + 0.1) * 1000);
     }
 
+    static getTweaks() {
+        return ["gain", "symmetry"];
+    }
+
+    static getInputs() {
+        return ["in", "gainCV", "symmetryCV"];
+    }
+
+    static getOutputs() {
+        return ["out"];
+    }
+
 }

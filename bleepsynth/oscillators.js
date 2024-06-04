@@ -17,6 +17,11 @@ class Oscillator extends BleepSynthModule {
 
   _osc
 
+  /**
+   * make an oscillator 
+   * @param {AudioContext} context 
+   * @param {Monitor} monitor 
+   */
   constructor(context, monitor) {
     super(context, monitor);
     this._osc = new MonitoredOscillatorNode(context, monitor, {
@@ -61,6 +66,18 @@ class Oscillator extends BleepSynthModule {
     setTimeout(() => {
       this._osc.disconnect();
     }, (stopTime + 0.1) * 1000);
+  }
+
+  static getTweaks() {
+    return ["pitch", "detune"];
+  }
+
+  static getInputs() {
+    return ["pitchCV"];
+  }
+
+  static getOutputs() {
+    return ["out"];
   }
 
 }
@@ -218,6 +235,18 @@ export class PulseOsc extends Oscillator {
     }, (stopTime + 0.1) * 1000);
   }
 
+  static getTweaks() {
+    return ["pitch", "detune", "pulsewidth"];
+  }
+
+  static getInputs() {
+    return ["pitchCV", "pulsewidthCV"];
+  }
+
+  static getOutputs() {
+    return ["out"];
+  }
+  
 }
 
 // ------------------------------------------------------------

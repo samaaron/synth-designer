@@ -80,4 +80,16 @@ export default class Reverb extends BleepSynthModule {
         return this.#out;
     }
 
+    static getTweaks() {
+        return ["wetLevel"];
+    }
+
+    static getInputs() {
+        return ["in"];
+    }
+
+    static getOutputs() {
+        return ["out"];
+    }
+
 }

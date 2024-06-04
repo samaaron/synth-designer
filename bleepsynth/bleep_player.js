@@ -154,7 +154,7 @@ export default class BleepPlayer {
      * @returns {object}
      */
     getModuleInstance(type) {
-      return new Constants.MODULE_CONTEXT[Constants.MODULE_CLASSES[type]](this.#context, this.#monitor);
+      return new Constants.MODULE_CLASSES[type](this.#context, this.#monitor);
     }
 
   }

@@ -160,5 +160,17 @@ export default class SuperSaw extends BleepSynthModule {
         }
     }
 
+    static getTweaks() {
+        return ["detune", "level", "pitch", "spread"];
+    }
+
+    static getInputs() {
+        return ["pitchCV"];
+    }
+
+    static getOutputs() {
+        return ["out"];
+    }
+    
 }
 
