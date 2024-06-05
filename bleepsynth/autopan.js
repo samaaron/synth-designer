@@ -32,7 +32,8 @@ export default class AutoPan extends BleepEffect {
         this._wetGain.connect(this.#pan);
         this.#pan.connect(this._out);
         this.#lfo.start();
-        // temporary - fully wet
+        // fully wet
+        this.setWetLevel(1);
         this.setDryLevel(0);
     }
 
@@ -41,7 +42,7 @@ export default class AutoPan extends BleepEffect {
      * @param {number} r - rate in Hz
      * @param {number} when - the time at which the change should occur
      */
-    setRate(r, when) {
+    setRate(r, when = this._context.currentTime) {
         r = Utility.clamp(r, 0, 100);
         this.#lfo.frequency.setValueAtTime(r, when);
     }
@@ -51,7 +52,7 @@ export default class AutoPan extends BleepEffect {
      * @param {number} s - stereo spread in range [0,1]
      * @param {number} when - the time at which the change should occur
      */
-    setSpread(s, when) {
+    setSpread(s, when = this._context.currentTime) {
         s = Utility.clamp(s, 0, 1);
         this.#gain.gain.setValueAtTime(s, when);
     }
@@ -61,7 +62,7 @@ export default class AutoPan extends BleepEffect {
      * @param {object} params - key value list of parameters
      * @param {number} when - the time at which the change should occur
      */
-    setParams(params, when) {
+    setParams(params, when = this._context.currentTime) {
         super.setParams(params, when);
         if (typeof params.rate !== undefined) {
             this.setRate(params.rate, when);

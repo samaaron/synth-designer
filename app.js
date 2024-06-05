@@ -162,7 +162,7 @@ function addListenersToGUI() {
   GUI.tag("start-button").onclick = async () => {
     context = new AudioContext();
     synthEngine = new BleepSynthEngine(context);
-    startMonitorTimer
+    startMonitorTimer();
     GUI.disableGUI(false);
     await loadSelectedEffect(context);
     setWetLevel(0.1);

@@ -98,3 +98,9 @@ export class MonitoredWaveShaperNode extends monitorMixin(WaveShaperNode) {
         super(monitor, context, options);
     }
 }
+
+export class MonitoredDynamicsCompressorNode extends monitorMixin(DynamicsCompressorNode) {
+    constructor(context, monitor, options) {
+        super(monitor, context, options);
+    }
+}

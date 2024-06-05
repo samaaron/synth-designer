@@ -70,6 +70,7 @@ export default class Flanger extends BleepEffect {
         this.#lfo.connect(this.#modgain);
         this.#modgain.connect(this.#delay.delayTime);
         this.#lfo.start();
+        this.setWetLevel(1);
         this.setDryLevel(0);
     }
 
@@ -93,10 +94,7 @@ export default class Flanger extends BleepEffect {
      * @param {number} k - feedback in the range [0,1]
      * @param {number} when - the time at which the change should occur
      */
-    setFeedback(k, when) {
-        if (when===undefined) {
-            when = this._context.currentTime;
-        }
+    setFeedback(k, when = this._context.currentTime) {
         k = Utility.clamp(k, 0, 1);
         this.#feedback.gain.setValueAtTime(-k, when);
     }
@@ -106,10 +104,7 @@ export default class Flanger extends BleepEffect {
      * @param {number} d - depth in ms
      * @param {number} when - the time at which the change should occur
      */
-    setDepth(d, when) {
-        if (when===undefined) {
-            when = this._context.currentTime;
-        }
+    setDepth(d, when = this._context.currentTime) {
         d = Utility.clamp(d, 0, 10) / 1000;
         this.#modgain.gain.setValueAtTime(d, when);
     }
@@ -119,10 +114,7 @@ export default class Flanger extends BleepEffect {
      * @param {number} d - delay in msec
      * @param {number} when - the time at which the change should occur
      */
-    setDelay(d, when) {
-        if (when===undefined) {
-            when = this._context.currentTime;
-        }
+    setDelay(d, when = this._context.currentTime) {
         const delayMs = Utility.clamp(d, 0.1, 10) / 1000;
         this.#delay.delayTime.setValueAtTime(delayMs, when);
     }
@@ -132,10 +124,7 @@ export default class Flanger extends BleepEffect {
      * @param {number} r - rate in HZ
      * @param {number} when - the time at which the change should occur
      */
-    setRate(r, when) {
-        if (when===undefined) {
-            when = this._context.currentTime;
-        }
+    setRate(r, when = this._context.currentTime) {
         r = Utility.clamp(r, 0.01, 100);
         this.#lfo.frequency.setValueAtTime(r, when);
     }
@@ -154,11 +143,8 @@ export default class Flanger extends BleepEffect {
      * @param {object} params - key value list of parameters
      * @param {number} when - the time at which the change should occur
      */
-    setParams(params, when) {
+    setParams(params, when = this._context.currentTime) {
         super.setParams(params, when);
-        if (when===undefined) {
-            when = this._context.currentTime;
-        }
         if (typeof params.feedback !== undefined) {
             this.setFeedback(params.feedback, when);
         }
@@ -189,5 +175,10 @@ export default class Flanger extends BleepEffect {
         this.#modgain.disconnect();
         this.#saturator.disconnect();
     }
+
+    static getTweaks() {
+        return super.getTweaks().concat(["feedback", "delay", "depth", "rate"]);
+    }
+
 }
 

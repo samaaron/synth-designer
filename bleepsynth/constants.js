@@ -14,6 +14,10 @@ import Wavefolder from './wave_folder.js';
 import SuperSaw from './supersaw.js';
 import FormantFilter from './formant_filter.js';
 import Reverb from './reverb.js';
+import AutoPan from './autopan.js';
+import Flanger from './flanger.js';
+import Chorus from './chorus.js';
+import Compressor from './compressor.js';
 
 const MAX_MIDI_FREQ = 4186; // C8
 const MIN_MIDI_FREQ = 27.5;  // A0
@@ -48,24 +52,26 @@ const MODULE_CLASSES = {
   "VCA": Amplifier
 };
 
-const EFFECT_NAMES = [
-  "reverb_large",
-  "reverb_medium",
-  "reverb_small",
-  "reverb_massive",
-  "room_large",
-  "room_small",
-  "plate_drums",
-  "plate_vocal",
-  "plate_large",
-  "plate_small",
-  "ambience_large",
-  "ambience_medium",
-  "ambience_small",
-  "ambience_gated",
-  "autopan",
-  "flanger"
-];
+const EFFECT_NAMES = {
+  "reverb_large": Reverb,
+  "reverb_medium": Reverb,
+  "reverb_small": Reverb,
+  "reverb_massive": Reverb,
+  "room_large": Reverb,
+  "room_small": Reverb,
+  "plate_drums": Reverb,
+  "plate_vocal": Reverb,
+  "plate_large": Reverb,
+  "plate_small": Reverb,
+  "ambience_large": Reverb,
+  "ambience_medium": Reverb,
+  "ambience_small": Reverb,
+  "ambience_gated": Reverb,
+  "autopan": AutoPan,
+  "flanger": Flanger,
+  "chorus": Chorus,
+  "compressor": Compressor
+};
 
 const REVERB_IMPULSES = {
   "reverb_large": "hall-large.flac",

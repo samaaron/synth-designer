@@ -1,12 +1,14 @@
-import Monitor from './monitor.js';
-import Grammar from './grammar.js';
+import AutoPan from './autopan.js';
 import BleepGenerator from './bleep_generator.js';
 import BleepPlayer from './bleep_player.js';
-import Reverb from './reverb.js';
+import Chorus from './chorus.js';
 import Constants from './constants.js';
-import AutoPan from './autopan.js';
 import Flanger from './flanger.js';
+import Grammar from './grammar.js';
+import Monitor from './monitor.js';
+import Reverb from './reverb.js';
 import SampleCache from './samplecache.js';
+import Compressor from './compressor.js';
 
 export default class BleepSynthEngine {
 
@@ -73,32 +75,12 @@ export default class BleepSynthEngine {
      */
     async getEffect(name) {
         let effect = null;
-        switch (name) {
-            case "reverb_medium":
-            case "reverb_large":
-            case "reverb_small":
-            case "reverb_massive":
-            case "room_large":
-            case "room_small":
-            case "plate_drums":
-            case "plate_vocal":
-            case "plate_large":
-            case "plate_small":
-            case "ambience_large":
-            case "ambience_medium":
-            case "ambience_small":
-            case "ambience_gated":
-                effect = new Reverb(this.#context, this.#monitor, this.#cache);
-                await effect.load(Constants.REVERB_IMPULSES[name]);
-                break;
-            case "autopan":
-                effect = new AutoPan(this.#context, this.#monitor);
-                break;
-            case "flanger":
-                effect = new Flanger(this.#context, this.#monitor);
-                break;
-            default:
-                console.error("unknown effect name: " + name);
+        const className = Constants.EFFECT_CLASSES[name];
+        if (className === Reverb) {
+            effect = new Reverb(this.#context, this.#monitor, this.#cache);
+            await effect.load(Constants.REVERB_IMPULSES[name]);
+        } else {
+            effect = new className(this.#context, this.#monitor);
         }
         return effect;
     }
@@ -116,7 +98,7 @@ export default class BleepSynthEngine {
      * @returns {Array<string>} 
      */
     static getEffectNames() {
-        return Constants.EFFECT_CLASSES;
+        return Object.keys(Constants.EFFECT_CLASSES);
     }
 
     /**

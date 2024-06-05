@@ -23,6 +23,9 @@ export default class Reverb extends BleepEffect {
         // connect everything up
         this._wetGain.connect(this.#convolver);
         this.#convolver.connect(this._out);
+        // default settings
+        this.setWetLevel(0.2);
+        this.setDryLevel(1);
     }
 
     /**
@@ -39,6 +42,7 @@ export default class Reverb extends BleepEffect {
      * stop the reverb unit
      */
     stop() {
+        super.stop();
         this.#convolver.disconnect();
     }
 
