@@ -4,7 +4,7 @@ import Flags from "./flags";
 
 // Abstract base class for effects
 
-export class BleepEffect {
+export default class BleepEffect {
 
   static DEFAULT_WET_LEVEL = 0.2
   static DEFAULT_DRY_LEVEL = 1
@@ -24,16 +24,16 @@ export class BleepEffect {
   constructor(context, monitor) {
     this._context = context;
     this._monitor = monitor;
-    this._wetGain = new MonitoredGainNode(context, {
+    this._wetGain = new MonitoredGainNode(context, monitor, {
       gain: BleepEffect.DEFAULT_WET_LEVEL
     });
-    this._dryGain = new MonitoredGainNode(context, {
+    this._dryGain = new MonitoredGainNode(context, monitor, {
       gain: BleepEffect.DEFAULT_DRY_LEVEL
     });
-    this._in = new MonitoredGainNode(ctx, {
+    this._in = new MonitoredGainNode(context, monitor, {
       gain: 1
     });
-    this._out = new MonitoredGainNode(ctx, {
+    this._out = new MonitoredGainNode(context, monitor, {
       gain: 1
     });
     // connect wet and dry signal paths
@@ -78,9 +78,9 @@ export class BleepEffect {
    * @param {number} when - the time at which the change should occur
    */
   setParams(params, when) {
-    if (typeof params.wetLevel !== "undefined")
+    if (typeof params.wetLevel !== undefined)
       this.setWetLevel(params.wetLevel, when);
-    if (typeof params.dryLevel !== "undefined")
+    if (typeof params.dryLevel !== undefined)
       this.setDryLevel(params.dryLevel, when);
   }
 
@@ -90,7 +90,10 @@ export class BleepEffect {
    * @param {number} when - the time at which the change should occur
    */
   setWetLevel(wetLevel, when) {
-    this._wetGain.gain.setValueAtTime(wetLevel,when);
+    if (when === undefined) {
+      when = this._context.currentTime;
+    }
+    this._wetGain.gain.setValueAtTime(wetLevel, when);
   }
 
     /**
@@ -99,6 +102,9 @@ export class BleepEffect {
    * @param {number} when - the time at which the change should occur
    */
   setDryLevel(dryLevel, when) {
+    if (when === undefined) {
+      when = this._context.currentTime;
+    }
     this._dryGain.gain.setValueAtTime(dryLevel, when);
   }
 
@@ -107,6 +113,18 @@ export class BleepEffect {
    */
   timeToFadeOut() {
     throw new Error("BleepEffect is abstract, you must implement this");
+  }
+
+  static getTweaks() {
+    return ["wetLevel", "dryLevel"];
+  }
+
+  static getInputs() {
+    return ["in"];
+  }
+
+  static getOutputs() {
+    return ["out"];
   }
 
 }

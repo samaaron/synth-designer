@@ -62,7 +62,9 @@ const EFFECT_NAMES = [
   "ambience_large",
   "ambience_medium",
   "ambience_small",
-  "ambience_gated"
+  "ambience_gated",
+  "autopan",
+  "flanger"
 ];
 
 const IMPULSE_PATH = "./bleepsynth/impulses/";

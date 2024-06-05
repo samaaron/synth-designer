@@ -4,6 +4,8 @@ import BleepGenerator from './bleep_generator.js';
 import BleepPlayer from './bleep_player.js';
 import Reverb from './reverb.js';
 import Constants from './constants.js';
+import AutoPan from './autopan.js';
+import Flanger from './flanger.js';
 
 export default class BleepSynthEngine {
 
@@ -84,6 +86,12 @@ export default class BleepSynthEngine {
                 const impulseFilename = `${Constants.IMPULSE_PATH}${Constants.REVERB_IMPULSES[name]}`;
                 console.log(impulseFilename);
                 effect = await this.#getReverb(context, this.#monitor, impulseFilename);
+                break;
+            case "autopan":
+                effect = new AutoPan(context, this.#monitor);
+                break;
+            case "flanger":
+                effect = new Flanger(context, this.#monitor);
                 break;
             default:
                 console.error("unknown effect name: " + name);
