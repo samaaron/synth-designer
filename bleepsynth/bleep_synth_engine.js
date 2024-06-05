@@ -88,8 +88,8 @@ export default class BleepSynthEngine {
             case "ambience_medium":
             case "ambience_small":
             case "ambience_gated":
-                const impulseFilename = Constants.REVERB_IMPULSES[name];
-                effect = await this.#getReverb(impulseFilename);
+                effect = new Reverb(this.#context, this.#monitor, this.#cache);
+                await effect.load(Constants.REVERB_IMPULSES[name]);
                 break;
             case "autopan":
                 effect = new AutoPan(this.#context, this.#monitor);
@@ -101,19 +101,6 @@ export default class BleepSynthEngine {
                 console.error("unknown effect name: " + name);
         }
         return effect;
-    }
-
-    /**
-     * reverbs are special since we need to load an impulse response
-     * @param {AudioContext} context 
-     * @param {Monitor} monitor 
-     * @param {string} impulse 
-     * @returns {Reverb}
-     */
-    async #getReverb(impulseFilename) {
-        const reverb = new Reverb(this.#context, this.#monitor, this.#cache);
-        await reverb.load(impulseFilename);
-        return reverb;
     }
 
     /**

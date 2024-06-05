@@ -27,6 +27,8 @@ export default class GUI {
         GUI.tag("play-button").disabled = b;
         GUI.tag("midi-label").disabled = b;
         GUI.tag("midi-input").disabled = b;
+        GUI.tag("fx-select").disabled = b;
+        GUI.tag("fx-label").disabled = b;
     }
 
     /**
