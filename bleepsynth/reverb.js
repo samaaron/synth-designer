@@ -1,95 +1,53 @@
-import Utility from "./utility.js"
 import Monitor from "./monitor.js"
-import BleepSynthModule from "./bleep_synth_module.js"
-import { MonitoredConvolverNode, MonitoredGainNode } from "./monitored_components.js"
+import { MonitoredConvolverNode } from "./monitored_components.js"
+import BleepEffect from "./effect.js"
+import SampleCache from "./samplecache.js"
 
-export default class Reverb extends BleepSynthModule {
+export default class Reverb extends BleepEffect {
 
-    #in
-    #out
-    #isValid
-    #wetLevel
-    #wetGain
-    #dryGain
-    #reverb
+    static IMPULSE_PATH = "./bleepsynth/impulses/";
 
-    constructor(context,monitor) {
+    #convolver
+    #cache
+
+    /**
+     * make a reverb effect
+     * @param {AudioContext} context 
+     * @param {Monitor} monitor 
+     * @param {SampleCache} cache 
+     */
+    constructor(context, monitor, cache) {
         super(context, monitor);
-        this.#isValid = false;
-        this.#wetLevel = 0.5
-        this.#reverb = new MonitoredConvolverNode(context,monitor);
-        this.#wetGain = new MonitoredGainNode(context,monitor);
-        this.#dryGain = new MonitoredGainNode(context,monitor);
-        this.#in = new MonitoredGainNode(context,monitor,{
-            gain : 1
-        });
-        this.#out = new MonitoredGainNode(context,monitor,{
-            gain : 1
-        });
-        this.#wetGain.gain.value = this.#wetLevel;
-        this.#dryGain.gain.value = 1 - this.#wetLevel;
+        this.#cache = cache;
+        this.#convolver = new MonitoredConvolverNode(context, monitor);
         // connect everything up
-        this.#in.connect(this.#reverb);
-        this.#reverb.connect(this.#wetGain);
-        this.#in.connect(this.#dryGain);
-        this.#wetGain.connect(this.#out);
-        this.#dryGain.connect(this.#out);
-    }
-
-    async load(filename) {
-        const impulseResponse = await this.getImpulseResponseFromFile(filename);
-        if (this.#isValid) {
-            this.#reverb.buffer = impulseResponse;
-        }
-    }
-
-    async getImpulseResponseFromFile(filename) {
-        try {
-            let reply = await fetch(filename);
-            this.#isValid = true;
-            return this._context.decodeAudioData(await reply.arrayBuffer());
-        } catch (err) {
-            this.#isValid = false;
-            console.log("unable to load the impulse response file called " + filename);
-        }
-    }
-
-    stop() {
-        this.#reverb.disconnect();
-        this.#wetGain.disconnect();
-        this.#dryGain.disconnect();
-        this.#in.disconnect();
-        this.#out.disconnect();
+        this._wetGain.connect(this.#convolver);
+        this.#convolver.connect(this._out);
     }
 
     /**
-     * set the wet level
-     * @param {number} level
+     * load an impulse response
+     * @param {string} filename 
      */
-    set wetLevel(level) {
-        this.#wetLevel = Utility.clamp(level, 0, 1);
-        this.#wetGain.gain.value = this.#wetLevel;
-        this.#dryGain.gain.value = 1 - this.#wetLevel;
+    async load(filename) {
+        const impulseName = `${Reverb.IMPULSE_PATH}${filename}`;
+        const buffer = await this.#cache.getSample(this._context, impulseName);
+        this.#convolver.buffer = buffer;
     }
 
-    get in() {
-        return this.#in
+    /**
+     * stop the reverb unit
+     */
+    stop() {
+        this.#convolver.disconnect();
     }
 
-    get out() {
-        return this.#out;
-    }
-
-    static getTweaks() {
-        return ["wetLevel"];
-    }
-
-    static getInputs() {
-        return ["in"];
-    }
-
-    static getOutputs() {
-        return ["out"];
+    /**
+     * time taken to fade out is equal to the duration of the impulse response
+     * @returns {number}
+     */
+    timeToFadeOut() {
+        return this._convolver.buffer.duration;
     }
 
 }

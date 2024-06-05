@@ -109,9 +109,13 @@ export default class GUI {
      * @param {string} label
      * @param {number} value
      */
-    static setFloatControl(label, value) {
+    static setSliderValue(label, value) {
         GUI.tag("slider-" + label).value = value;
         GUI.tag(`label-${label}`).textContent = `${label} [${value.toFixed(2)}]`;
+    }
+
+    static getSliderValue(label) {
+        return parseFloat(GUI.tag("slider-"+label).value);
     }
 
 }

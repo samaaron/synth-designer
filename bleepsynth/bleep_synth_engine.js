@@ -6,18 +6,23 @@ import Reverb from './reverb.js';
 import Constants from './constants.js';
 import AutoPan from './autopan.js';
 import Flanger from './flanger.js';
+import SampleCache from './samplecache.js';
 
 export default class BleepSynthEngine {
 
     #monitor
+    #cache
     #synthSemantics
     #synthGrammar
+    #context
 
     /**
      * make a bleep synth engine
      */
-    constructor() {
+    constructor(context) {
+        this.#context = context;
         this.#monitor = new Monitor();
+        this.#cache = new SampleCache(context);
         ({ synthSemantics: this.#synthSemantics, synthGrammar: this.#synthGrammar } = Grammar.makeGrammar());
     }
 
@@ -56,8 +61,8 @@ export default class BleepSynthEngine {
      * @param {object} params 
      * @returns {BleepPlayer}
      */
-    getPlayer(context, generator, pitchHz, level, params) {
-        return new BleepPlayer(context, this.#monitor, generator, pitchHz, level, params);
+    getPlayer(generator, pitchHz, level, params) {
+        return new BleepPlayer(this.#context, this.#monitor, generator, pitchHz, level, params);
     }
 
     /**
@@ -66,7 +71,7 @@ export default class BleepSynthEngine {
      * @param {string} name 
      * @returns 
      */
-    async getEffect(context, name) {
+    async getEffect(name) {
         let effect = null;
         switch (name) {
             case "reverb_medium":
@@ -83,15 +88,14 @@ export default class BleepSynthEngine {
             case "ambience_medium":
             case "ambience_small":
             case "ambience_gated":
-                const impulseFilename = `${Constants.IMPULSE_PATH}${Constants.REVERB_IMPULSES[name]}`;
-                console.log(impulseFilename);
-                effect = await this.#getReverb(context, this.#monitor, impulseFilename);
+                const impulseFilename = Constants.REVERB_IMPULSES[name];
+                effect = await this.#getReverb(impulseFilename);
                 break;
             case "autopan":
-                effect = new AutoPan(context, this.#monitor);
+                effect = new AutoPan(this.#context, this.#monitor);
                 break;
             case "flanger":
-                effect = new Flanger(context, this.#monitor);
+                effect = new Flanger(this.#context, this.#monitor);
                 break;
             default:
                 console.error("unknown effect name: " + name);
@@ -106,9 +110,9 @@ export default class BleepSynthEngine {
      * @param {string} impulse 
      * @returns {Reverb}
      */
-    async #getReverb(context, monitor, impulse) {
-        const reverb = new Reverb(context, monitor);
-        await reverb.load(impulse);
+    async #getReverb(impulseFilename) {
+        const reverb = new Reverb(this.#context, this.#monitor, this.#cache);
+        await reverb.load(impulseFilename);
         return reverb;
     }
 

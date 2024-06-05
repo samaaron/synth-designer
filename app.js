@@ -18,7 +18,7 @@ let controlMap;
 
 // engine
 
-const synthEngine = new BleepSynthEngine();
+let synthEngine;
 
 const midiSystem = new MidiSystem();
 
@@ -80,7 +80,6 @@ async function init() {
   addListenersToGUI();
   setupMidi();
   setDefaultValues();
-  startMonitorTimer();
 }
 
 function startMonitorTimer() {
@@ -94,8 +93,8 @@ function startMonitorTimer() {
 // ------------------------------------------------------------
 
 function setDefaultValues() {
-  GUI.setFloatControl("level", 0.8);
-  GUI.setFloatControl("fx_level", 0.1);
+  GUI.setSliderValue("level", 0.8);
+  GUI.setSliderValue("wetLevel", 0.1);
 }
 
 // ------------------------------------------------------------
@@ -162,6 +161,8 @@ function addListenersToGUI() {
   // start button
   GUI.tag("start-button").onclick = async () => {
     context = new AudioContext();
+    synthEngine = new BleepSynthEngine(context);
+    startMonitorTimer
     GUI.disableGUI(false);
     await loadSelectedEffect(context);
     setWetLevel(0.1);
@@ -180,11 +181,11 @@ function addListenersToGUI() {
 
   // amplitude slider
   GUI.tag("slider-level").addEventListener("input", function () {
-    GUI.setFloatControl("level", parseFloat(this.value));
+    GUI.setSliderValue("level", parseFloat(this.value));
   });
 
   // reverb slider
-  GUI.tag("slider-fx_level").addEventListener("input", function () {
+  GUI.tag("slider-wetLevel").addEventListener("input", function () {
     setWetLevel(parseFloat(this.value));
   });
 
@@ -292,7 +293,7 @@ function makeMIDIlisteners() {
     if (param != undefined) {
       let el = GUI.tag("slider-" + param);
       let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * e.detail.value;
-      GUI.setFloatControl(param, value);
+      GUI.setSliderValue(param, value);
       playerForNote.forEach((player, note) => {
         player.applyTweakNow(param, value);
       });
@@ -318,7 +319,7 @@ function playNote(midiNoteNumber, velocity) {
     const params = getParametersForGenerator(generator);
     // make a player and store a reference to it so we can stop it later
    // player = new BleepPlayer(context, monitor, generator, pitchHz, velocity, params);
-    player = synthEngine.getPlayer(context, generator, pitchHz, velocity, params);
+    player = synthEngine.getPlayer(generator, pitchHz, velocity, params);
     if (Flags.VERBOSE) console.log(player);
     playerForNote.set(midiNoteNumber, player);
     player.out.connect(fx.in);
@@ -408,8 +409,10 @@ async function loadSelectedEffect(context) {
   const selectedIndex = GUI.tag("fx-select").selectedIndex;
   const selectedName = GUI.tag("fx-select").options[selectedIndex].text;
   if (fx != null) fx.stop();
-  fx = await synthEngine.getEffect(context, selectedName);
+  fx = await synthEngine.getEffect(selectedName);
   fx.out.connect(context.destination);
+  const wetLevel = GUI.getSliderValue("wetLevel");
+  setWetLevel(wetLevel);
 }
 
 // ------------------------------------------------------------
@@ -417,8 +420,8 @@ async function loadSelectedEffect(context) {
 // ------------------------------------------------------------
 
 function setWetLevel(w) {
-  fx.wetLevel = w;
-  GUI.setFloatControl("fx_level", w);
+  fx.setWetLevel(w);
+  GUI.setSliderValue("wetLevel", w);
 }
 
 // ------------------------------------------------------------

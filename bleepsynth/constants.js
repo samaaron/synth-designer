@@ -67,8 +67,6 @@ const EFFECT_NAMES = [
   "flanger"
 ];
 
-const IMPULSE_PATH = "./bleepsynth/impulses/";
-
 const REVERB_IMPULSES = {
   "reverb_large": "hall-large.flac",
   "reverb_medium": "hall-medium.flac",
@@ -94,8 +92,7 @@ const Constants = {
   MIDDLE_C,
   MODULE_CLASSES,
   EFFECT_CLASSES: EFFECT_NAMES,
-  REVERB_IMPULSES,
-  IMPULSE_PATH
+  REVERB_IMPULSES
 };
 
 export default Constants;
