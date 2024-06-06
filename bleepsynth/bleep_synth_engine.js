@@ -38,8 +38,9 @@ export default class BleepSynthEngine {
             try {
                 message = "OK";
                 const adapter = this.#synthSemantics(result);
-                let json = Grammar.convertToStandardJSON(adapter.interpret());
+                let json = adapter.interpret();
                 generator = new BleepGenerator(json);
+                console.log(generator);
                 if (generator.hasWarning) {
                     message += "\n" + generator.warningString;
                 }

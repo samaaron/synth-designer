@@ -397,57 +397,57 @@ export default class Grammar {
       `;
   }
 
-  static convertToStandardJSON(json) {
-  // we need to put the JSON from the grammar into a standard format
-  const tree = JSON.parse(json);
-  var std = {};
-  std.longname = tree.synth.longname;
-  std.shortname = tree.synth.shortname;
-  std.version = tree.synth.version;
-  std.author = tree.synth.author;
-  std.doc = tree.synth.doc;
-  std.prototype = "builder";
-  std.modules = [];
-  // filter the statements into the right structures
-  const statements = tree.statements;
-  for (let i = 0; i < statements.length; i++) {
-    let obj = statements[i];
-    if (obj.module) {
-      std.modules.push(obj.module);
-    } else if (obj.patch) {
-      // find the type of the from id
-      let found = std.modules.find((a) => (a.id === obj.patch.from.id));
-      const type = found.type;
-      // we treat envelopes differently for efficiency reasons
-      if (type === "ADSR" || type === "DECAY") {
-        if (!std.envelopes) {
-          std.envelopes = [];
-        }
-        std.envelopes.push(obj.patch);
-      } else {
-        if (!std.patches) {
-          std.patches = [];
-        }
-        std.patches.push(obj.patch);
-      }
-    } else if (obj.param) {
-      if (!std.parameters) {
-        std.parameters = [];
-      }
-      std.parameters.push(obj.param);
-    } else if (obj.tweak) {
-      if (!std.tweaks) {
-        std.tweaks = [];
-      }
-      var mytweak = {};
-      mytweak.id = obj.tweak.id;
-      mytweak.param = obj.tweak.param;
-      mytweak.expression = Expression.convertToPostfix(obj.tweak.expression);
-      std.tweaks.push(mytweak);
-    }
-  }
-  return JSON.stringify(std);
-}
+//   static convertToStandardJSON(json) {
+//   // we need to put the JSON from the grammar into a standard format
+//   const tree = JSON.parse(json);
+//   var std = {};
+//   std.longname = tree.synth.longname;
+//   std.shortname = tree.synth.shortname;
+//   std.version = tree.synth.version;
+//   std.author = tree.synth.author;
+//   std.doc = tree.synth.doc;
+//   std.prototype = "builder";
+//   std.modules = [];
+//   // filter the statements into the right structures
+//   const statements = tree.statements;
+//   for (let i = 0; i < statements.length; i++) {
+//     let obj = statements[i];
+//     if (obj.module) {
+//       std.modules.push(obj.module);
+//     } else if (obj.patch) {
+//       // find the type of the from id
+//       let found = std.modules.find((a) => (a.id === obj.patch.from.id));
+//       const type = found.type;
+//       // we treat envelopes differently for efficiency reasons
+//       if (type === "ADSR" || type === "DECAY") {
+//         if (!std.envelopes) {
+//           std.envelopes = [];
+//         }
+//         std.envelopes.push(obj.patch);
+//       } else {
+//         if (!std.patches) {
+//           std.patches = [];
+//         }
+//         std.patches.push(obj.patch);
+//       }
+//     } else if (obj.param) {
+//       if (!std.parameters) {
+//         std.parameters = [];
+//       }
+//       std.parameters.push(obj.param);
+//     } else if (obj.tweak) {
+//       if (!std.tweaks) {
+//         std.tweaks = [];
+//       }
+//       var mytweak = {};
+//       mytweak.id = obj.tweak.id;
+//       mytweak.param = obj.tweak.param;
+//       mytweak.expression = Expression.convertToPostfix(obj.tweak.expression);
+//       std.tweaks.push(mytweak);
+//     }
+//   }
+//   return JSON.stringify(std);
+// }
 
 }
 
