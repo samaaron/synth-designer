@@ -103,6 +103,10 @@ class DistortionPrototype extends BleepEffect {
         this._bandpass.Q.setValueAtTime(q, when);
     }
 
+    static getTweaks() {
+        return super.getTweaks().concat(["preGain", "postGain", "frequency", "bandwidth"]);
+    }
+
     /**
      * Stop this effect and tidy up
      */

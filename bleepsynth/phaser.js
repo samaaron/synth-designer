@@ -154,6 +154,10 @@ class PhaserPrototype extends BleepEffect {
         this._rightPan.disconnect();
     }
 
+    static getTweaks() {
+        return super.getTweaks().concat(["spread", "feedback", "depth", "rate", "resonance"]);
+    }
+
 }
 
 /**
