@@ -1,0 +1,81 @@
+@synth crossfadertest
+longname : Crossfader test
+type : synth
+author : Guy J Brown
+version : 1.0
+doc : A demo of the crossfader module
+@end
+
+# parameters
+
+@param cutoff
+type : float
+mutable: yes
+step : 0.01
+min : 100
+max : 8000
+default : 2000
+doc : cutoff frequency
+@end
+
+@param balance
+type : float
+mutable : yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : crossfader balance
+@end
+
+@param mod_level
+type : float
+mutable : yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : balance modulation level
+@end
+
+@param mod_rate
+type : float
+mutable : yes
+step : 0.01
+min : 0.01
+max : 5
+default : 0.5
+doc : balance modulation rate
+@end
+
+# modules
+
+SIN-OSC : sin
+SAW-OSC : saw
+FADER : fader
+LPF : lowpass
+VCA : vca
+SIN-OSC : lfo
+VCA : modgain
+
+# patch
+
+sin.out -> fader.inA
+saw.out -> fader.inB
+fader.out -> lowpass.in
+lowpass.out -> vca.in
+vca.out -> audio.in
+lfo.out -> modgain.in
+modgain.out -> fader.balanceCV
+
+# tweak
+
+sin.pitch = param.pitch
+saw.pitch = param.pitch
+vca.level = param.level
+lowpass.cutoff = param.cutoff
+fader.balance = param.balance
+lfo.pitch = param.mod_rate
+modgain.level = param.mod_level
+
+# end

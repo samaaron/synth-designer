@@ -1,9 +1,9 @@
-@synth supersaw
-longname : demo of the supersaw module
+@synth comb
+longname : demo of the comb filter module
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : A demo of the supersaw module with controls for detune, cutoff and stereo spread
+doc : A demo of the comb filter module
 @end
 
 @param cutoff
@@ -15,6 +15,17 @@ max: 8000
 default: 4000
 doc: changes the filter cutoff
 @end
+
+@param resonance
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.3
+doc: changes the filter resonance
+@end
+
 
 @param detune
 type: float
@@ -39,20 +50,21 @@ doc: changes the stereo spread
 # modules
 
 SUPERSAW : osc
-LPF : lowpass
+COMB : comb
 VCA : vca
 
 # patch
 
-osc.out -> lowpass.in
-lowpass.out -> vca.in
+osc.out -> comb.in
+comb.out -> vca.in
 vca.out -> audio.in
 
 # tweak
 
 osc.pitch = param.pitch
 vca.level = param.level*0.5
-lowpass.cutoff = param.cutoff
+comb.cutoff = param.cutoff
+comb.resonance = param.resonance
 osc.detune = param.detune
 osc.spread = param.spread
 osc.level = 1
