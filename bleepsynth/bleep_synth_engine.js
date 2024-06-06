@@ -5,7 +5,7 @@ import Grammar from './grammar.js';
 import Monitor from './monitor.js';
 import Reverb from './reverb.js';
 import SampleCache from './samplecache.js';
-import BleepEffect from './effect.js';
+import BleepEffect from './effect.js'; 
 
 export default class BleepSynthEngine {
 

@@ -19,6 +19,7 @@ import Flanger from './flanger.js';
 import Chorus from './chorus.js';
 import Compressor from './compressor.js';
 import { Distortion, Overdrive } from './distortion.js';
+import { DeepPhaser, PicoPebble, ThickPhaser } from './phaser.js';
 
 const MAX_MIDI_FREQ = 4186; // C8
 const MIN_MIDI_FREQ = 27.5;  // A0
@@ -73,7 +74,10 @@ const EFFECT_NAMES = {
   "chorus": Chorus,
   "compressor": Compressor,
   "distortion": Distortion,
-  "overdrive": Overdrive
+  "overdrive": Overdrive,
+  "deep_phaser": DeepPhaser,
+  "pico_pebble": PicoPebble,
+  "thick_phaser": ThickPhaser
 };
 
 const REVERB_IMPULSES = {

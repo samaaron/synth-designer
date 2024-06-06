@@ -90,7 +90,6 @@ export default class BleepEffect {
    * @param {number} when - the time at which the change should occur
    */
   setWetLevel(wetLevel, when = this._context.currentTime) {
-    console.log(`setting wet level to ${wetLevel}`);
     this._wetGain.gain.setValueAtTime(wetLevel, when);
   }
 
