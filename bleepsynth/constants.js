@@ -18,6 +18,7 @@ import AutoPan from './autopan.js';
 import Flanger from './flanger.js';
 import Chorus from './chorus.js';
 import Compressor from './compressor.js';
+import { Distortion, Overdrive } from './distortion.js';
 
 const MAX_MIDI_FREQ = 4186; // C8
 const MIN_MIDI_FREQ = 27.5;  // A0
@@ -70,7 +71,9 @@ const EFFECT_NAMES = {
   "autopan": AutoPan,
   "flanger": Flanger,
   "chorus": Chorus,
-  "compressor": Compressor
+  "compressor": Compressor,
+  "distortion": Distortion,
+  "overdrive": Overdrive
 };
 
 const REVERB_IMPULSES = {

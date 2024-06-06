@@ -77,10 +77,10 @@ export default class BleepEffect {
    * @param {object} params - key value list of parameters
    * @param {number} when - the time at which the change should occur
    */
-  setParams(params, when) {
-    if (typeof params.wetLevel !== undefined)
+  setParams(params, when = this._context.currentTime) {
+    if (params.wetLevel !== undefined)
       this.setWetLevel(params.wetLevel, when);
-    if (typeof params.dryLevel !== undefined)
+    if (params.dryLevel !== undefined)
       this.setDryLevel(params.dryLevel, when);
   }
 
@@ -89,10 +89,8 @@ export default class BleepEffect {
    * @param {number} wetLevel - the gain of the wet signal pathway in the range [0,1]
    * @param {number} when - the time at which the change should occur
    */
-  setWetLevel(wetLevel, when) {
-    if (when === undefined) {
-      when = this._context.currentTime;
-    }
+  setWetLevel(wetLevel, when = this._context.currentTime) {
+    console.log(`setting wet level to ${wetLevel}`);
     this._wetGain.gain.setValueAtTime(wetLevel, when);
   }
 
@@ -101,10 +99,7 @@ export default class BleepEffect {
    * @param {number} dryLevel - the gain of the dry signal pathway in the range [0,1]
    * @param {number} when - the time at which the change should occur
    */
-  setDryLevel(dryLevel, when) {
-    if (when === undefined) {
-      when = this._context.currentTime;
-    }
+  setDryLevel(dryLevel, when = this._context.currentTime) {
     this._dryGain.gain.setValueAtTime(dryLevel, when);
   }
 

@@ -1,14 +1,11 @@
-import AutoPan from './autopan.js';
 import BleepGenerator from './bleep_generator.js';
 import BleepPlayer from './bleep_player.js';
-import Chorus from './chorus.js';
 import Constants from './constants.js';
-import Flanger from './flanger.js';
 import Grammar from './grammar.js';
 import Monitor from './monitor.js';
 import Reverb from './reverb.js';
 import SampleCache from './samplecache.js';
-import Compressor from './compressor.js';
+import BleepEffect from './effect.js';
 
 export default class BleepSynthEngine {
 
@@ -20,6 +17,7 @@ export default class BleepSynthEngine {
 
     /**
      * make a bleep synth engine
+     * @param {AudioContext} context
      */
     constructor(context) {
         this.#context = context;
@@ -56,7 +54,6 @@ export default class BleepSynthEngine {
 
     /**
      * get a player from a generator
-     * @param {AudioContext} context 
      * @param {BleepGenerator} generator 
      * @param {number} pitchHz 
      * @param {number} level 
@@ -69,9 +66,8 @@ export default class BleepSynthEngine {
 
     /**
      * get an effect
-     * @param {AudioContext} ctx 
      * @param {string} name 
-     * @returns 
+     * @returns {BleepEffect}
      */
     async getEffect(name) {
         let effect = null;
