@@ -1,12 +1,7 @@
 import BleepSynthModule from "./bleep_synth_module.js"
 import Flags from "./flags.js"
 import Monitor from "./monitor.js"
-import {
-  MonitoredConstantSourceNode,
-  MonitoredDelayNode,
-  MonitoredGainNode,
-  MonitoredOscillatorNode
-} from "./monitored_components.js"
+import { MonitoredConstantSourceNode, MonitoredDelayNode, MonitoredGainNode, MonitoredOscillatorNode } from "./monitored_components.js"
 import Constants from "./constants.js"
 
 // ------------------------------------------------------------
@@ -291,4 +286,77 @@ export class SquareOsc extends Oscillator {
     super(context, monitor);
     this._osc.type = "square";
   }
+}
+
+// ------------------------------------------------------------
+// Random oscillator - cycle of random noise for karplus strong
+// ------------------------------------------------------------
+
+// export class RandomOsc extends Oscillator {
+
+//   // real parts for random sequence
+//   static REAL_PARTS = new Float32Array([9.1182, 1.1314, -3.7047, -1.5283, -1.0751, 0.0700, 3.2826, 3.6116, -5.5772, -2.6959, 2.6466, -1.8377, 2.1301, 0.9041, -1.5017, -4.2249, -1.0005, -0.4352, 4.5624, -6.7144, 2.4735, -2.0083, -2.6985, 3.7056, -2.2746, 5.1290, -7.3179, 2.4413, 4.1436, 0.3962, -4.8453, 2.1462, 2.5211, 2.1462, -4.8453, 0.3962, 4.1436, 2.4413, -7.3179, 5.1290, -2.2746, 3.7056, -2.6985, -2.0083, 2.4735, -6.7144, 4.5624, -0.4352, -1.0005, -4.2249, -1.5017, 0.9041, 2.1301, -1.8377, 2.6466, -2.6959, -5.5772, 3.6116, 3.2826, 0.0700, -1.0751, -1.5283, -3.7047, 1.1314]);
+
+//   // imaginary parts for random sequence
+//   static IMAG_PARTS = new Float32Array([0.0000, 1.6620, 4.1186, 5.8102, -1.8278, -0.6848, 0.7658, -2.5074, -5.5043, -3.6768, -4.1541, -3.6705, 2.7696, -5.5667, 1.8004, 3.6096, 5.5857, 5.1045, 1.1952, 1.6681, 2.3166, -3.3849, -3.2703, 0.2231, -0.6119, 1.1657, -0.3912, -2.2402, -1.4960, -2.8728, -9.5067, 0.2702, 0.0000, -0.2702, 9.5067, 2.8728, 1.4960, 2.2402, 0.3912, -1.1657, 0.6119, -0.2231, 3.2703, 3.3849, -2.3166, -1.6681, -1.1952, -5.1045, -5.5857, -3.6096, -1.8004, 5.5667, -2.7696, 3.6705, 4.1541, 3.6768, 5.5043, 2.5074, -0.7658, 0.6848, 1.8278, -5.8102, -4.1186, -1.6620]);
+
+//   constructor(context, monitor) {
+//     super(context, monitor);
+//     // oscillator with a wavetable containing a random sequence
+//     const wave = context.createPeriodicWave(RandomOsc.REAL_PARTS, RandomOsc.IMAG_PARTS);
+//     this._osc.setPeriodicWave(wave);
+//   }
+// }
+
+export class RandomOsc extends Oscillator {
+
+  static TABLE_SIZE = 64;
+
+  constructor(context, monitor) {
+    super(context, monitor);
+    // Generate and normalize the random Fourier coefficients
+    const { realParts, imagParts } = RandomOsc.#generateRandomCoefficients();
+    // Create the PeriodicWave with the normalized coefficients
+    const wave = context.createPeriodicWave(realParts, imagParts);
+    this._osc.setPeriodicWave(wave);
+  }
+
+  static #generateRandomCoefficients() {
+    const realParts = new Float32Array(RandomOsc.TABLE_SIZE);
+    const imagParts = new Float32Array(RandomOsc.TABLE_SIZE);
+    // Generate random coefficients
+    for (let i = 0; i < RandomOsc.TABLE_SIZE; i++) {
+      realParts[i] = Math.random() * 2 - 1; 
+      imagParts[i] = Math.random() * 2 - 1; 
+    }
+    // Normalize the coefficients
+    RandomOsc.#normalizeCoefficients(realParts);
+    RandomOsc.#normalizeCoefficients(imagParts);
+    return { realParts, imagParts };
+  }
+
+  static #normalizeCoefficients(coefficients) {
+    let sumOfSquares = 0;
+    // Calculate the sum of squares of the coefficients
+    for (let i = 0; i < RandomOsc.TABLE_SIZE; i++) {
+      sumOfSquares += coefficients[i] * coefficients[i];
+    }
+    // Calculate the normalization factor
+    const normalizationFactor = Math.sqrt(sumOfSquares / RandomOsc.TABLE_SIZE);
+    // Normalize the coefficients
+    for (let i = 0; i < RandomOsc.TABLE_SIZE; i++) {
+      coefficients[i] /= normalizationFactor;
+    }
+  }
+
+}
+
+export class CustomOsc extends Oscillator {
+
+  constructor(context, monitor, cycle) {
+    super(context, monitor);
+    const wave = context.createPeriodicWave(cycle.real, cycle.imag);
+    this._osc.setPeriodicWave(wave);
+  }
+  
 }

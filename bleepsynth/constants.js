@@ -9,7 +9,7 @@ import LFO from './lfo.js';
 import NoiseGenerator from './noise.js';
 import Panner from './panner.js';
 import Waveshaper from './wave_shaper.js';
-import { SinOsc, SawOsc, SquareOsc, TriOsc, PulseOsc } from './oscillators.js';
+import { SinOsc, SawOsc, SquareOsc, TriOsc, PulseOsc, RandomOsc, CustomOsc } from './oscillators.js';
 import Wavefolder from './wave_folder.js';
 import SuperSaw from './supersaw.js';
 import FormantFilter from './formant_filter.js';
@@ -34,6 +34,7 @@ const MODULE_CLASSES = {
   "ADSR": Envelope,
   "AUDIO": Audio,
   "COMB": CombFilter,
+  "CUSTOM-OSC": CustomOsc,
   "DECAY": Decay,
   "DELAY": DelayLine,
   "FADER": CrossFader,
@@ -45,6 +46,7 @@ const MODULE_CLASSES = {
   "NOISE": NoiseGenerator,
   "PAN": Panner,
   "PULSE-OSC": PulseOsc,
+  "RAND-OSC" : RandomOsc,
   "SAW-OSC": SawOsc,
   "SHAPER": Waveshaper,
   "SIN-OSC": SinOsc,

@@ -5,7 +5,7 @@ export default class Chorus extends BleepEffect {
 
     static DEFAULT_CHORUS_RATE = 0.8;
     static DEFAULT_STEREO_SPREAD = 0.9;
-    static DEFAULT_CHORUS_DEPTH = 0.5;
+    static DEFAULT_CHORUS_DEPTH = 0.3;
     static DEFAULT_DELAY_TIME = 0.0035; 
 
     #lfo

@@ -2,20 +2,15 @@ import BleepSynthModule from "./bleep_synth_module.js"
 
 export default class Envelope extends BleepSynthModule {
 
-    #attack
-    #decay
-    #sustain
-    #release
-    #level
+    #attack = 0.1;
+    #decay = 0.5;
+    #sustain = 0.5;
+    #release = 0.1;
+    #level = 1.0;
     #controlledParam
 
     constructor(context,monitor) {
       super(context, monitor);
-      this.#attack = 0.1;
-      this.#decay = 0.5;
-      this.#sustain = 0.5;
-      this.#release = 0.1;
-      this.#level = 1.0;
     }
 
     set attack(v) {

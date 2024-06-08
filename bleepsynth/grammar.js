@@ -1,5 +1,4 @@
 import Constants from "./constants";
-import Expression from "./expression";
 
 export default class Grammar {
 
@@ -24,7 +23,6 @@ export default class Grammar {
         modules = new Map();
         patches = new Map();
         tweaks = [];
-        // always have access to pitch and level
         controls = ["pitch", "level"];
         return `{"synth":{${a.interpret()}},"statements":[${"".concat(b.children.map(z => z.interpret()))}]}`;
       },
@@ -159,6 +157,9 @@ export default class Grammar {
       varname(a, b) {
         return a.sourceString + b.sourceString;
       },
+      tablename(a, b) {
+        return a.sourceString + b.sourceString;
+      },  
       Declaration(a, b, c) {
         const type = a.interpret();
         const id = c.interpret();
@@ -167,6 +168,15 @@ export default class Grammar {
         modules.set(id, type);
         return `{"module":{"type":"${type}","id":"${id}"}}`;
       },
+      Custom(a, b, c, d, e) {
+        const type = a.sourceString;
+        const id = c.interpret();
+        const table = e.interpret();
+        if (modules.has(id))
+          throwError(`module "${id}" has already been defined`, this.source);
+        modules.set(id, type);
+        return `{"module":{"type":"${type}","id":"${id}","table":"${table}"}}`;
+      },  
       module(a) {
         return a.sourceString;
       },
@@ -231,7 +241,7 @@ export default class Grammar {
       }
     });
 
-    return { synthSemantics: semantics, synthGrammar: grammar };
+    return { semantics, grammar };
 
   }
 
@@ -304,6 +314,7 @@ export default class Grammar {
         | Patch
         | Tweak
         | Declaration
+        | Custom
       
         Patch = patchoutput "->" (patchinput | audio)
       
@@ -326,11 +337,14 @@ export default class Grammar {
       
         Declaration = module ":" varname
       
+        Custom = "CUSTOM-OSC" ":" varname "TABLE" tablename
+
         module = "SAW-OSC"
         | "SIN-OSC"
         | "SQR-OSC"
         | "TRI-OSC"
         | "PULSE-OSC"
+        | "RAND-OSC"
         | "SUPERSAW"
         | "LFO"
         | "NOISE"
@@ -384,6 +398,9 @@ export default class Grammar {
         varname (a module name)
         = lower alnum*
       
+        tablename (a wavetable name)
+        = lower alnum*
+
         number (a number)
         = floatingpoint | integer
       
@@ -396,59 +413,6 @@ export default class Grammar {
       }
       `;
   }
-
-//   static convertToStandardJSON(json) {
-//   // we need to put the JSON from the grammar into a standard format
-//   const tree = JSON.parse(json);
-//   var std = {};
-//   std.longname = tree.synth.longname;
-//   std.shortname = tree.synth.shortname;
-//   std.version = tree.synth.version;
-//   std.author = tree.synth.author;
-//   std.doc = tree.synth.doc;
-//   std.prototype = "builder";
-//   std.modules = [];
-//   // filter the statements into the right structures
-//   const statements = tree.statements;
-//   for (let i = 0; i < statements.length; i++) {
-//     let obj = statements[i];
-//     if (obj.module) {
-//       std.modules.push(obj.module);
-//     } else if (obj.patch) {
-//       // find the type of the from id
-//       let found = std.modules.find((a) => (a.id === obj.patch.from.id));
-//       const type = found.type;
-//       // we treat envelopes differently for efficiency reasons
-//       if (type === "ADSR" || type === "DECAY") {
-//         if (!std.envelopes) {
-//           std.envelopes = [];
-//         }
-//         std.envelopes.push(obj.patch);
-//       } else {
-//         if (!std.patches) {
-//           std.patches = [];
-//         }
-//         std.patches.push(obj.patch);
-//       }
-//     } else if (obj.param) {
-//       if (!std.parameters) {
-//         std.parameters = [];
-//       }
-//       std.parameters.push(obj.param);
-//     } else if (obj.tweak) {
-//       if (!std.tweaks) {
-//         std.tweaks = [];
-//       }
-//       var mytweak = {};
-//       mytweak.id = obj.tweak.id;
-//       mytweak.param = obj.tweak.param;
-//       mytweak.expression = Expression.convertToPostfix(obj.tweak.expression);
-//       std.tweaks.push(mytweak);
-//     }
-//   }
-//   return JSON.stringify(std);
-// }
-
 }
 
 // ------------------------------------------------------------

@@ -3,6 +3,8 @@ import Flags from "./flags.js"
 import Expression from "./expression.js"
 import Monitor from "./monitor.js"
 import BleepGenerator from "./bleep_generator.js"
+import { CustomOsc } from "./oscillators.js"
+import Amplifier from "./amplifier.js"
 
 export default class BleepPlayer {
 
@@ -11,6 +13,7 @@ export default class BleepPlayer {
     #generator
     #params
     #monitor
+    #cycles
   
     /**
      * constructor
@@ -21,10 +24,11 @@ export default class BleepPlayer {
      * @param {number} level 
      * @param {object} params 
      */
-    constructor(ctx, monitor, generator, pitchHz, level, params) {
-      this.#context = ctx;
+    constructor(context, monitor, generator, cycles, pitchHz, level, params) {
+      this.#context = context;
       this.#monitor = monitor;
       this.#generator = generator;
+      this.#cycles = cycles;
       this.#params = params;
       this.#node = {};
       // add the pitch and level to the parameters
@@ -39,15 +43,20 @@ export default class BleepPlayer {
     /**
      * create all the modules
      */
-    createModules() {
-      // make a webaudio object for each node
-      for (let m of this.#generator.modules) {
-        this.#node[m.id] = this.getModuleInstance(m.type);
+  createModules() {
+    // make a webaudio object for each node
+    for (let m of this.#generator.modules) {
+      if (m.type === "CUSTOM-OSC") {
+        const cycle = this.#cycles[m.table];
+        this.#node[m.id] = new CustomOsc(this.#context, this.#monitor, cycle);
+      } else {
+        this.#node[m.id] = new Constants.MODULE_CLASSES[m.type](this.#context, this.#monitor);
       }
-      // we always need an audio object for output
-      this.#node["audio"] = this.getModuleInstance("VCA");
     }
-  
+    // we always need an audio object for output
+    this.#node["audio"] = new Amplifier(this.#context, this.#monitor);
+  }
+    
     /**
      * connect all the patch cables
      */
@@ -148,15 +157,6 @@ export default class BleepPlayer {
       return this.#node.audio.out;
     }
     
-    /**
-     * get a module instance
-     * @param {string} type 
-     * @returns {object}
-     */
-    getModuleInstance(type) {
-      return new Constants.MODULE_CLASSES[type](this.#context, this.#monitor);
-    }
-
   }
   
   

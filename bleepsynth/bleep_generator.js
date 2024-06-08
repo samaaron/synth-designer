@@ -2,27 +2,29 @@ import Constants from "./constants.js"
 import Expression from "./expression.js"
 
 export default class BleepGenerator {
-
-  #isValid
-  #hasWarning
+  
+  #isValid = true;
+  #hasWarning = false;
   #longname
   #shortname
   #version
   #author
   #doc
-  #modules
-  #patches
-  #tweaks
-  #envelopes
-  #parameters
-  #maxima
-  #minima
-  #defaults
-  #mutable
-  #errorString
-  #warningString
+  #modules = [];
+  #patches = [];
+  #tweaks = [];
+  #envelopes = [];
+  #parameters = [];
+  #maxima = { pitch : Constants.MAX_MIDI_FREQ, level : Constants.MAX_LEVEL };
+  #minima = { pitch : Constants.MIN_MIDI_FREQ, level : Constants.MIN_LEVEL };
+  #defaults = {};
+  #mutable = {};
+  #errorString = "";
+  #warningString = "";
+  #cycles
 
-  constructor(json) {
+  constructor(json,cycles) {
+    this.#cycles = cycles;
     const tree = JSON.parse(json);
     // header
     this.#longname = tree.synth.longname;
@@ -30,25 +32,33 @@ export default class BleepGenerator {
     this.#version = tree.synth.version;
     this.#author = tree.synth.author;
     this.#doc = tree.synth.doc;
-    // data structures
-    this.#modules = [];
-    this.#patches = [];
-    this.#tweaks = [];
-    this.#envelopes = [];
-    this.#parameters = [];
+    // parse the statements
+    this.#parseStatements(tree.statements);
+    // find the maxima and minima of all parameters and store them
+    this.#parameters.forEach((m) => {
+      this.#mutable[m.name] = (m.mutable === "yes");
+      this.#maxima[m.name] = m.max;
+      this.#minima[m.name] = m.min;
+      this.#defaults[m.name] = m.default;
+    });
+    try {
+      this.checkForErrors();
+    } catch (error) {
+      this.#isValid = false;
+      this.#errorString = error.message;
+    }
+    this.checkForWarnings();
+  }
 
-    const statements = tree.statements;
-
-    for (let i = 0; i < statements.length; i++) {
-      let obj = statements[i];
-      console.log(obj);
+  #parseStatements(statements) {
+    statements.forEach((obj) => {
       if (obj.module) {
         this.#modules.push(obj.module);
       } else if (obj.patch) {
-        // find the type of the from id
-        let found = this.#modules.find((a) => (a.id === obj.patch.from.id));
-        const type = found.type;
-        // we treat envelopes differently for efficiency reasons
+        // find the type of the 'from' id
+        const found = this.#modules.find((a) => a.id === obj.patch.from.id);
+        const type = found?.type;
+        // handle envelopes differently for efficiency reasons
         if (type === "ADSR" || type === "DECAY") {
           this.#envelopes.push(obj.patch);
         } else {
@@ -57,41 +67,14 @@ export default class BleepGenerator {
       } else if (obj.param) {
         this.#parameters.push(obj.param);
       } else if (obj.tweak) {
-        var mytweak = {};
-        mytweak.id = obj.tweak.id;
-        mytweak.param = obj.tweak.param;
-        mytweak.expression = Expression.convertToPostfix(obj.tweak.expression);
+        const mytweak = {
+          id: obj.tweak.id,
+          param: obj.tweak.param,
+          expression: Expression.convertToPostfix(obj.tweak.expression),
+        };
         this.#tweaks.push(mytweak);
       }
-    }
-
-    this.#isValid = true;
-    this.#hasWarning = false;
-    this.#errorString = "";
-    this.#warningString = "";
-    // find the maxima and minima of all parameters and store them
-    // but we need to store information about max/min pitch and level
-    this.#maxima = {};
-    this.#maxima.pitch = Constants.MAX_MIDI_FREQ;
-    this.#maxima.level = Constants.MAX_LEVEL;
-    this.#minima = {};
-    this.#minima.pitch = Constants.MIN_MIDI_FREQ;
-    this.#minima.level = Constants.MIN_LEVEL;
-    this.#defaults = {};
-    this.#mutable = {};
-    for (let m of this.#parameters) {
-      this.#mutable[m.name] = (m.mutable === "yes");
-      this.#maxima[m.name] = m.max;
-      this.#minima[m.name] = m.min;
-      this.#defaults[m.name] = m.default;
-    }
-    try {
-      this.checkForErrors();
-    } catch (error) {
-      this.#isValid = false;
-      this.#errorString = error.message;
-    }
-    this.checkForWarnings();
+    });
   }
 
   // check for errors
@@ -106,6 +89,14 @@ export default class BleepGenerator {
     // nothing is patched to audio in
     if (!this.hasPatchTo("audio", "in"))
       throw new Error("BleepGenerator error: nothing is patched to audio.in");
+    // check for invalid wave table names
+    for (let m of this.#modules) {
+      if (m.type === "CUSTOM-OSC") {
+        if (!this.#cycles[m.table]) {
+          throw new Error(`BleepGenerator error: unknown wave table "${m.table}"`);
+        }
+      }
+    }
   }
 
   // find the module type for a given ID
@@ -120,27 +111,33 @@ export default class BleepGenerator {
   // we might warn the user about some stuff, like nothing patched from keyboard.pitch
 
   checkForWarnings() {
-    // have the pitch and level been assigned to anything?
-    let msg = "";
-    for (let param of ["pitch", "level"]) {
-      if (!this.hasTweakWithValue(`param.${param}`))
-        msg += `BleepGenerator warning: you haven't assigned param.${param} to a control\n`;
+    const warnings = [];
+    // check if pitch and level have been assigned
+    ["pitch", "level"].forEach(param => {
+      if (!this.hasTweakWithValue(`param.${param}`)) {
+        warnings.push(`BleepGenerator warning: you haven't assigned param.${param} to a control`);
+      }
+    });
+    // check if something has been patched to audio.in
+    if (!this.hasPatchTo("audio", "in")) {
+      warnings.push(`BleepGenerator warning: you haven't patched anything to audio.in`);
     }
-    // has something been patched to audio.in?
-    if (this.hasPatchTo("audio", "in") == false)
-      msg += `BleepGenerator warning: you haven't patched anything to audio.in\n`;
     // check that parameters have reasonable values
-    for (let obj of this.#parameters) {
-      if (obj.max < obj.min)
-        msg += `BleepGenerator warning: max of parameter ${obj.name} is less than min\n`;
-      if (obj.default < obj.min)
-        msg += `BleepGenerator warning: default of parameter ${obj.name} is less than min\n`;
-      if (obj.default > obj.max)
-        msg += `BleepGenerator warning: default of parameter ${obj.name} is greater than max\n`;
+    this.#parameters.forEach(obj => {
+      if (obj.max < obj.min) {
+        warnings.push(`BleepGenerator warning: max of parameter ${obj.name} is less than min`);
+      }
+      if (obj.default < obj.min) {
+        warnings.push(`BleepGenerator warning: default of parameter ${obj.name} is less than min`);
+      }
+      if (obj.default > obj.max) {
+        warnings.push(`BleepGenerator warning: default of parameter ${obj.name} is greater than max`);
+      }
+    });
+    // throw the warning if there are any
+    if (warnings.length > 0) {
+      this.throwWarning(warnings.join("\n"));
     }
-    // throw the warning if we have one
-    if (msg.length > 0)
-      this.throwWarning(msg);
   }
 
   // determine if this generator has a patch cable to the given node
@@ -224,7 +221,7 @@ export default class BleepGenerator {
     } else {
       const type = this.getTypeForID(id);
       switch (type) {
-        case "SAW-OSC": case "SIN-OSC": case "SQR-OSC": case "TRI-OSC": case "PULSE-OSC": case "LFO":
+        case "SAW-OSC": case "SIN-OSC": case "SQR-OSC": case "TRI-OSC": case "PULSE-OSC": case "RANDOM-OSC": case "CUSTOM-OSC": case "LFO":
           leftBracket = "([";
           rightBracket = "])";
           break;
@@ -244,14 +241,10 @@ export default class BleepGenerator {
   }
 
   getTypeForID(id) {
-    for (let i = 0; i < this.#modules.length; i++) {
-      if (this.#modules[i].id === id) {
-        return this.#modules[i].type;
-      }
-    }
-    return null;
+    const module = this.#modules.find(m => m.id === id);
+    return module ? module.type : null;
   }
-
+  
   // get the long name of the generator
 
   get longname() {

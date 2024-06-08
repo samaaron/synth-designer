@@ -9,11 +9,14 @@ import BleepEffect from './effect.js';
 
 export default class BleepSynthEngine {
 
+    static WAVE_CYCLE_DATA = `bleepsynth/cycles/cycle_defs.json`;
+
     #monitor
     #cache
     #synthSemantics
     #synthGrammar
     #context
+    #cycles = null;
 
     /**
      * make a bleep synth engine
@@ -23,9 +26,33 @@ export default class BleepSynthEngine {
         this.#context = context;
         this.#monitor = new Monitor();
         this.#cache = new SampleCache(context);
-        ({ synthSemantics: this.#synthSemantics, synthGrammar: this.#synthGrammar } = Grammar.makeGrammar());
+        ({ semantics: this.#synthSemantics, grammar: this.#synthGrammar } = Grammar.makeGrammar());
+        this.#initialise();
     }
 
+    /**
+     * initialise the engine
+     */
+    async #initialise() {
+        await this.#loadCycles();
+    }
+
+    /**
+     * load wave cycles
+     * @returns {Promise<object>}
+     */
+    async #loadCycles() {
+        try {
+            const response = await fetch(BleepSynthEngine.WAVE_CYCLE_DATA);
+            if (!response.ok) {
+                throw new Error(`HTTP error when fetching wave cycles: ${response.status}`);
+            }
+            this.#cycles = await response.json();
+        } catch (error) {
+            console.error("Unable to fetch wave cycles:", error);
+        }
+    }
+    
     /**
      * get a generator from a synth specification
      * @param {string} spec 
@@ -39,10 +66,12 @@ export default class BleepSynthEngine {
                 message = "OK";
                 const adapter = this.#synthSemantics(result);
                 let json = adapter.interpret();
-                generator = new BleepGenerator(json);
-                console.log(generator);
+                generator = new BleepGenerator(json,this.#cycles);
                 if (generator.hasWarning) {
                     message += "\n" + generator.warningString;
+                }
+                if (!generator.isValid) {
+                    message += "\n" + generator.errorString;
                 }
             } catch (error) {
                 message = error.message;
@@ -62,7 +91,7 @@ export default class BleepSynthEngine {
      * @returns {BleepPlayer}
      */
     getPlayer(generator, pitchHz, level, params) {
-        return new BleepPlayer(this.#context, this.#monitor, generator, pitchHz, level, params);
+        return new BleepPlayer(this.#context, this.#monitor, generator, this.#cycles, pitchHz, level, params);
     }
 
     /**
