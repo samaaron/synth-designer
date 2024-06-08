@@ -24,35 +24,67 @@ class Oscillator extends BleepSynthModule {
     });
   }
 
+  /**
+   * set the detune of the oscillator
+   * @param {number} n
+   */
   set detune(n) {
     this._osc.detune.value = n;
   }
 
+  /**
+   * get the detune of the oscillator
+   * @returns {number}
+   */
   get detune() {
     return this._osc.detune.value;
   }
 
+  /**
+   * get the pitch of the oscillator
+   * @returns {number}
+   */
   get pitch() {
     return this._osc.frequency.value;
   }
 
+  /**
+   * set the pitch of the oscillator
+   * @param {number} n
+   */
   set pitch(n) {
     this._osc.frequency.value = n;
   }
 
+  /**
+   * get the output node
+   * @returns {MonitoredOscillatorNode}
+   */
   get out() {
     return this._osc;
   }
 
+  /**
+   * get the pitch control voltage
+   * @returns {AudioParam}
+   */
   get pitchCV() {
     return this._osc.frequency;
   }
 
+  /**
+   * start the oscillator
+   * @param {number} tim 
+   */
   start(tim) {
     if (Flags.DEBUG_START_STOP) console.log("starting oscillator");
     this._osc.start(tim);
   }
 
+  /**
+   * stop the oscillator
+   * @param {number} tim 
+   */
   stop(tim) {
     if (Flags.DEBUG_START_STOP) console.log("stopping Oscillator");
     this._osc.stop(tim);

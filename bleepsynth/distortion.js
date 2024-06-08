@@ -14,6 +14,12 @@ class DistortionPrototype extends BleepEffect {
     _postgain
     _bandpass
 
+    /**
+     * Make a distortion effect
+     * @param {AudioContext} context 
+     * @param {Monitor} monitor 
+     * @param {number} steepness 
+     */
     constructor(context, monitor, steepness) {
         super(context, monitor);
         this._distort = new MonitoredWaveShaperNode(context, monitor, {
@@ -43,8 +49,8 @@ class DistortionPrototype extends BleepEffect {
 
     /**
      * Set the parameters
-     * @param {*} params - parameter list
-     * @param {*} when - the time at which parameter changes should occur
+     * @param {object} params - parameter list
+     * @param {number} when - the time at which parameter changes should occur
      */
     setParams(params, when = this._context.currentTime) {
         super.setParams(params, when);
@@ -65,8 +71,8 @@ class DistortionPrototype extends BleepEffect {
     /**
      * The pre-gain control the level going into the distortion curve
      * Higher levels cause more clipping
-     * @param {*} g - the gain level
-     * @param {*} when - the time at which the change should occur
+     * @param {number} g - the gain level
+     * @param {number} when - the time at which the change should occur
      */
     setPreGain(g, when = this._context.currentTime) {
         this._pregain.gain.setValueAtTime(g, when);
@@ -75,8 +81,8 @@ class DistortionPrototype extends BleepEffect {
     /**
  * The post-gain is a level adjustment after the distortion curve
  * Often needed because compression makes the signal louder
- * @param {*} g - the gain level
- * @param {*} when - the time at which the change should occur
+ * @param {number} g - the gain level
+ * @param {number} when - the time at which the change should occur
  */
     setPostGain(g, when = this._context.currentTime) {
         this._postgain.gain.setValueAtTime(g, when);
@@ -84,8 +90,8 @@ class DistortionPrototype extends BleepEffect {
 
     /**
      * The centre frequency of a bandpass filter, which shapes the tone of the distortion
-     * @param {*} f - frequency in Hz
-     * @param {*} when - the time at which the change should occur
+     * @param {number} f - frequency in Hz
+     * @param {number} when - the time at which the change should occur
      */
     setFrequency(f, when = this._context.currentTime) {
         this._bandpass.frequency.setValueAtTime(f, when);
@@ -94,8 +100,8 @@ class DistortionPrototype extends BleepEffect {
     /**
      * The bandwidth (in arbitrary units) of the bandpass filter
      * High values of b give wider bandwidth, in fact b is related to filter Q
-     * @param {*} b - bandwidth of the filter in the range 0.1 to 100
-     * @param {*} when - the time at which the change should occur
+     * @param {number} b - bandwidth of the filter in the range 0.1 to 100
+     * @param {number} when - the time at which the change should occur
      */
     setBandwidth(b, when = this._context.currentTime) {
         b = Utility.clamp(b, 0.1, 100);
@@ -103,6 +109,10 @@ class DistortionPrototype extends BleepEffect {
         this._bandpass.Q.setValueAtTime(q, when);
     }
 
+    /**
+     * Get the tweakable parameters for this effect
+     * @returns {Array<string>} 
+     */
     static getTweaks() {
         return super.getTweaks().concat(["preGain", "postGain", "frequency", "bandwidth"]);
     }

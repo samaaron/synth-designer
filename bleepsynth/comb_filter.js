@@ -4,9 +4,10 @@ import { MonitoredDelayNode, MonitoredGainNode } from "./monitored_components.js
 export default class CombFilter extends BleepSynthModule {
 
     static DEFAULT_FREQ = 500
+    static DEFAULT_FEEDBACK = -0.65
 
     #delay
-    #feedback = -0.65
+    #feedback = CombFilter.DEFAULT_FEEDBACK
     #out
     #in
     #sum
@@ -40,6 +41,10 @@ export default class CombFilter extends BleepSynthModule {
         this.#feedback.connect(this.#sum);
     }
 
+    /**
+     * Stops the comb filter
+     * @param {number} tim 
+     */
     stop(tim) {
         let stopTime = tim - this._context.currentTime;
         if (stopTime < 0) stopTime = 0;
