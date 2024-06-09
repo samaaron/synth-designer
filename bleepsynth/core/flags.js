@@ -2,7 +2,7 @@ const VERBOSE = false;
 const DEBUG_MONITOR = false;
 const DEBUG_START_STOP = false;
 const DEBUG_EFFECTS = false;
-const RUN_TESTS = true;
+const RUN_TESTS = false;
 
 const Flags = {
     VERBOSE,

@@ -5,7 +5,7 @@ import Constants from "./constants.js";
 
 export default class BleepSynthTests {
 
-  static TEST_PATCHES = ["buzzer", "synflute", "noise"];
+  static TEST_PATCHES = ["buzzer", "synflute", "noise","elpiano","fmbell","fmpluck","filterwobble"];
   static TEST_DURATION = 1; // seconds
   static TEST_GAP = 1; // seconds
 
@@ -19,12 +19,11 @@ export default class BleepSynthTests {
       const result = await synthEngine.getGeneratorFromFile(patchFile);
       const generator = result.generator;
       console.log(result.message);
-      const player = synthEngine.getPlayer(generator, Constants.MIDDLE_C, 0.8, {cutoff:2000, resonance:0.1, noise:0.5});
-      console.log(player);
+      const player = synthEngine.getPlayer(generator, Constants.MIDDLE_C, 0.8);
       player.out.connect(context.destination);
       player.start(playTime);
       player.stopAfterRelease(playTime + BleepSynthTests.TEST_DURATION);
-      playTime += BleepSynthTests.TEST_DURATION+BleepSynthTests.TEST_GAP;
+      playTime += BleepSynthTests.TEST_DURATION + BleepSynthTests.TEST_GAP;
     }
   }
 

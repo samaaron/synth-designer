@@ -20,6 +20,8 @@ import Chorus from '../effects/chorus.js';
 import Compressor from '../effects/compressor.js';
 import { Distortion, Overdrive } from '../effects/distortion.js';
 import { DeepPhaser, PicoPebble, ThickPhaser } from '../effects/phaser.js';
+import MonoDelay from '../effects/mono_delay.js';
+import StereoDelay from '../effects/stereo_delay.js';
 
 const MAX_MIDI_FREQ = 4186; // C8
 const MIN_MIDI_FREQ = 27.5;  // A0
@@ -79,7 +81,9 @@ const EFFECT_NAMES = {
   "overdrive": Overdrive,
   "deep_phaser": DeepPhaser,
   "pico_pebble": PicoPebble,
-  "thick_phaser": ThickPhaser
+  "thick_phaser": ThickPhaser,
+  "mono_delay": MonoDelay,
+  "stereo_delay": StereoDelay
 };
 
 const REVERB_IMPULSES = {

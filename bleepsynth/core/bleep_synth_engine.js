@@ -7,6 +7,8 @@ import Reverb from '../effects/reverb.js';
 import SampleCache from './samplecache.js';
 import BleepEffect from '../effects/effect.js'; 
 
+const privateContructorKey = Symbol("privateContructorKey");
+
 export default class BleepSynthEngine {
 
     static WAVE_CYCLE_DATA = `bleepsynth/cycles/cycle_defs.json`;
@@ -20,9 +22,13 @@ export default class BleepSynthEngine {
 
     /**
      * make a bleep synth engine
+     * do not call this directly, use createInstance(context)
      * @param {AudioContext} context
      */
-    constructor(context) {
+    constructor(context, key) {
+        if (key !== privateContructorKey) {
+            throw new Error("BleepSynthEngine: Cannot call constructor directly, use createInstance(context)");
+        }
         this.#context = context;
         this.#monitor = new Monitor();
         this.#cache = new SampleCache(context);
@@ -35,7 +41,7 @@ export default class BleepSynthEngine {
      * @returns {Promise<BleepSynthEngine>}
      */
     static async createInstance(context) {
-        const engine = new BleepSynthEngine(context);
+        const engine = new BleepSynthEngine(context, privateContructorKey);
         await engine.initialise();
         return engine;
     }
@@ -45,7 +51,6 @@ export default class BleepSynthEngine {
      */
     async initialise() {
         await this.#loadCycles();
-        console.log("BleepSynthEngine initialised");
     }
 
     /**
@@ -111,6 +116,9 @@ export default class BleepSynthEngine {
      * @returns {BleepPlayer}
      */
     getPlayer(generator, pitchHz, level, params) {
+        if (params === undefined) {
+            params = generator.defaults;
+        }
         return new BleepPlayer(this.#context, this.#monitor, generator, this.#cycles, pitchHz, level, params);
     }
 
