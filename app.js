@@ -100,7 +100,6 @@ function setDefaultValues() {
 function addListenersToGUI() {
 
   // listen for change events in the text area and indicate if the file is edited
-
   GUI.tag("synth-spec").addEventListener("input", () => {
     if (GUI.tag("synth-spec").value.length > 0) {
       const spec = GUI.tag("synth-spec").value;
