@@ -1,0 +1,111 @@
+@synth fairvoice
+longname : Breathy voice
+type : synth
+author : Guy J Brown
+version : 1.0
+doc : Breathy voice that slowly changes character through vowel sounds, with controls for rate of vowel change and envelope. The oscillator source is a supersaw. Each note is a random vowel shape.
+@end
+
+@param rate
+type: float
+mutable: yes
+step: 0.001
+min: 0.001
+max: 1
+default: 0.01
+doc: changes the rate of vowel change
+@end
+
+@param noise
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.3
+doc: noise level
+@end
+
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 2
+default: 0.5
+doc: attack
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 2
+default: 0.5
+doc: release
+@end
+
+@param cutoff
+type: float
+mutable: yes
+step: 0.01
+min: 10
+max: 15000
+default: 15000
+doc: cutoff
+@end
+
+@param volume
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.8
+doc: master volume
+@end
+
+# modules
+
+SUPERSAW : osc
+FORMANT : formant
+VCA : vca
+SIN-OSC : lfo
+NOISE : noise
+VCA : mix
+VCA : noisegain
+ADSR : env
+LPF : lowpass
+
+# patch
+
+osc.out -> mix.in
+noise.out -> noisegain.in
+noisegain.out -> mix.in
+mix.out -> formant.in
+formant.out -> lowpass.in
+lowpass.out -> vca.in
+vca.out -> audio.in
+lfo.out -> formant.vowelCV
+env.out -> vca.levelCV
+
+# tweak
+
+osc.pitch = param.pitch
+osc.detune = 5
+osc.spread = 0.8
+osc.level = 0.5
+lfo.pitch=param.rate
+noisegain.level = param.noise
+formant.vowel = random(-1,1)
+lowpass.cutoff = param.cutoff
+lowpass.resonance = 0.01
+
+env.attack = param.attack
+env.level = param.level*param.volume
+env.sustain = param.level*param.volume
+env.decay = 1
+env.release = param.release
+
+# end

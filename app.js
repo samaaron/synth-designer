@@ -2,11 +2,11 @@ import GUI from './js/GUI.js';
 import Scope from './js/scope.js';
 import ScopeView from './js/scopeview.js';
 import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-import Utility from './bleepsynth/utility.js';
-import Flags from './bleepsynth/flags.js';
-import BleepGenerator from './bleepsynth/bleep_generator.js';
-import BleepSynthTests from './bleepsynth/bleep_synth_tests.js';
-import BleepSynthEngine from './bleepsynth/bleep_synth_engine.js';
+import Utility from './bleepsynth/core/utility.js';
+import Flags from './bleepsynth/core/flags.js';
+import BleepGenerator from './bleepsynth/core/bleep_generator.js';
+import BleepSynthTests from './bleepsynth/core/bleep_synth_tests.js';
+import BleepSynthEngine from './bleepsynth/core/bleep_synth_engine.js';
 import MidiSystem from './midi/midi_system.js';
 
 window.addEventListener('DOMContentLoaded', init);
@@ -51,10 +51,6 @@ let context = null;
 // ------------------------------------------------------------
 
 async function init() {
-
-  // tests
-
-  // BleepSynthTests.testExpressionEvaluation();
 
   // midi
 
@@ -104,11 +100,10 @@ function setDefaultValues() {
 function addListenersToGUI() {
 
   // listen for change events in the text area and indicate if the file is edited
-
   GUI.tag("synth-spec").addEventListener("input", () => {
     if (GUI.tag("synth-spec").value.length > 0) {
       const spec = GUI.tag("synth-spec").value;
-      const result = synthEngine.getGenerator(spec);
+      const result = synthEngine.getGeneratorFromSpec(spec);
       generator = result.generator;
       GUI.tag("parse-errors").value = result.message;
       if (generator && generator.isValid) {
@@ -147,6 +142,8 @@ function addListenersToGUI() {
   GUI.tag("play-button").onmousedown = () => {
     const midiNoteNumber = getIntParam("slider-pitch");
     const velocity = getFloatParam("slider-level");
+    console.log(midiNoteNumber);
+    console.log(velocity);
     playNote(midiNoteNumber, velocity);
   };
   GUI.tag("play-button").onmouseup = () => {
@@ -161,7 +158,10 @@ function addListenersToGUI() {
   // start button
   GUI.tag("start-button").onclick = async () => {
     context = new AudioContext();
-    synthEngine = new BleepSynthEngine(context);
+    if (Flags.RUN_TESTS) {
+      BleepSynthTests.testSynths(context);
+    }
+    synthEngine = await BleepSynthEngine.createInstance(context);
     startMonitorTimer();
     GUI.disableGUI(false);
     await loadSelectedEffect(context);
@@ -184,9 +184,14 @@ function addListenersToGUI() {
     GUI.setSliderValue("level", parseFloat(this.value));
   });
 
-  // reverb slider
+  // wetLevel slider
   GUI.tag("slider-wetLevel").addEventListener("input", function () {
     setWetLevel(parseFloat(this.value));
+  });
+
+  // dryLevel slider
+  GUI.tag("slider-dryLevel").addEventListener("input", function () {
+    setDryLevel(parseFloat(this.value));
   });
 
   GUI.tag("midi-input").addEventListener("change", () => {
@@ -412,7 +417,9 @@ async function loadSelectedEffect(context) {
   fx = await synthEngine.getEffect(selectedName);
   fx.out.connect(context.destination);
   const wetLevel = GUI.getSliderValue("wetLevel");
+  const dryLevel = GUI.getSliderValue("dryLevel");
   setWetLevel(wetLevel);
+  setDryLevel(dryLevel);
 }
 
 // ------------------------------------------------------------
@@ -422,6 +429,11 @@ async function loadSelectedEffect(context) {
 function setWetLevel(w) {
   fx.setWetLevel(w);
   GUI.setSliderValue("wetLevel", w);
+}
+
+function setDryLevel(w) {
+  fx.setDryLevel(w);
+  GUI.setSliderValue("dryLevel", w);
 }
 
 // ------------------------------------------------------------
@@ -452,7 +464,7 @@ async function loadFile() {
   GUI.tag("synth-spec").value = spec;
   GUI.tag("file-label").textContent = "Current file: " + fileHandle.name;
   wasEdited = false;
-  const result = synthEngine.getGenerator(spec);
+  const result = synthEngine.getGeneratorFromSpec(spec);
   generator = result.generator;
   GUI.tag("parse-errors").value = result.message;
   controlMap = createControls(generator);
