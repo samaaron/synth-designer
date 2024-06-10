@@ -20,11 +20,9 @@ export default class BleepPlayer {
      * @param {AudioContext} ctx 
      * @param {Monitor} monitor 
      * @param {BleepGenerator} generator 
-     * @param {number} pitchHz 
-     * @param {number} level 
      * @param {object} params 
      */
-    constructor(context, monitor, generator, cycles, pitchHz, level, params) {
+    constructor(context, monitor, generator, cycles, params) {
       this.#context = context;
       this.#monitor = monitor;
       this.#generator = generator;
@@ -32,8 +30,8 @@ export default class BleepPlayer {
       this.#params = params;
       this.#node = {};
       // add the pitch and level to the parameters
-      this.#params.pitch = pitchHz;
-      this.#params.level = level;
+      //this.#params.pitch = pitchHz;
+      //this.#params.level = level;
       // create the webaudio network in three steps
       this.createModules();
       this.createPatches();

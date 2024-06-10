@@ -145,16 +145,16 @@ export default class Flanger extends BleepEffect {
      */
     setParams(params, when = this._context.currentTime) {
         super.setParams(params, when);
-        if (typeof params.feedback !== undefined) {
+        if (params.feedback !== undefined) {
             this.setFeedback(params.feedback, when);
         }
-        if (typeof params.depth !== undefined) {
+        if (params.depth !== undefined) {
             this.setDepth(params.depth, when);
         }
-        if (typeof params.delay !== undefined) {
+        if (params.delay !== undefined) {
             this.setDelay(params.delay, when);
         }
-        if (typeof params.rate !== undefined) {
+        if (params.rate !== undefined) {
             this.setRate(params.rate, when);
         }
     }

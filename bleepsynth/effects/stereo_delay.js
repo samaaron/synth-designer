@@ -145,16 +145,16 @@ export default class StereoDelay extends BleepEffect {
      */
     setParams(params, when = this._context.currentTime) {
       super.setParams(params, when);
-      if (typeof params.leftDelay !== undefined) {
+      if (params.leftDelay !== undefined) {
         this.setLeftDelay(params.leftDelay, when);
       }
-      if (typeof params.rightDelay !== undefined) {
+      if (params.rightDelay !== undefined) {
         this.setRightDelay(params.rightDelay, when);
       }
-      if (typeof params.spread !== undefined) {
+      if (params.spread !== undefined) {
         this.setSpread(params.spread, when);
       }
-      if (typeof params.feedback !== undefined) {
+      if (params.feedback !== undefined) {
         this.setFeedback(params.feedback, when);
       }
     }

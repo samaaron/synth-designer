@@ -54,16 +54,16 @@ class DistortionPrototype extends BleepEffect {
      */
     setParams(params, when = this._context.currentTime) {
         super.setParams(params, when);
-        if (typeof params.preGain !== undefined) {
+        if (params.preGain !== undefined) {
             this.setPreGain(params.preGain, when);
         }
-        if (typeof params.postGain !== undefined) {
+        if (params.postGain !== undefined) {
             this.setPostGain(params.postGain, when);
         }
-        if (typeof params.frequency !== undefined) {
+        if (params.frequency !== undefined) {
             this.setFrequency(params.frequency, when);
         }
-        if (typeof params.bandwidth !== undefined) {
+        if (params.bandwidth !== undefined) {
             this.setBandwidth(params.bandwidth, when);
         }
     }

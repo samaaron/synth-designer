@@ -142,8 +142,6 @@ function addListenersToGUI() {
   GUI.tag("play-button").onmousedown = () => {
     const midiNoteNumber = getIntParam("slider-pitch");
     const velocity = getFloatParam("slider-level");
-    console.log(midiNoteNumber);
-    console.log(velocity);
     playNote(midiNoteNumber, velocity);
   };
   GUI.tag("play-button").onmouseup = () => {
@@ -320,11 +318,12 @@ function playNote(midiNoteNumber, velocity) {
       playerForNote.delete(midiNoteNumber);
     }
     // get the pitch and parameters
-    const pitchHz = Utility.midiNoteToFreqHz(midiNoteNumber);
-    const params = getParametersForGenerator(generator);
+    let params = getParametersForGenerator(generator);
+    params["level"] = velocity;
+    params["pitch"] = Utility.midiNoteToFreqHz(midiNoteNumber);
     // make a player and store a reference to it so we can stop it later
    // player = new BleepPlayer(context, monitor, generator, pitchHz, velocity, params);
-    player = synthEngine.getPlayer(generator, pitchHz, velocity, params);
+    player = synthEngine.getPlayer(generator, params);
     if (Flags.VERBOSE) console.log(player);
     playerForNote.set(midiNoteNumber, player);
     player.out.connect(fx.in);

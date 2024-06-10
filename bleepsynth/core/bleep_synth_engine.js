@@ -115,11 +115,11 @@ export default class BleepSynthEngine {
      * @param {object} params 
      * @returns {BleepPlayer}
      */
-    getPlayer(generator, pitchHz, level, params) {
+    getPlayer(generator, params) {
         if (params === undefined) {
             params = generator.defaults;
         }
-        return new BleepPlayer(this.#context, this.#monitor, generator, this.#cycles, pitchHz, level, params);
+        return new BleepPlayer(this.#context, this.#monitor, generator, this.#cycles, params);
     }
 
     /**
