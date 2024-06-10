@@ -1,4 +1,4 @@
-import BleepSynthModule from "../modules/bleep_synth_module.js";
+import BleepSynthModule from "./bleep_synth_module.js";
 import { MonitoredStereoPannerNode } from "../core/monitored_components.js";
 
 export default class Panner extends BleepSynthModule {
@@ -51,5 +51,5 @@ export default class Panner extends BleepSynthModule {
     static getOutputs() {
       return ["out"];
     }
-    
+
   }

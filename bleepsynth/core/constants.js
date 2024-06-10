@@ -7,7 +7,7 @@ import Envelope from '../modules/envelope.js';
 import { LowpassFilter, HighpassFilter } from '../modules/filters.js';
 import LFO from '../modules/lfo.js';
 import NoiseGenerator from '../modules/noise.js';
-import Panner from '../effects/panner.js';
+import Panner from '../modules/panner.js';
 import Waveshaper from '../modules/wave_shaper.js';
 import { SinOsc, SawOsc, SquareOsc, TriOsc, PulseOsc, RandomOsc, CustomOsc } from '../modules/oscillators.js';
 import Wavefolder from '../modules/wave_folder.js';
