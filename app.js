@@ -142,6 +142,8 @@ function addListenersToGUI() {
   GUI.tag("play-button").onmousedown = () => {
     const midiNoteNumber = getIntParam("slider-pitch");
     const velocity = getFloatParam("slider-level");
+    console.log(midiNoteNumber);
+    console.log(velocity);
     playNote(midiNoteNumber, velocity);
   };
   GUI.tag("play-button").onmouseup = () => {
