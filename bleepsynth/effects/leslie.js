@@ -6,18 +6,24 @@ import { MonitoredBiquadFilterNode, MonitoredOscillatorNode, MonitoredGainNode,
 
 export default class Leslie extends BleepEffect {
 
-    static DEFAULT_ROTATION_SPEED = 6.6;
+    static CHORALE_ROTATION_SPEED = 0.66;
+    static TREMOLO_ROTATION_SPEED = 5.66;
     static DEFAULT_MOD_DEPTH = 0.0003;
     static DEFAULT_WET_LEVEL = 1;
     static DEFAULT_DRY_LEVEL = 0;
     static DEFAULT_DRIVE = 0.2;
     static FILTER_CUTOFF = 800;
     static DELAY_TIME = 0.01;
+    static SPEED_FACTOR = 1.17;  // treble rotor is faster than bass rotor
+    static LOW_MOD_GAIN = 3;
+    static HIGH_MOD_GAIN = 6;
+    static GAIN_ADJUST = 0.75;
 
     #shaper
     #lowpass
     #highpass
-    #lfo
+    #lowlfo
+    #highlfo
     #inverter
     #lowmod
     #highmod
@@ -25,6 +31,8 @@ export default class Leslie extends BleepEffect {
     #highlag
     #lowpan
     #highpan
+    #lowgain
+    #highgain
 
     constructor(context, monitor) {
         super(context, monitor);
@@ -39,13 +47,22 @@ export default class Leslie extends BleepEffect {
             type: "highpass",
             frequency: Leslie.FILTER_CUTOFF
         });
-        this.#lfo = new MonitoredOscillatorNode(context, monitor, {
-            type: "sine",
-            frequency: Leslie.DEFAULT_ROTATION_SPEED
+        this.#lowlfo = new MonitoredOscillatorNode(context, monitor, {
+            type: "sine"
         });
-        this.#lfo.start();
+        this.#lowlfo.start();
+        this.#highlfo = new MonitoredOscillatorNode(context, monitor, {
+            type: "sine"
+        });
+        this.#highlfo.start();
         this.#inverter = new MonitoredGainNode(context, monitor, {
             gain: -1
+        });
+        this.#lowgain = new MonitoredGainNode(context, monitor, {
+            gain: Leslie.LOW_MOD_GAIN
+        });
+        this.#highgain = new MonitoredGainNode(context, monitor, {
+            gain: Leslie.HIGH_MOD_GAIN
         });
         this.#lowmod = new MonitoredGainNode(context, monitor, {
             gain: Leslie.DEFAULT_MOD_DEPTH
@@ -70,28 +87,52 @@ export default class Leslie extends BleepEffect {
         this.#shaper.out.connect(this.#lowpass);
         this.#shaper.out.connect(this.#highpass);
 
+        // low channel
+
         this.#lowpass.connect(this.#lowlag);
         this.#lowlag.connect(this.#lowpan);
         this.#lowpan.connect(this._out);
 
-        this.#lfo.connect(this.#lowpan.pan);
-        this.#lfo.connect(this.#lowmod);
+        this.#lowlfo.connect(this.#lowpan.pan);
+        this.#lowlfo.connect(this.#lowmod);
         this.#lowmod.connect(this.#lowlag.delayTime);
 
-        this.#highpass.connect(this.#highlag);
+        this.#lowlfo.connect(this.#lowgain);
+        this.#lowgain.connect(this.#lowpass.gain);
+
+        // high channel
+
+        this.#highpass.connect(this.#inverter);
+        this.#inverter.connect(this.#highlag);
         this.#highlag.connect(this.#highpan);
         this.#highpan.connect(this._out);
 
-        this.#lfo.connect(this.#inverter);
-        this.#lfo.connect(this.#highpan.pan);
-        this.#inverter.connect(this.#highmod);
+        this.#highlfo.connect(this.#highpan.pan);
+        this.#highlfo.connect(this.#highmod);
         this.#highmod.connect(this.#highlag.delayTime);
 
+        this.#highlfo.connect(this.#highgain);
+        this.#highgain.connect(this.#highpass.gain);
+
+        // gain adjustment
+
+        this._out.gain.value = Leslie.GAIN_ADJUST;
+
+        // defaults
+
         this.setDrive(Leslie.DEFAULT_DRIVE);
+        this.setSpeed(Leslie.TREMOLO_ROTATION_SPEED);
+
+
     }
 
     setDrive(d) {
         this.#shaper.fuzz=Utility.clamp(d, 0, 8);
+    }
+
+    setSpeed(s) {
+        this.#lowlfo.frequency.value = s;
+        this.#highlfo.frequency.value = s*Leslie.SPEED_FACTOR;
     }
 
 }

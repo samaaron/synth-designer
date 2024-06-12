@@ -327,7 +327,7 @@ function playNote(midiNoteNumber, velocity) {
     if (Flags.VERBOSE) console.log(player);
     playerForNote.set(midiNoteNumber, player);
     player.out.connect(fx.in);
-    player.out.connect(scope.in);
+    fx.out.connect(scope.in);
     player.start(context.currentTime);
     scope.resetRMS();
   }
