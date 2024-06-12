@@ -1,13 +1,12 @@
 import GUI from './js/GUI.js';
 import Scope from './js/scope.js';
 import ScopeView from './js/scopeview.js';
-import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 import Utility from './bleepsynth/core/utility.js';
 import Flags from './bleepsynth/core/flags.js';
-import BleepGenerator from './bleepsynth/core/bleep_generator.js';
 import BleepSynthTests from './bleepsynth/core/bleep_synth_tests.js';
 import BleepSynthEngine from './bleepsynth/core/bleep_synth_engine.js';
 import MidiSystem from './midi/midi_system.js';
+import Flowchart from './js/flowchart.js';
 
 window.addEventListener('DOMContentLoaded', init);
 
@@ -41,7 +40,6 @@ let scope;
 // global variables (sorry)
 
 let wasEdited;
-let currentJSON = null;
 let generator = null;
 let context = null;
 
@@ -58,19 +56,7 @@ async function init() {
 
   // initialisation
 
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'base',
-    themeVariables: {
-      "primaryColor": "#4f4f4f",
-      "primaryTextColor": "#ccc",
-      "primaryBorderColor": "#4f4f4f",
-      "lineColor": "#aaaaaa",
-      "secondaryColor": "#006100",
-      "tertiaryColor": "#fff"
-    }
-  });
-
+  Flowchart.initialize();
   GUI.disableGUI(true);
   makeFXdropdown();
   addListenersToGUI();
@@ -108,7 +94,7 @@ function addListenersToGUI() {
       GUI.tag("parse-errors").value = result.message;
       if (generator && generator.isValid) {
         controlMap = createControls(generator);
-        drawGraphAsMermaid(generator);
+        Flowchart.drawGraphAsMermaid(generator);
       }
       if (!wasEdited) {
         GUI.tag("file-label").textContent += "*";
@@ -129,9 +115,6 @@ function addListenersToGUI() {
   // save as button
   GUI.tag("save-as-button").onclick = async () => { await saveAsFile(); };
 
-  // export button
-  GUI.tag("export-button").onclick = async () => { await exportAsJSON(); };
-
   // copy parameters to clipboard button
   GUI.tag("clip-button").onclick = () => { copyParamsToClipboard(); };
 
@@ -140,16 +123,16 @@ function addListenersToGUI() {
 
   // play button
   GUI.tag("play-button").onmousedown = () => {
-    const midiNoteNumber = getIntParam("slider-pitch");
-    const velocity = getFloatParam("slider-level");
+    const midiNoteNumber = GUI.getIntParam("slider-pitch");
+    const velocity = GUI.getFloatParam("slider-level");
     playNote(midiNoteNumber, velocity);
   };
   GUI.tag("play-button").onmouseup = () => {
-    const midiNoteNumber = getIntParam("slider-pitch");
+    const midiNoteNumber = GUI.getIntParam("slider-pitch");
     stopNote(midiNoteNumber);
   };
   GUI.tag("play-button").onmouseout = () => {
-    const midiNoteNumber = getIntParam("slider-pitch");
+    const midiNoteNumber = GUI.getIntParam("slider-pitch");
     stopNote(midiNoteNumber);
   };
 
@@ -348,9 +331,9 @@ function getParametersForGenerator(s) {
   let params = {};
   for (let p of s.parameters) {
     if (p.type === "float") {
-      params[p.name] = getFloatParam("slider-" + p.name);
+      params[p.name] = GUI.getFloatParam("slider-" + p.name);
     } else if (p.type === "int") {
-      params[p.name] = getIntParam("slider-" + p.name);
+      params[p.name] = GUI.getIntParam("slider-" + p.name);
     }
   }
   return params;
@@ -379,27 +362,6 @@ function createControls(generator) {
   return map;
 }
 
-/**
- * draw the generator as a mermaid graph
- * @param {BleepGenerator} generator
- */
-function drawGraphAsMermaid(generator) {
-  var element = GUI.tag("mermaid-graph");
-  // get rid of all the kids
-  while (element.firstChild) {
-    element.removeChild(element.firstChild);
-  }
-  // mermaid callback that inserts a svg into the HTML
-  var insertSvg = function (svg, bindFunctions) {
-      element.innerHTML = svg.svg;
-      bindFunctions?.(element);
-  };
-  // get this generator in mermaid form, with a fishy tail and all
-  var graphDefinition = generator.getGraphAsMermaid();
-  // mermaid transforms our graph description into a svg
-  var graph = mermaid.render('graph-id', graphDefinition).then(insertSvg);
-}
-
 // ------------------------------------------------------------
 // make a effects unit and connect it to the audio output
 // ------------------------------------------------------------
@@ -425,22 +387,6 @@ function setWetLevel(w) {
 }
 
 // ------------------------------------------------------------
-// Get an integer parameter with a given name
-// ------------------------------------------------------------
-
-function getIntParam(name) {
-  return parseInt(document.getElementById(name).value);
-}
-
-// ------------------------------------------------------------
-// Get a float parameter with a given name
-// ------------------------------------------------------------
-
-function getFloatParam(name) {
-  return parseFloat(document.getElementById(name).value);
-}
-
-// ------------------------------------------------------------
 // load file
 // https://developer.chrome.com/articles/file-system-access/
 // ------------------------------------------------------------
@@ -456,7 +402,7 @@ async function loadFile() {
   generator = result.generator;
   GUI.tag("parse-errors").value = result.message;
   controlMap = createControls(generator);
-  drawGraphAsMermaid(generator);
+  Flowchart.drawGraphAsMermaid(generator);
 }
 
 // ------------------------------------------------------------
@@ -493,19 +439,3 @@ async function saveAsFile() {
   wasEdited = false;
 }
 
-// ------------------------------------------------------------
-// export as JSON
-// https://developer.chrome.com/articles/file-system-access/
-// ------------------------------------------------------------
-
-async function exportAsJSON() {
-  if (generator != undefined && generator.isValid) {
-    const opts = {
-      suggestedName: generator.shortname + ".json"
-    };
-    fileHandle = await window.showSaveFilePicker(opts);
-    const writable = await fileHandle.createWritable();
-    await writable.write(currentJSON);
-    await writable.close();
-  }
-}

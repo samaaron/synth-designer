@@ -21,7 +21,6 @@ export default class GUI {
         GUI.tag("load-button").disabled = b;
         GUI.tag("save-button").disabled = b;
         GUI.tag("save-as-button").disabled = b;
-        GUI.tag("export-button").disabled = b;
         GUI.tag("clip-button").disabled = b;
         GUI.tag("docs-button").disabled = b;
         GUI.tag("play-button").disabled = b;
@@ -74,7 +73,7 @@ export default class GUI {
         slider.addEventListener("input", function () {
             let val = parseFloat(this.value);
             GUI.tag(label.id).textContent = `${id} [${val}]`;
-            playerForNote.forEach((player,note) => {
+            playerForNote.forEach((player, note) => {
                 player.applyTweakNow(id, val);
             });
         });
@@ -117,7 +116,17 @@ export default class GUI {
     }
 
     static getSliderValue(label) {
-        return parseFloat(GUI.tag("slider-"+label).value);
+        return parseFloat(GUI.tag("slider-" + label).value);
     }
 
+    // Get an integer parameter with a given name
+    static getIntParam(name) {
+        return parseInt(document.getElementById(name).value);
+    }
+
+    // Get a float parameter with a given name
+    static getFloatParam(name) {
+        return parseFloat(document.getElementById(name).value);
+    }
+  
 }
