@@ -187,11 +187,6 @@ function addListenersToGUI() {
     setWetLevel(parseFloat(this.value));
   });
 
-  // dryLevel slider
-  GUI.tag("slider-dryLevel").addEventListener("input", function () {
-    setDryLevel(parseFloat(this.value));
-  });
-
   GUI.tag("midi-input").addEventListener("change", () => {
     var selectedIndex = GUI.tag("midi-input").selectedIndex;
     var selectedName = GUI.tag("midi-input").options[selectedIndex].text;
@@ -416,9 +411,7 @@ async function loadSelectedEffect(context) {
   fx = await synthEngine.getEffect(selectedName);
   fx.out.connect(context.destination);
   const wetLevel = GUI.getSliderValue("wetLevel");
-  const dryLevel = GUI.getSliderValue("dryLevel");
   setWetLevel(wetLevel);
-  setDryLevel(dryLevel);
 }
 
 // ------------------------------------------------------------
@@ -427,12 +420,8 @@ async function loadSelectedEffect(context) {
 
 function setWetLevel(w) {
   fx.setWetLevel(w);
+  fx.setDryLevel(1-w);
   GUI.setSliderValue("wetLevel", w);
-}
-
-function setDryLevel(w) {
-  fx.setDryLevel(w);
-  GUI.setSliderValue("dryLevel", w);
 }
 
 // ------------------------------------------------------------
