@@ -19,10 +19,9 @@ const MONITOR_UPDATE_INTERVAL = 100; // msec
 
 let model;
 
+// map for MIDI controllers
 
 let controlMap;
-
-// engine
 
 const midiSystem = new MidiSystem();
 
@@ -79,7 +78,7 @@ function addListenersToGUI() {
   // listen for change events in the text area and indicate if the file is edited
   GUI.tag("synth-spec").addEventListener("input", () => {
     if (GUI.tag("synth-spec").value.length > 0) {
-      const spec = GUI.tag("synth-spec").value;
+      model.spec = GUI.tag("synth-spec").value;
       const result = model.synthEngine.getGeneratorFromSpec(spec);
       model.generator = result.generator;
       GUI.tag("parse-errors").value = result.message;
@@ -102,13 +101,22 @@ function addListenersToGUI() {
     await FileHandler.loadFile(model); 
     controlMap = createControls(model.generator);
     Flowchart.drawGraphAsMermaid(model.generator);
+    GUI.tag("synth-spec").value = model.spec;
+    GUI.tag("file-label").textContent = "Current file: " + model.fileHandle.name;
+    GUI.tag("parse-errors").value = model.message;
   };
 
   // save button
-  GUI.tag("save-button").onclick = async () => { await FileHandler.saveFile(model); };
+  GUI.tag("save-button").onclick = async () => { 
+    await FileHandler.saveFile(model);
+    GUI.tag("file-label").textContent = "Current file: " + model.fileHandle.name;
+   };
 
   // save as button
-  GUI.tag("save-as-button").onclick = async () => { await FileHandler.saveAsFile(model); };
+  GUI.tag("save-as-button").onclick = async () => { 
+    await FileHandler.saveAsFile(model); 
+    GUI.tag("file-label").textContent = "Current file: " + model.fileHandle.name;
+  };
 
   // copy parameters to clipboard button
   GUI.tag("clip-button").onclick = () => { copyParamsToClipboard(); };

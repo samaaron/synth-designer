@@ -6,9 +6,9 @@ export default class Model {
     #wasEdited = false;
     #generator = null;
     #context = null;
-    #controlMap = null;
     #synthEngine = null;
     #fx = null;
+    #spec = null;
     
     static #instance = null;
     static #privateKey = Symbol("privateKey");
@@ -76,4 +76,12 @@ export default class Model {
         this.#synthEngine = value;
     }
 
+    set spec(value) {
+        this.#spec = value;
+    }
+
+    get spec() {
+        return this.#spec;
+    }   
+    
 }

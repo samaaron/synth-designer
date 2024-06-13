@@ -1,5 +1,3 @@
-import GUI from "./GUI.js";
-
 export default class FileHandler {
 
     /**
@@ -9,13 +7,11 @@ export default class FileHandler {
     static async loadFile(model) {
         [model.fileHandle] = await window.showOpenFilePicker();
         const file = await model.fileHandle.getFile();
-        const spec = await file.text();
-        GUI.tag("synth-spec").value = spec;
-        GUI.tag("file-label").textContent = "Current file: " + model.fileHandle.name;
+        model.spec = await file.text();
         model.wasEdited = false;
-        const result = model.synthEngine.getGeneratorFromSpec(spec);
+        const result = model.synthEngine.getGeneratorFromSpec(model.spec);
         model.generator = result.generator;
-        GUI.tag("parse-errors").value = result.message;
+        model.message = result.message;
     }
 
     /**
@@ -25,10 +21,8 @@ export default class FileHandler {
     static async saveFile(model) {
         if (model.fileHandle != null) {
             const writable = await model.fileHandle.createWritable();
-            await writable.write(GUI.tag("synth-spec").value);
+            await writable.write(model.spec);
             await writable.close();
-            // remove the star
-            GUI.tag("file-label").textContent = "Current file: " + model.fileHandle.name;
             model.wasEdited = false;
         }
     }
@@ -44,9 +38,8 @@ export default class FileHandler {
         }
         model.fileHandle = await window.showSaveFilePicker(opts);
         const writable = await model.fileHandle.createWritable();
-        await writable.write(GUI.tag("synth-spec").value);
+        await writable.write(model.spec);
         await writable.close();
-        GUI.tag("file-label").textContent = "Current file: " + model.fileHandle.name;
         model.wasEdited = false;
     }
 
