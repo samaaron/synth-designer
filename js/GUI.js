@@ -1,3 +1,5 @@
+import BleepSynthEngine from "../bleepsynth/core/bleep_synth_engine.js";
+
 export default class GUI {
 
     static SHOW_DOC_STRINGS = false;
@@ -44,24 +46,27 @@ export default class GUI {
         // get the root container
         const container = document.getElementById(containerName);
         // make the slider container
-        const sliderContainer = document.createElement("div");
-        sliderContainer.className = "slider-container";
-        sliderContainer.id = "param-" + id;
+        const sliderContainer = Object.assign(document.createElement("div"), {
+            className: "slider-container",
+            id: `param-${id}`
+        });
         // make the slider
-        const slider = document.createElement("input");
-        slider.className = "slider";
-        slider.type = "range";
-        slider.id = "slider-" + id;
-        slider.min = min;
-        slider.max = max;
-        slider.step = step;
-        slider.value = val;
+        const slider = Object.assign(document.createElement("input"), {
+            className: "slider",
+            type: "range",
+            id: `slider-${id}`,
+            min: min,
+            max: max,
+            step: step,
+            value: val
+        });        
         // doc string
         if (GUI.SHOW_DOC_STRINGS) {
-            const doc = document.createElement("label");
-            doc.className = "docstring";
-            doc.id = "doc-" + id;
-            doc.textContent = docstring;
+            const doc = Object.assign(document.createElement("label"), {
+                className: "docstring",
+                id: `doc-${id}`,
+                textContent: docstring
+            });
             container.appendChild(doc);
         }
         // label
@@ -106,6 +111,19 @@ export default class GUI {
     }
 
     /**
+     * make a dropdown for the effects
+     */
+    static makeFXdropdown() {
+        const fxSelector = GUI.tag("fx-select");
+        BleepSynthEngine.getEffectNames().forEach((name, index) => {
+            const option = document.createElement("option");
+            option.text = name;
+            option.value = index;
+            fxSelector.appendChild(option);
+        });
+    }
+      
+    /**
      * set the value of a control to a real number
      * @param {string} label
      * @param {number} value
@@ -115,16 +133,29 @@ export default class GUI {
         GUI.tag(`label-${label}`).textContent = `${label} [${value.toFixed(2)}]`;
     }
 
+    /**
+     * get the value of a slider
+     * @param {string} label 
+     * @returns {number}
+     */
     static getSliderValue(label) {
         return parseFloat(GUI.tag("slider-" + label).value);
     }
 
-    // Get an integer parameter with a given name
+    /**
+     * get an integer parameter with a given name
+     * @param {string} name 
+     * @returns {number}
+     */
     static getIntParam(name) {
         return parseInt(document.getElementById(name).value);
     }
 
-    // Get a float parameter with a given name
+    /**
+     * get a float parameter with a given name
+     * @param {string} name 
+     * @returns {number}
+     */
     static getFloatParam(name) {
         return parseFloat(document.getElementById(name).value);
     }
