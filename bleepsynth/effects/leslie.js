@@ -122,8 +122,6 @@ export default class Leslie extends BleepEffect {
 
         this.setDrive(Leslie.DEFAULT_DRIVE);
         this.setSpeed(Leslie.TREMOLO_ROTATION_SPEED);
-
-
     }
 
     setDrive(d) {
@@ -133,6 +131,26 @@ export default class Leslie extends BleepEffect {
     setSpeed(s) {
         this.#lowlfo.frequency.value = s;
         this.#highlfo.frequency.value = s*Leslie.SPEED_FACTOR;
+    }
+
+    stop() {
+        super.stop();
+        this.#lowlfo.stop();
+        this.#highlfo.stop();
+        this.#lowlfo.disconnect();
+        this.#highlfo.disconnect();
+        this.#shaper.stop(this._context.currentTime);
+        this.#lowpass.disconnect();
+        this.#highpass.disconnect();
+        this.#lowlag.disconnect();
+        this.#highlag.disconnect();
+        this.#lowpan.disconnect();
+        this.#highpan.disconnect();
+        this.#lowgain.disconnect();
+        this.#highgain.disconnect();
+        this.#lowmod.disconnect();
+        this.#highmod.disconnect();
+        this.#inverter.disconnect();    
     }
 
 }

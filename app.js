@@ -7,41 +7,32 @@ import BleepSynthTests from './bleepsynth/core/bleep_synth_tests.js';
 import BleepSynthEngine from './bleepsynth/core/bleep_synth_engine.js';
 import MidiSystem from './midi/midi_system.js';
 import Flowchart from './js/flowchart.js';
+import Model from './js/model.js';
+import FileHandler from './js/filehandler.js';
 
 window.addEventListener('DOMContentLoaded', init);
 
 const MIDI_CONTROLLERS = [74, 71, 76, 77, 93, 18, 19, 16];
 const MONITOR_UPDATE_INTERVAL = 100; // msec
 
+// data model
+
+let model;
+
+
 let controlMap;
 
 // engine
 
-let synthEngine;
-
 const midiSystem = new MidiSystem();
-
-// file handle
-
-let fileHandle;
 
 // this is a map from midi note -> player
 
 let playerForNote = new Map();
 
-// effects
-
-let fx;
-
 // scope
 
 let scope;
-
-// global variables (sorry)
-
-let wasEdited;
-let generator = null;
-let context = null;
 
 
 // ------------------------------------------------------------
@@ -66,7 +57,7 @@ async function init() {
 
 function startMonitorTimer() {
   setInterval(() => {
-    GUI.tag("monitor").textContent = synthEngine.monitor.summaryString;
+    GUI.tag("monitor").textContent = model.synthEngine.monitor.summaryString;
   }, MONITOR_UPDATE_INTERVAL);
 }
 
@@ -89,16 +80,16 @@ function addListenersToGUI() {
   GUI.tag("synth-spec").addEventListener("input", () => {
     if (GUI.tag("synth-spec").value.length > 0) {
       const spec = GUI.tag("synth-spec").value;
-      const result = synthEngine.getGeneratorFromSpec(spec);
-      generator = result.generator;
+      const result = model.synthEngine.getGeneratorFromSpec(spec);
+      model.generator = result.generator;
       GUI.tag("parse-errors").value = result.message;
-      if (generator && generator.isValid) {
-        controlMap = createControls(generator);
-        Flowchart.drawGraphAsMermaid(generator);
+      if (model.generator && model.generator.isValid) {
+        controlMap = createControls(model.generator);
+        Flowchart.drawGraphAsMermaid(model.generator);
       }
-      if (!wasEdited) {
+      if (!model.wasEdited) {
         GUI.tag("file-label").textContent += "*";
-        wasEdited = true;
+        model.wasEdited = true;
       }
     }
   });
@@ -107,13 +98,17 @@ function addListenersToGUI() {
   GUI.tag("file-label").textContent = "Current file: none";
 
   // load button
-  GUI.tag("load-button").onclick = async () => { await loadFile(); };
+  GUI.tag("load-button").onclick = async () => { 
+    await FileHandler.loadFile(model); 
+    controlMap = createControls(model.generator);
+    Flowchart.drawGraphAsMermaid(model.generator);
+  };
 
   // save button
-  GUI.tag("save-button").onclick = async () => { await saveFile(); };
+  GUI.tag("save-button").onclick = async () => { await FileHandler.saveFile(model); };
 
   // save as button
-  GUI.tag("save-as-button").onclick = async () => { await saveAsFile(); };
+  GUI.tag("save-as-button").onclick = async () => { await FileHandler.saveAsFile(model); };
 
   // copy parameters to clipboard button
   GUI.tag("clip-button").onclick = () => { copyParamsToClipboard(); };
@@ -138,20 +133,20 @@ function addListenersToGUI() {
 
   // start button
   GUI.tag("start-button").onclick = async () => {
-    context = new AudioContext();
+    model = await Model.getInstance();
+    console.log(model);
     if (Flags.RUN_TESTS) {
-      BleepSynthTests.testSynths(context);
+      BleepSynthTests.testSynths(model.context);
     }
-    synthEngine = await BleepSynthEngine.createInstance(context);
     startMonitorTimer();
     GUI.disableGUI(false);
-    await loadSelectedEffect(context);
+    await loadSelectedEffect(model);
     setWetLevel(0.1);
     let view = new ScopeView(GUI.tag("scope-canvas"), {
       lineWidth: 2,
       sync: true
     });
-    scope = new Scope(context, view);
+    scope = new Scope(model.context, view);
     scope.draw();
   }
 
@@ -177,7 +172,7 @@ function addListenersToGUI() {
   });
 
   GUI.tag("fx-select").addEventListener("change", async () => {
-    await loadSelectedEffect(context);
+    await loadSelectedEffect(model);
   });
 
 }
@@ -187,8 +182,8 @@ function addListenersToGUI() {
 // ------------------------------------------------------------
 
 function copyParamsToClipboard() {
-  if (generator != undefined && generator.isValid) {
-    const params = getParametersForGenerator(generator);
+  if (model.generator != undefined && model.generator.isValid) {
+    const params = getParametersForGenerator(model.generator);
     const text = getParameterListAsString(params);
     navigator.clipboard.writeText(text).then(() => {
       console.log(text);
@@ -203,8 +198,8 @@ function copyParamsToClipboard() {
 // ------------------------------------------------------------
 
 function copyDocsToClipboard() {
-  if (generator != undefined && generator.isValid) {
-    const text = generator.getDocumentationAsMarkdownString();
+  if (model.generator != undefined && model.generator.isValid) {
+    const text = model.generator.getDocumentationAsMarkdownString();
     navigator.clipboard.writeText(text).then(() => {
       console.log(text);
     }, (error) => {
@@ -287,26 +282,26 @@ function makeMIDIlisteners() {
 // ------------------------------------------------------------
 
 function playNote(midiNoteNumber, velocity) {
-  if (generator != undefined && generator.isValid) {
+  if (model.generator != undefined && model.generator.isValid) {
     let player = playerForNote.get(midiNoteNumber);
     // possibly we triggered the same note during the release phase of an existing note
     // in which case we must stop it and release the object
     if (player != undefined) {
-      player.stopAfterRelease(context.currentTime);
+      player.stopAfterRelease(mdoel.context.currentTime);
       playerForNote.delete(midiNoteNumber);
     }
     // get the pitch and parameters
-    let params = getParametersForGenerator(generator);
+    let params = getParametersForGenerator(model.generator);
     params["level"] = velocity;
     params["pitch"] = Utility.midiNoteToFreqHz(midiNoteNumber);
     // make a player and store a reference to it so we can stop it later
    // player = new BleepPlayer(context, monitor, generator, pitchHz, velocity, params);
-    player = synthEngine.getPlayer(generator, params);
+    player = model.synthEngine.getPlayer(model.generator, params);
     if (Flags.VERBOSE) console.log(player);
     playerForNote.set(midiNoteNumber, player);
-    player.out.connect(fx.in);
-    fx.out.connect(scope.in);
-    player.start(context.currentTime);
+    player.out.connect(model.fx.in);
+    model.fx.out.connect(scope.in);
+    player.start(model.context.currentTime);
     scope.resetRMS();
   }
 }
@@ -318,7 +313,7 @@ function playNote(midiNoteNumber, velocity) {
 function stopNote(midiNoteNumber) {
   let player = playerForNote.get(midiNoteNumber);
   if (player != undefined) {
-    player.stopAfterRelease(context.currentTime);
+    player.stopAfterRelease(model.context.currentTime);
     playerForNote.delete(midiNoteNumber);
   }
 }
@@ -366,12 +361,14 @@ function createControls(generator) {
 // make a effects unit and connect it to the audio output
 // ------------------------------------------------------------
 
-async function loadSelectedEffect(context) {
+async function loadSelectedEffect(model) {
   const selectedIndex = GUI.tag("fx-select").selectedIndex;
   const selectedName = GUI.tag("fx-select").options[selectedIndex].text;
-  if (fx != null) fx.stop();
-  fx = await synthEngine.getEffect(selectedName);
-  fx.out.connect(context.destination);
+  if (model.fx != null) {
+    model.fx.stop();
+  }
+  model.fx = await model.synthEngine.getEffect(selectedName);
+  model.fx.out.connect(model.context.destination);
   const wetLevel = GUI.getSliderValue("wetLevel");
   setWetLevel(wetLevel);
 }
@@ -381,61 +378,9 @@ async function loadSelectedEffect(context) {
 // ------------------------------------------------------------
 
 function setWetLevel(w) {
-  fx.setWetLevel(w);
-  fx.setDryLevel(1-w);
+  model.fx.setWetLevel(w);
+  model.fx.setDryLevel(1-w);
   GUI.setSliderValue("wetLevel", w);
 }
 
-// ------------------------------------------------------------
-// load file
-// https://developer.chrome.com/articles/file-system-access/
-// ------------------------------------------------------------
-
-async function loadFile() {
-  [fileHandle] = await window.showOpenFilePicker();
-  const file = await fileHandle.getFile();
-  const spec = await file.text();
-  GUI.tag("synth-spec").value = spec;
-  GUI.tag("file-label").textContent = "Current file: " + fileHandle.name;
-  wasEdited = false;
-  const result = synthEngine.getGeneratorFromSpec(spec);
-  generator = result.generator;
-  GUI.tag("parse-errors").value = result.message;
-  controlMap = createControls(generator);
-  Flowchart.drawGraphAsMermaid(generator);
-}
-
-// ------------------------------------------------------------
-// save file
-// https://developer.chrome.com/articles/file-system-access/
-// ------------------------------------------------------------
-
-async function saveFile() {
-  if (fileHandle != null) {
-    const writable = await fileHandle.createWritable();
-    await writable.write(GUI.tag("synth-spec").value);
-    await writable.close();
-    // remove the star
-    GUI.tag("file-label").textContent = "Current file: " + fileHandle.name;
-    wasEdited = false;
-  }
-}
-
-// ------------------------------------------------------------
-// save as file
-// https://developer.chrome.com/articles/file-system-access/
-// ------------------------------------------------------------
-
-async function saveAsFile() {
-  let opts = {};
-  if (generator.shortname.length > 0) {
-    opts.suggestedName = generator.shortname + ".txt";
-  }
-  fileHandle = await window.showSaveFilePicker(opts);
-  const writable = await fileHandle.createWritable();
-  await writable.write(GUI.tag("synth-spec").value);
-  await writable.close();
-  GUI.tag("file-label").textContent = "Current file: " + fileHandle.name;
-  wasEdited = false;
-}
 
