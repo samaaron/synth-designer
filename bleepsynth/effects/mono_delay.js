@@ -98,10 +98,10 @@ export default class MonoDelay extends BleepEffect {
       if (typeof params.delay !== undefined) {
         this.setDelay(params.delay, when);
       }
-      if (typeof params.pan !== undefined) {
+      if (params.pan !== undefined) {
         this.setPan(params.pan, when);
       }
-      if (typeof params.feedback !== undefined) {
+      if (params.feedback !== undefined) {
         this.setFeedback(params.feedback, when);
       }
     }

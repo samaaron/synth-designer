@@ -64,10 +64,10 @@ export default class AutoPan extends BleepEffect {
      */
     setParams(params, when = this._context.currentTime) {
         super.setParams(params, when);
-        if (typeof params.rate !== undefined) {
+        if (params.rate !== undefined) {
             this.setRate(params.rate, when);
         }
-        if (typeof params.spread !== undefined) {
+        if (params.spread !== undefined) {
             this.setSpread(params.spread, when);
         }
     }

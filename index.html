@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 
-<head>
-  <meta charset="UTF-8">
-  <link rel="stylesheet" href="sheet.css">
-  <title>Synth Builder</title>
+<head><meta charset="UTF-8">
+<link rel="stylesheet" href="sheet.css">
+<link rel="icon" type="image/png" href="./assets/img/bleep-favicon.png">
+<title>Bleep Builder</title>
 </head>
 
 <body>
@@ -14,9 +14,9 @@
     <button class="greybutton" id="load-button">Load</button>
     <button class="greybutton" id="save-button">Save</button>
     <button class="greybutton" id="save-as-button">Save As</button>
-    <button class="greybutton" id="export-button">Export As JSON</button>
-    <button class="greybutton" id="clip-button">Copy Params to Clipboard</button>
-    <button class="greybutton" id="docs-button">Copy Docs to Clipboard</button>
+    <button class="greybutton" id="clip-button">Copy Params</button>
+    <button class="greybutton" id="docs-button">Copy Docs</button>
+    <button class="midibutton" id="midi-learn-button">MIDI Learn</button>
     <span id="midi-label">&nbsp;Midi input:&nbsp;</span><select class="dropdown" id="midi-input"></select>
     <span id="fx-label">&nbsp;Effect:&nbsp;</span><select class="dropdown" id="fx-select"></select>
     <span id="dot" style="color:#e6983f; opacity:0;">&nbsp;&#x25C9;</span>
@@ -62,13 +62,8 @@
             </div>
 
             <div class="slider-container">
-              <input class="slider" type="range" id="slider-wetLevel" min="0" max="1" value="0.1" step="0.01">
+              <input class="slider" type="range" id="slider-wetLevel" min="0" max="1" value="0.5" step="0.01">
               <label id="label-wetLevel" for="slider-wetLevel">wetLevel [1]</label>
-            </div>
-
-            <div class="slider-container">
-              <input class="slider" type="range" id="slider-dryLevel" min="0" max="1" value="1" step="0.01">
-              <label id="label-dryLevel" for="slider-dryLevel">dryLevel [1]</label>
             </div>
 
             <button class="playbutton" id="play-button">Play</button>

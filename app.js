@@ -1,218 +1,144 @@
 import GUI from './js/GUI.js';
 import Scope from './js/scope.js';
 import ScopeView from './js/scopeview.js';
-import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
 import Utility from './bleepsynth/core/utility.js';
 import Flags from './bleepsynth/core/flags.js';
-import BleepGenerator from './bleepsynth/core/bleep_generator.js';
 import BleepSynthTests from './bleepsynth/core/bleep_synth_tests.js';
-import BleepSynthEngine from './bleepsynth/core/bleep_synth_engine.js';
 import MidiSystem from './midi/midi_system.js';
+import Flowchart from './js/flowchart.js';
+import Model from './js/model.js';
 
 window.addEventListener('DOMContentLoaded', init);
 
-const MIDI_CONTROLLERS = [74, 71, 76, 77, 93, 18, 19, 16];
-const MONITOR_UPDATE_INTERVAL = 100; // msec
+const MONITOR_UPDATE_INTERVAL = 100;    // msec
 
-let controlMap;
+let model;                              // the model
+const midiSystem = new MidiSystem();    // the MIDI system
+let playerForNote = new Map();          // map from midi note -> player
+let scope;                              // the scope
 
-// engine
-
-let synthEngine;
-
-const midiSystem = new MidiSystem();
-
-// file handle
-
-let fileHandle;
-
-// this is a map from midi note -> player
-
-let playerForNote = new Map();
-
-// effects
-
-let fx;
-
-// scope
-
-let scope;
-
-// global variables (sorry)
-
-let wasEdited;
-let currentJSON = null;
-let generator = null;
-let context = null;
-
-
-// ------------------------------------------------------------
-// initialise the button callbacks etc
-// ------------------------------------------------------------
-
+/**
+ * Initialize the application
+ */
 async function init() {
-
-  // midi
-
   await midiSystem.connect();
-
-  // initialisation
-
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'base',
-    themeVariables: {
-      "primaryColor": "#4f4f4f",
-      "primaryTextColor": "#ccc",
-      "primaryBorderColor": "#4f4f4f",
-      "lineColor": "#aaaaaa",
-      "secondaryColor": "#006100",
-      "tertiaryColor": "#fff"
-    }
-  });
-
+  Flowchart.initialize();
   GUI.disableGUI(true);
-  makeFXdropdown();
+  GUI.makeFXdropdown();
   addListenersToGUI();
   setupMidi();
   setDefaultValues();
 }
 
+/**
+ * Start the monitor timer
+ */
 function startMonitorTimer() {
   setInterval(() => {
-    GUI.tag("monitor").textContent = synthEngine.monitor.summaryString;
+    GUI.tag("monitor").textContent = model.synthEngine.monitor.summaryString;
   }, MONITOR_UPDATE_INTERVAL);
 }
 
-// ------------------------------------------------------------
-// set default parameters
-// ------------------------------------------------------------
-
+/**
+ * Set the default values for the sliders
+ */
 function setDefaultValues() {
   GUI.setSliderValue("level", 0.8);
   GUI.setSliderValue("wetLevel", 0.1);
 }
 
-// ------------------------------------------------------------
-// add event listeners to GUI controls
-// ------------------------------------------------------------
-
+/**
+ * Add event listeners to the GUI controls
+ */
 function addListenersToGUI() {
-
-  // listen for change events in the text area and indicate if the file is edited
-  GUI.tag("synth-spec").addEventListener("input", () => {
-    if (GUI.tag("synth-spec").value.length > 0) {
-      const spec = GUI.tag("synth-spec").value;
-      const result = synthEngine.getGeneratorFromSpec(spec);
-      generator = result.generator;
-      GUI.tag("parse-errors").value = result.message;
-      if (generator && generator.isValid) {
-        controlMap = createControls(generator);
-        drawGraphAsMermaid(generator);
-      }
-      if (!wasEdited) {
-        GUI.tag("file-label").textContent += "*";
-        wasEdited = true;
-      }
-    }
-  });
-
-  // set the current file name to none
   GUI.tag("file-label").textContent = "Current file: none";
-
-  // load button
-  GUI.tag("load-button").onclick = async () => { await loadFile(); };
-
-  // save button
-  GUI.tag("save-button").onclick = async () => { await saveFile(); };
-
-  // save as button
-  GUI.tag("save-as-button").onclick = async () => { await saveAsFile(); };
-
-  // export button
-  GUI.tag("export-button").onclick = async () => { await exportAsJSON(); };
-
-  // copy parameters to clipboard button
-  GUI.tag("clip-button").onclick = () => { copyParamsToClipboard(); };
-
-  // copy docs to clipboard button
-  GUI.tag("docs-button").onclick = () => { copyDocsToClipboard(); };
-
-  // play button
-  GUI.tag("play-button").onmousedown = () => {
-    const midiNoteNumber = getIntParam("slider-pitch");
-    const velocity = getFloatParam("slider-level");
-    console.log(midiNoteNumber);
-    console.log(velocity);
-    playNote(midiNoteNumber, velocity);
-  };
-  GUI.tag("play-button").onmouseup = () => {
-    const midiNoteNumber = getIntParam("slider-pitch");
-    stopNote(midiNoteNumber);
-  };
-  GUI.tag("play-button").onmouseout = () => {
-    const midiNoteNumber = getIntParam("slider-pitch");
-    stopNote(midiNoteNumber);
-  };
-
-  // start button
-  GUI.tag("start-button").onclick = async () => {
-    context = new AudioContext();
-    if (Flags.RUN_TESTS) {
-      BleepSynthTests.testSynths(context);
-    }
-    synthEngine = await BleepSynthEngine.createInstance(context);
-    startMonitorTimer();
-    GUI.disableGUI(false);
-    await loadSelectedEffect(context);
-    setWetLevel(0.1);
-    let view = new ScopeView(GUI.tag("scope-canvas"), {
-      lineWidth: 2,
-      sync: true
-    });
-    scope = new Scope(context, view);
-    scope.draw();
-  }
-
-  // pitch slider
-  GUI.tag("slider-pitch").addEventListener("input", function () {
-    GUI.tag("label-pitch").textContent = `pitch [${Utility.midiToNoteName(parseInt(this.value))}]`;
-  });
-
-  // amplitude slider
-  GUI.tag("slider-level").addEventListener("input", function () {
-    GUI.setSliderValue("level", parseFloat(this.value));
-  });
-
-  // wetLevel slider
-  GUI.tag("slider-wetLevel").addEventListener("input", function () {
-    setWetLevel(parseFloat(this.value));
-  });
-
-  // dryLevel slider
-  GUI.tag("slider-dryLevel").addEventListener("input", function () {
-    setDryLevel(parseFloat(this.value));
-  });
-
-  GUI.tag("midi-input").addEventListener("change", () => {
-    var selectedIndex = GUI.tag("midi-input").selectedIndex;
-    var selectedName = GUI.tag("midi-input").options[selectedIndex].text;
-    midiSystem.selectInput(selectedName);
-  });
-
-  GUI.tag("fx-select").addEventListener("change", async () => {
-    await loadSelectedEffect(context);
-  });
-
+  GUI.tag("synth-spec").addEventListener("input", handleSpecInput.bind(this));
+  GUI.tag("load-button").onclick = loadFile.bind(this);
+  GUI.tag("save-button").onclick = saveFile.bind(this);
+  GUI.tag("save-as-button").onclick = saveAsFile.bind(this);
+  GUI.tag("clip-button").onclick = copyParamsToClipboard.bind(this);
+  GUI.tag("docs-button").onclick = copyDocsToClipboard.bind(this);
+  GUI.tag("midi-learn-button").onclick = handleMIDILearnButton.bind(this);
+  GUI.tag("play-button").onmousedown = playNoteWithButton.bind(this);
+  GUI.tag("play-button").onmouseup = stopNoteWithButton.bind(this);
+  GUI.tag("play-button").onmouseout = stopNoteWithButton.bind(this);
+  GUI.tag("start-button").onclick = start.bind(this);
+  GUI.tag("slider-pitch").addEventListener("input", updatePitch.bind(this));
+  GUI.tag("slider-level").addEventListener("input", updateLevel.bind(this));
+  GUI.tag("slider-wetLevel").addEventListener("input", updateWetLevel.bind(this));
+  GUI.tag("midi-input").addEventListener("change", changeMIDIInput.bind(this));
+  GUI.tag("fx-select").addEventListener("change", loadSelectedEffect.bind(this));
 }
 
-// ------------------------------------------------------------
-// copy parameters to clipboard
-// ------------------------------------------------------------
+/**
+ * Handle the MIDI learn button
+ */
+function handleMIDILearnButton() {
+  if (model.learning) {
+    model.learning = false;
+    GUI.setMidiLearnState(false, model.lastSliderMoved);
+  } else if (midiSystem.inputEnabled && model.generator && model.generator.parameters.length > 0) {
+    if (model.lastSliderMoved >= 0) {
+      model.learning = true;
+      GUI.setMidiLearnState(true, model.lastSliderMoved);
+    }
+  }
+}
 
+/**
+ * Handle the input of the spec
+ */
+function handleSpecInput() {
+  if (GUI.tag("synth-spec").value.length > 0) {
+    model.spec = GUI.tag("synth-spec").value;
+    const result = model.synthEngine.getGeneratorFromSpec(model.spec);
+    model.generator = result.generator;
+    GUI.tag("parse-errors").value = result.message;
+    if (model.generator && model.generator.isValid) {
+      createControls();
+      Flowchart.drawGraphAsMermaid(model.generator);
+    }
+    if (!model.wasEdited) {
+      GUI.tag("file-label").textContent += "*";
+      model.wasEdited = true;
+    }
+  }
+}
+
+/**
+ * Load a file
+ */
+async function loadFile() {
+  await model.loadFile();
+  createControls();
+  Flowchart.drawGraphAsMermaid(model.generator);
+  GUI.tag("synth-spec").value = model.spec;
+  GUI.tag("file-label").textContent = "Current file: " + model.fileHandle.name;
+  GUI.tag("parse-errors").value = model.message;
+}
+
+/**
+ * Save a file
+ */
+async function saveFile() {
+  await model.saveFile();
+  GUI.tag("file-label").textContent = "Current file: " + model.fileHandle.name;
+}
+
+/**
+ * Save a file as
+ */
+async function saveAsFile() {
+  await model.saveAsFile();
+  GUI.tag("file-label").textContent = "Current file: " + model.fileHandle.name;
+}
+
+/**
+ * Copy the parameters to the clipboard
+ */
 function copyParamsToClipboard() {
-  if (generator != undefined && generator.isValid) {
-    const params = getParametersForGenerator(generator);
+  if (model.generator && model.generator.isValid) {
+    const params = getParametersForGenerator();
     const text = getParameterListAsString(params);
     navigator.clipboard.writeText(text).then(() => {
       console.log(text);
@@ -222,13 +148,12 @@ function copyParamsToClipboard() {
   }
 }
 
-// ------------------------------------------------------------
-// copy docs to clipboard
-// ------------------------------------------------------------
-
+/**
+ * Copy the documentation to the clipboard
+ */
 function copyDocsToClipboard() {
-  if (generator != undefined && generator.isValid) {
-    const text = generator.getDocumentationAsMarkdownString();
+  if (model.generator && model.generator.isValid) {
+    const text = model.generator.getDocumentationAsMarkdownString();
     navigator.clipboard.writeText(text).then(() => {
       console.log(text);
     }, (error) => {
@@ -237,51 +162,82 @@ function copyDocsToClipboard() {
   }
 }
 
+/**
+ * Update the pitch label
+ * @param {any} event
+ */
+function updatePitch(event) {
+  GUI.tag("label-pitch").textContent = `pitch [${Utility.midiToNoteName(parseInt(event.target.value))}]`;
+}
+
+/**
+ * Update the level label
+ * @param {any} event
+ */
+function updateLevel(event) {
+  GUI.setSliderValue("level", parseFloat(event.target.value));
+}
+
+/**
+ * Update the wet level label
+ * @param {any} event
+ */
+function updateWetLevel(event) {
+  setWetLevel(parseFloat(event.target.value));
+}
+
+/**
+ * Change the MIDI input
+ */
+function changeMIDIInput() {
+  var selectedIndex = GUI.tag("midi-input").selectedIndex;
+  var selectedName = GUI.tag("midi-input").options[selectedIndex].text;
+  midiSystem.selectInput(selectedName);
+}
+
+/**
+ * Get the parameter list as a string
+ * @param {*} params
+ * @returns
+ */
 function getParameterListAsString(params) {
-  let str = "use_defaults({";
-  str += Object.entries(params).map(([key, value]) => `${key}=${value}`).join(',');
-  str += "})";
-  return str;
+  const str = Object.entries(params).map(([key, value]) => `${key}=${value}`).join(',');
+  return `use_defaults({${str}})`;
 }
 
-function makeFXdropdown() {
-  const fxSelector = GUI.tag("fx-select");
-  BleepSynthEngine.getEffectNames().forEach((name, index) => {
-    const option = document.createElement("option");
-    option.text = name;
-    option.value = index;
-    fxSelector.appendChild(option);
-  });
-}
-
-// ------------------------------------------------------------
-// Set up the MIDI system and find possible input devices
-// ------------------------------------------------------------
-
+/**
+ * Set up the MIDI system
+ */
 function setupMidi() {
-  // make the dropdown
   makeMIDIdropdown();
-  // add event listeners
   makeMIDIlisteners();
 }
 
+/**
+ * Make the MIDI dropdown
+ */
 function makeMIDIdropdown() {
   const midiInputs = midiSystem.inputs;
   const inputSelector = GUI.tag("midi-input");
   // first element in the list is no input
-  const noneOption = document.createElement("option");
-  noneOption.text = "None";
-  noneOption.value = 0;
+  const noneOption = Object.assign(document.createElement("option"), {
+    text: "None",
+    value: 0
+  });
   inputSelector.appendChild(noneOption);
   // set the options for the remaining html elements
   midiInputs.forEach((name, index) => {
-    const option = document.createElement("option");
-    option.text = name;
-    option.value = index + 1;
+    const option = Object.assign(document.createElement("option"), {
+      text: name,
+      value: index + 1
+    });
     inputSelector.appendChild(option);
   });
 }
 
+/**
+ * Make the MIDI listeners
+ */
 function makeMIDIlisteners() {
   // note on
   window.addEventListener('midiNoteOnEvent', (e) => {
@@ -294,230 +250,156 @@ function makeMIDIlisteners() {
   });
   // controller
   window.addEventListener('midiControllerEvent', (e) => {
-    let param = controlMap.get(e.detail.controller);
-    if (param != undefined) {
-      let el = GUI.tag("slider-" + param);
+    // we are learning a new controller
+    if (model.learning && model.lastSliderMoved >= 0) {
+      midiSystem.setControllerForSlider(model.lastSliderMoved, e.detail.controller);
+      model.learning = false;
+      GUI.setMidiLearnState(false, model.lastSliderMoved);
+      return;
+    }
+    // find the index for this parameter
+    const index = midiSystem.getSliderForController(e.detail.controller);
+    const param = model.generator.parameters[index];
+    // only proceed if the parameter is valid
+    if (param) {
+      let el = GUI.tag("slider-" + param.name);
       let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * e.detail.value;
-      GUI.setSliderValue(param, value);
+      GUI.setSliderValue(param.name, value);
       playerForNote.forEach((player, note) => {
-        player.applyTweakNow(param, value);
+        player.applyTweakNow(param.name, value);
       });
     }
   });
 }
 
-// ------------------------------------------------------------
-// play a note
-// ------------------------------------------------------------
+/**
+ * Start the application
+ */
+async function start() {
+  model = await Model.getInstance();
+  if (Flags.RUN_TESTS) {
+    BleepSynthTests.testSynths(model.context);
+  }
+  startMonitorTimer();
+  GUI.disableGUI(false);
+  await loadSelectedEffect(model);
+  setWetLevel(0.1);
+  let view = new ScopeView(GUI.tag("scope-canvas"), {
+    lineWidth: 2,
+    sync: true
+  });
+  scope = new Scope(model.context, view);
+  scope.draw();
+}
 
-function playNote(midiNoteNumber, velocity) {
-  if (generator != undefined && generator.isValid) {
-    let player = playerForNote.get(midiNoteNumber);
+/**
+ * Play a note when the play button is pressed
+ */
+function playNoteWithButton() {
+  const midiNote = GUI.getIntParam("slider-pitch");
+  const velocity = GUI.getFloatParam("slider-level");
+  playNote(midiNote, velocity);
+}
+
+/**
+ * Play a note
+ */
+function playNote(midiNote, velocity) {
+  if (model.generator && model.generator.isValid) {
+    let player = playerForNote.get(midiNote);
     // possibly we triggered the same note during the release phase of an existing note
     // in which case we must stop it and release the object
-    if (player != undefined) {
-      player.stopAfterRelease(context.currentTime);
-      playerForNote.delete(midiNoteNumber);
+    if (player) {
+      player.stopAfterRelease(model.context.currentTime);
+      playerForNote.delete(midiNote);
     }
     // get the pitch and parameters
-    const pitchHz = Utility.midiNoteToFreqHz(midiNoteNumber);
-    const params = getParametersForGenerator(generator);
+    let params = getParametersForGenerator();
+    params["level"] = GUI.getFloatParam("slider-level");
+    params["pitch"] = Utility.midiNoteToFreqHz(midiNote);
     // make a player and store a reference to it so we can stop it later
-   // player = new BleepPlayer(context, monitor, generator, pitchHz, velocity, params);
-    player = synthEngine.getPlayer(generator, pitchHz, velocity, params);
+    player = model.synthEngine.getPlayer(model.generator, params);
     if (Flags.VERBOSE) console.log(player);
-    playerForNote.set(midiNoteNumber, player);
-    player.out.connect(fx.in);
-    player.out.connect(scope.in);
-    player.start(context.currentTime);
+    playerForNote.set(midiNote, player);
+    player.out.connect(model.fx.in);
+    model.fx.out.connect(scope.in);
+    player.start(model.context.currentTime);
     scope.resetRMS();
   }
 }
 
-// ------------------------------------------------------------
-// stop a note
-// ------------------------------------------------------------
+/**
+ * stop a note when the play button is released
+ */
+function stopNoteWithButton() {
+  const midiNote = GUI.getIntParam("slider-pitch");
+  stopNote(midiNote);
+}
 
-function stopNote(midiNoteNumber) {
-  let player = playerForNote.get(midiNoteNumber);
-  if (player != undefined) {
-    player.stopAfterRelease(context.currentTime);
-    playerForNote.delete(midiNoteNumber);
+/**
+ * Stop a note
+ */
+function stopNote(midiNote) {
+  let player = playerForNote.get(midiNote);
+  if (player) {
+    player.stopAfterRelease(model.context.currentTime);
+    playerForNote.delete(midiNote);
   }
 }
 
-// ------------------------------------------------------------
-// read all the parameters for this synth from the interface
-// ------------------------------------------------------------
-
-function getParametersForGenerator(s) {
+/**
+ * Get the parameters for a generator from the GUI
+ * @returns
+ */
+function getParametersForGenerator() {
   let params = {};
-  for (let p of s.parameters) {
+  for (let p of model.generator.parameters) {
     if (p.type === "float") {
-      params[p.name] = getFloatParam("slider-" + p.name);
+      params[p.name] = GUI.getFloatParam(`slider-${p.name}`);
     } else if (p.type === "int") {
-      params[p.name] = getIntParam("slider-" + p.name);
+      params[p.name] = GUI.getIntParam(`slider-${p.name}`);
     }
   }
   return params;
 }
 
-// ------------------------------------------------------------
-// create the controls for this synth
-// ------------------------------------------------------------
-
-function createControls(generator) {
+/**
+ * create the controls for this synth
+ */
+function createControls() {
   GUI.removeAllSliders();
-  const map = new Map();
   let count = 0;
   let row = 1;
-  for (const p of generator.parameters) {
-    // we map the first few sliders to the preferred list of MIDI controllers
-    if (count < MIDI_CONTROLLERS.length) {
-      map.set(MIDI_CONTROLLERS[count], p.name);
-    }
+  for (const params of model.generator.parameters) {
     if (count > 11) {
       row = 2;
     }
-    GUI.makeSlider(playerForNote, `container${row}`, p.name, p.doc, p.min, p.max, p.default, p.step);
+    GUI.makeSlider(model, count, playerForNote, `container${row}`, params);
     count++;
   }
-  return map;
 }
 
 /**
- * draw the generator as a mermaid graph
- * @param {BleepGenerator} generator
+ * make a effects unit and connect it to the audio output
  */
-function drawGraphAsMermaid(generator) {
-  var element = GUI.tag("mermaid-graph");
-  // get rid of all the kids
-  while (element.firstChild) {
-    element.removeChild(element.firstChild);
-  }
-  // mermaid callback that inserts a svg into the HTML
-  var insertSvg = function (svg, bindFunctions) {
-      element.innerHTML = svg.svg;
-      bindFunctions?.(element);
-  };
-  // get this generator in mermaid form, with a fishy tail and all
-  var graphDefinition = generator.getGraphAsMermaid();
-  // mermaid transforms our graph description into a svg
-  var graph = mermaid.render('graph-id', graphDefinition).then(insertSvg);
-}
-
-// ------------------------------------------------------------
-// make a effects unit and connect it to the audio output
-// ------------------------------------------------------------
-
-async function loadSelectedEffect(context) {
+async function loadSelectedEffect() {
   const selectedIndex = GUI.tag("fx-select").selectedIndex;
   const selectedName = GUI.tag("fx-select").options[selectedIndex].text;
-  if (fx != null) fx.stop();
-  fx = await synthEngine.getEffect(selectedName);
-  fx.out.connect(context.destination);
-  const wetLevel = GUI.getSliderValue("wetLevel");
-  const dryLevel = GUI.getSliderValue("dryLevel");
-  setWetLevel(wetLevel);
-  setDryLevel(dryLevel);
+  if (model.fx) {
+    model.fx.stop();
+  }
+  model.fx = await model.synthEngine.getEffect(selectedName);
+  model.fx.out.connect(model.context.destination);
+  setWetLevel(GUI.getSliderValue("wetLevel"));
 }
 
-// ------------------------------------------------------------
-// Set the reverb to a given level
-// ------------------------------------------------------------
-
+/**
+ * Set the reverb to a given level
+ */
 function setWetLevel(w) {
-  fx.setWetLevel(w);
+  model.fx.setWetLevel(w);
+  model.fx.setDryLevel(1 - w);
   GUI.setSliderValue("wetLevel", w);
 }
 
-function setDryLevel(w) {
-  fx.setDryLevel(w);
-  GUI.setSliderValue("dryLevel", w);
-}
 
-// ------------------------------------------------------------
-// Get an integer parameter with a given name
-// ------------------------------------------------------------
-
-function getIntParam(name) {
-  return parseInt(document.getElementById(name).value);
-}
-
-// ------------------------------------------------------------
-// Get a float parameter with a given name
-// ------------------------------------------------------------
-
-function getFloatParam(name) {
-  return parseFloat(document.getElementById(name).value);
-}
-
-// ------------------------------------------------------------
-// load file
-// https://developer.chrome.com/articles/file-system-access/
-// ------------------------------------------------------------
-
-async function loadFile() {
-  [fileHandle] = await window.showOpenFilePicker();
-  const file = await fileHandle.getFile();
-  const spec = await file.text();
-  GUI.tag("synth-spec").value = spec;
-  GUI.tag("file-label").textContent = "Current file: " + fileHandle.name;
-  wasEdited = false;
-  const result = synthEngine.getGeneratorFromSpec(spec);
-  generator = result.generator;
-  GUI.tag("parse-errors").value = result.message;
-  controlMap = createControls(generator);
-  drawGraphAsMermaid(generator);
-}
-
-// ------------------------------------------------------------
-// save file
-// https://developer.chrome.com/articles/file-system-access/
-// ------------------------------------------------------------
-
-async function saveFile() {
-  if (fileHandle != null) {
-    const writable = await fileHandle.createWritable();
-    await writable.write(GUI.tag("synth-spec").value);
-    await writable.close();
-    // remove the star
-    GUI.tag("file-label").textContent = "Current file: " + fileHandle.name;
-    wasEdited = false;
-  }
-}
-
-// ------------------------------------------------------------
-// save as file
-// https://developer.chrome.com/articles/file-system-access/
-// ------------------------------------------------------------
-
-async function saveAsFile() {
-  let opts = {};
-  if (generator.shortname.length > 0) {
-    opts.suggestedName = generator.shortname + ".txt";
-  }
-  fileHandle = await window.showSaveFilePicker(opts);
-  const writable = await fileHandle.createWritable();
-  await writable.write(GUI.tag("synth-spec").value);
-  await writable.close();
-  GUI.tag("file-label").textContent = "Current file: " + fileHandle.name;
-  wasEdited = false;
-}
-
-// ------------------------------------------------------------
-// export as JSON
-// https://developer.chrome.com/articles/file-system-access/
-// ------------------------------------------------------------
-
-async function exportAsJSON() {
-  if (generator != undefined && generator.isValid) {
-    const opts = {
-      suggestedName: generator.shortname + ".json"
-    };
-    fileHandle = await window.showSaveFilePicker(opts);
-    const writable = await fileHandle.createWritable();
-    await writable.write(currentJSON);
-    await writable.close();
-  }
-}

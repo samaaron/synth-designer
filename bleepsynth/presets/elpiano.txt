@@ -3,7 +3,7 @@ longname : Electric Piano
 type : synth
 author : Guy Brown
 version : 1.0
-doc : Electronic piano roughly on the Juno-106 patch Electric Piano II
+doc : Electronic piano roughly on the Juno-106 patch Electric Piano II, add tremolo effect
 @end
 
 @param timbre
@@ -36,26 +36,6 @@ default: 0.5
 doc: overall volume
 @end
 
-@param trem_rate
-type: float
-mutable: yes
-step: 0.01
-min: 0
-max: 1
-default: 0.55
-doc: rate of tremolo
-@end
-
-@param trem_depth
-type: float
-mutable: yes
-step: 0.01
-min: 0
-max: 1
-default: 0.9
-doc: depth of tremolo
-@end
-
 # modules
 
 PULSE-OSC : vco
@@ -70,15 +50,6 @@ ADSR : env1
 ADSR : env2
 ADSR : env3
 VCA : mix
-LFO : lefttrem
-LFO : righttrem
-VCA : leftdepth
-VCA : rightdepth
-VCA : leftgain
-VCA : rightgain
-VCA : stereomix
-PAN : leftpan
-PAN : rightpan
 
 # patch
 
@@ -94,38 +65,9 @@ carrier.out -> tinkle.in
 tinkle.out -> mix.in
 env3.out -> tinkle.levelCV
 
-vca.out -> leftgain.in
-vca.out -> rightgain.in
-leftgain.out -> leftpan.in
-rightgain.out -> rightpan.in
-
-lefttrem.out -> leftdepth.in
-leftdepth.out -> leftgain.levelCV
-
-righttrem.out -> rightdepth.in
-rightdepth.out -> rightgain.levelCV
-
-leftpan.out -> stereomix.in
-rightpan.out -> stereomix.in
-
-stereomix.out -> audio.in
+vca.out -> audio.in
 
 # tweak
-
-leftgain.level = 0.5
-rightgain.level = 0.5
-
-leftpan.angle = -1
-rightpan.angle = 1
-
-leftdepth.level = map(param.trem_depth,0,0.5)
-rightdepth.level = map(param.trem_depth,0,0.5)
-
-lefttrem.pitch = map(param.trem_rate,1,7)
-righttrem.pitch = map(param.trem_rate,1,7)
-
-lefttrem.phase = 1.57
-righttrem.phase = -1.57
 
 vco.pulsewidth = 0.55
 hpf.cutoff = 100

@@ -7,6 +7,16 @@ export default class MidiSystem {
     #midi = null;
     #midiInputs = null;
     #inputEnabled = false;
+    #midiControllers = JSON.parse(localStorage.getItem("midimap")) || [74, 71, 76, 77, 93, 18, 19, 16];
+
+    getSliderForController(controller) {
+        return this.#midiControllers.indexOf(controller);
+    }
+
+    setControllerForSlider(index, controller) {
+        this.#midiControllers[index] = controller;
+        localStorage.setItem("midimap", JSON.stringify(this.#midiControllers));
+    }
 
     async connect() {
         const access = await navigator.requestMIDIAccess({ "sysex": "false" });

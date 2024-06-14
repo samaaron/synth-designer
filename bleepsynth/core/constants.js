@@ -22,6 +22,9 @@ import { Distortion, Overdrive } from '../effects/distortion.js';
 import { DeepPhaser, PicoPebble, ThickPhaser } from '../effects/phaser.js';
 import MonoDelay from '../effects/mono_delay.js';
 import StereoDelay from '../effects/stereo_delay.js';
+import Tremolo from '../effects/tremolo.js';
+import Leslie from '../effects/leslie.js';
+import Bitcrusher from '../effects/bitcrusher.js';
 
 const MAX_MIDI_FREQ = 4186; // C8
 const MIN_MIDI_FREQ = 27.5;  // A0
@@ -83,7 +86,10 @@ const EFFECT_NAMES = {
   "pico_pebble": PicoPebble,
   "thick_phaser": ThickPhaser,
   "mono_delay": MonoDelay,
-  "stereo_delay": StereoDelay
+  "stereo_delay": StereoDelay,
+  "tremolo": Tremolo,
+  "leslie": Leslie,
+  "bitcrusher": Bitcrusher
 };
 
 const REVERB_IMPULSES = {

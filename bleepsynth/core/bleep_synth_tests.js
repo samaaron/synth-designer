@@ -19,10 +19,14 @@ export default class BleepSynthTests {
       const result = await synthEngine.getGeneratorFromFile(patchFile);
       const generator = result.generator;
       console.log(result.message);
-      const player = synthEngine.getPlayer(generator, Constants.MIDDLE_C, 0.8);
+      const player = synthEngine.getPlayer(generator, {
+        pitch: Constants.MIDDLE_C,
+        level: 0.8,
+        duration: BleepSynthTests.TEST_DURATION
+      });
       player.out.connect(context.destination);
-      player.start(playTime);
-      player.stopAfterRelease(playTime + BleepSynthTests.TEST_DURATION);
+      player.play(playTime);
+      //player.stopAfterRelease(playTime + BleepSynthTests.TEST_DURATION);
       playTime += BleepSynthTests.TEST_DURATION + BleepSynthTests.TEST_GAP;
     }
   }

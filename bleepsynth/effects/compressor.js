@@ -84,19 +84,19 @@ export default class Compressor extends BleepEffect {
      */
     setParams(params, when = this._context.currentTime) {
         super.setParams(params, when);
-        if (typeof params.threshold !== undefined) {
+        if (params.threshold !== undefined) {
             this.setThreshold(params.threshold, when);
         }
-        if (typeof params.knee !== undefined) {
+        if (params.knee !== undefined) {
             this.setKnee(params.knee, when);
         }
-        if (typeof params.ratio !== undefined) {
+        if (params.ratio !== undefined) {
             this.setRatio(params.ratio, when);
         }
-        if (typeof params.attack !== undefined) {
+        if (params.attack !== undefined) {
             this.setAttack(params.attack, when);
         }
-        if (typeof params.release !== undefined) {
+        if (params.release !== undefined) {
             this.setRelease(params.release, when);
         }
     }
