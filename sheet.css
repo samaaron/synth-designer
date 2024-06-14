@@ -64,8 +64,8 @@ width:500px;
 
 .docstring {
   color: #ffffff;
-  opacity: 0.2; 
-  margin-left: 4px; 
+  opacity: 0.2;
+  margin-left: 4px;
 }
 
 label {
@@ -114,6 +114,20 @@ label {
 
 .orangebutton:hover {
   opacity: 1
+}
+
+.midibutton {
+  color: #ffffff;
+  background-color: #4f4f4f;
+  box-shadow: none;
+  border: 0;
+  border-radius: 0px;
+  padding: 5px;
+  opacity:0.8
+}
+
+.midibutton.learning {
+  background-color: #4f65d4;
 }
 
 .dropdown {
@@ -173,7 +187,7 @@ textarea:focus {
 }
 
 .column {
-  border: 0px; 
+  border: 0px;
   padding: 0px;
   box-sizing: border-box;
 }
@@ -193,7 +207,7 @@ textarea:focus {
 .remaining-width {
   flex-grow: 1; /* Takes up the remaining space */
   justify-content: center; /* Center horizontally */
-  align-items: top; 
+  align-items: top;
   height: 540px; /* Set a height for the element */
 }
 

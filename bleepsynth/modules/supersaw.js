@@ -8,7 +8,7 @@ import { MonitoredGainNode, MonitoredBiquadFilterNode, MonitoredConstantSourceNo
  * note are needed to get a decent approximation to the Roland sound
  * Various tips from here:
  * https://static1.squarespace.com/static/519a384ee4b0079d49c8a1f2/t/592c9030a5790abc03d9df21/1496092742864/An+Analysis+of+Roland%27s+Super+Saw+Oscillator+and+its+Relation+to+Pads+within+Trance+Music+-+Research+Project+-+A.+Shore.pdf
- * https://www.adamszabo.com/internet/adam_szabo_how_to_emulate_the_super_saw.pdf 
+ * https://www.adamszabo.com/internet/adam_szabo_how_to_emulate_the_super_saw.pdf
  */
 
 export default class SuperSaw extends BleepSynthModule {
@@ -28,14 +28,14 @@ export default class SuperSaw extends BleepSynthModule {
 
     /**
      * Make a SuperSaw oscillator
-     * @param {AudioBuffer} - the audio context 
+     * @param {AudioBuffer} - the audio context
      * @param {Monitor} monitor - the monitor object to track this oscillator
      */
     constructor(context, monitor) {
         super(context, monitor);
         // output node
-        this.#out = new MonitoredGainNode(context, monitor, { 
-            gain: SuperSaw.DEFAULT_LEVEL 
+        this.#out = new MonitoredGainNode(context, monitor, {
+            gain: SuperSaw.DEFAULT_LEVEL
         });
         // pitch controller
         this.#pitchControl = new MonitoredConstantSourceNode(context, monitor, {
@@ -68,7 +68,7 @@ export default class SuperSaw extends BleepSynthModule {
     /**
      * Start the supersaw oscillator
      * Add a tiny random delay to the start time of each oscillator to randomise the phases
-     * @param {number} tim 
+     * @param {number} tim
      */
     start(tim) {
         this.#pitchControl.start(tim);
@@ -79,7 +79,7 @@ export default class SuperSaw extends BleepSynthModule {
 
     /**
      * stop the supersaw
-     * @param {number} tim 
+     * @param {number} tim
      */
     stop(tim) {
         this.#pitchControl.stop(tim);
@@ -95,9 +95,9 @@ export default class SuperSaw extends BleepSynthModule {
             for (let i = 0; i < SuperSaw.NUM_SAWS; i++) {
                 this.#oscs[i].disconnect();
                 this.#pans[i].disconnect();
-            }    
+            }
         }, (stopTime + 0.1) * 1000);
-    
+
     }
 
     /**
@@ -110,7 +110,7 @@ export default class SuperSaw extends BleepSynthModule {
 
     /**
      * Set the detune amount in cents, useful range is 0 to 30
-     * @param {number} d 
+     * @param {number} d
      */
     set detune(d) {
         for (let i = -SuperSaw.HALF_SAWS; i <= SuperSaw.HALF_SAWS; i++) {
@@ -121,7 +121,7 @@ export default class SuperSaw extends BleepSynthModule {
 
     /**
      * Set the output level of the oscillator
-     * @param {number} v 
+     * @param {number} v
      */
     set level(v) {
         this.#out.gain.value = v;
@@ -129,7 +129,7 @@ export default class SuperSaw extends BleepSynthModule {
 
     /**
      * Set the pitch (strictly, the frequency) of the oscillator in Hz
-     * @param {number} f 
+     * @param {number} f
      */
     set pitch(f) {
         this.#pitchControl.offset.value = f;
@@ -138,7 +138,7 @@ export default class SuperSaw extends BleepSynthModule {
 
     /**
      * Get the pitch control
-     * @return {AudioParam} 
+     * @return {AudioParam}
      */
     get pitchCV() {
         return this.#pitchControl.offset;
@@ -146,7 +146,7 @@ export default class SuperSaw extends BleepSynthModule {
 
     /**
      * Set the stereo spread of the oscillator in the range [0,1]
-     * @param {number} s 
+     * @param {number} s
      */
     set spread(s) {
         for (let i = -SuperSaw.HALF_SAWS; i <= SuperSaw.HALF_SAWS; i++) {
@@ -166,6 +166,6 @@ export default class SuperSaw extends BleepSynthModule {
     static getOutputs() {
         return ["out"];
     }
-    
+
 }
 

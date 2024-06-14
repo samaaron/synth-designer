@@ -10,12 +10,9 @@ import Model from './js/model.js';
 
 window.addEventListener('DOMContentLoaded', init);
 
-const MIDI_CONTROLLERS = [74, 71, 76, 77, 93, 18, 19, 16];
-
 const MONITOR_UPDATE_INTERVAL = 100;    // msec
 
 let model;                              // the model
-let controlMap;                         // map from MIDI controller -> parameter name
 const midiSystem = new MidiSystem();    // the MIDI system
 let playerForNote = new Map();          // map from midi note -> player
 let scope;                              // the scope
@@ -61,6 +58,7 @@ function addListenersToGUI() {
   GUI.tag("save-as-button").onclick = saveAsFile.bind(this);
   GUI.tag("clip-button").onclick = copyParamsToClipboard.bind(this);
   GUI.tag("docs-button").onclick = copyDocsToClipboard.bind(this);
+  GUI.tag("midi-learn-button").onclick = handleMIDILearnButton.bind(this);
   GUI.tag("play-button").onmousedown = playNoteWithButton.bind(this);
   GUI.tag("play-button").onmouseup = stopNoteWithButton.bind(this);
   GUI.tag("play-button").onmouseout = stopNoteWithButton.bind(this);
@@ -73,6 +71,21 @@ function addListenersToGUI() {
 }
 
 /**
+ * Handle the MIDI learn button
+ */
+function handleMIDILearnButton() {
+  if (model.learning) {
+    model.learning = false;
+    GUI.setMidiLearnState(false, model.lastSliderMoved);
+  } else if (midiSystem.inputEnabled && model.generator && model.generator.parameters.length > 0) {
+    if (model.lastSliderMoved >= 0) {
+      model.learning = true;
+      GUI.setMidiLearnState(true, model.lastSliderMoved);
+    }
+  }
+}
+
+/**
  * Handle the input of the spec
  */
 function handleSpecInput() {
@@ -82,7 +95,7 @@ function handleSpecInput() {
     model.generator = result.generator;
     GUI.tag("parse-errors").value = result.message;
     if (model.generator && model.generator.isValid) {
-      controlMap = createControls();
+      createControls();
       Flowchart.drawGraphAsMermaid(model.generator);
     }
     if (!model.wasEdited) {
@@ -97,7 +110,7 @@ function handleSpecInput() {
  */
 async function loadFile() {
   await model.loadFile();
-  controlMap = createControls();
+  createControls();
   Flowchart.drawGraphAsMermaid(model.generator);
   GUI.tag("synth-spec").value = model.spec;
   GUI.tag("file-label").textContent = "Current file: " + model.fileHandle.name;
@@ -151,7 +164,7 @@ function copyDocsToClipboard() {
 
 /**
  * Update the pitch label
- * @param {any} event 
+ * @param {any} event
  */
 function updatePitch(event) {
   GUI.tag("label-pitch").textContent = `pitch [${Utility.midiToNoteName(parseInt(event.target.value))}]`;
@@ -159,7 +172,7 @@ function updatePitch(event) {
 
 /**
  * Update the level label
- * @param {any} event 
+ * @param {any} event
  */
 function updateLevel(event) {
   GUI.setSliderValue("level", parseFloat(event.target.value));
@@ -167,7 +180,7 @@ function updateLevel(event) {
 
 /**
  * Update the wet level label
- * @param {any} event 
+ * @param {any} event
  */
 function updateWetLevel(event) {
   setWetLevel(parseFloat(event.target.value));
@@ -184,8 +197,8 @@ function changeMIDIInput() {
 
 /**
  * Get the parameter list as a string
- * @param {*} params 
- * @returns 
+ * @param {*} params
+ * @returns
  */
 function getParameterListAsString(params) {
   const str = Object.entries(params).map(([key, value]) => `${key}=${value}`).join(',');
@@ -237,13 +250,23 @@ function makeMIDIlisteners() {
   });
   // controller
   window.addEventListener('midiControllerEvent', (e) => {
-    let param = controlMap.get(e.detail.controller);
+    // we are learning a new controller
+    if (model.learning && model.lastSliderMoved >= 0) {
+      midiSystem.setControllerForSlider(model.lastSliderMoved, e.detail.controller);
+      model.learning = false;
+      GUI.setMidiLearnState(false, model.lastSliderMoved);
+      return;
+    }
+    // find the index for this parameter
+    const index = midiSystem.getSliderForController(e.detail.controller);
+    const param = model.generator.parameters[index];
+    // only proceed if the parameter is valid
     if (param) {
-      let el = GUI.tag("slider-" + param);
+      let el = GUI.tag("slider-" + param.name);
       let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * e.detail.value;
-      GUI.setSliderValue(param, value);
+      GUI.setSliderValue(param.name, value);
       playerForNote.forEach((player, note) => {
-        player.applyTweakNow(param, value);
+        player.applyTweakNow(param.name, value);
       });
     }
   });
@@ -326,7 +349,7 @@ function stopNote(midiNote) {
 
 /**
  * Get the parameters for a generator from the GUI
- * @returns 
+ * @returns
  */
 function getParametersForGenerator() {
   let params = {};
@@ -345,21 +368,15 @@ function getParametersForGenerator() {
  */
 function createControls() {
   GUI.removeAllSliders();
-  const map = new Map();
   let count = 0;
   let row = 1;
-  for (const p of model.generator.parameters) {
-    // we map the first few sliders to the preferred list of MIDI controllers
-    if (count < MIDI_CONTROLLERS.length) {
-      map.set(MIDI_CONTROLLERS[count], p.name);
-    }
+  for (const params of model.generator.parameters) {
     if (count > 11) {
       row = 2;
     }
-    GUI.makeSlider(playerForNote, `container${row}`, p.name, p.doc, p.min, p.max, p.default, p.step);
+    GUI.makeSlider(model, count, playerForNote, `container${row}`, params);
     count++;
   }
-  return map;
 }
 
 /**

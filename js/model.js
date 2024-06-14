@@ -10,6 +10,8 @@ export default class Model {
     #fx = null;
     #spec = null;
     #message = null;
+    #learning = false;
+    #lastSliderMoved = -1;
 
     static #instance = null;
     static #privateKey = Symbol("privateKey");
@@ -91,6 +93,22 @@ export default class Model {
 
     set message(value) {
         this.#message = value;
+    }
+
+    set learning(value) {
+        this.#learning = value;
+    }
+
+    get learning() {
+        return this.#learning;
+    }
+
+    set lastSliderMoved(value) {
+        this.#lastSliderMoved = value;
+    }
+
+    get lastSliderMoved() {
+        return this.#lastSliderMoved;
     }
 
     /**

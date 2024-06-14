@@ -26,60 +26,71 @@ export default class GUI {
         GUI.tag("clip-button").disabled = b;
         GUI.tag("docs-button").disabled = b;
         GUI.tag("play-button").disabled = b;
+        GUI.tag("midi-learn-button").disabled = b;
         GUI.tag("midi-label").disabled = b;
         GUI.tag("midi-input").disabled = b;
         GUI.tag("fx-select").disabled = b;
         GUI.tag("fx-label").disabled = b;
     }
 
+    static setMidiLearnState(learning,index) {
+        const button = GUI.tag("midi-learn-button");
+        if (learning) {
+            button.classList.add("learning");
+            button.textContent = `Learning ${index+1}`;
+        } else {
+            button.classList.remove("learning");
+            button.textContent = "MIDI Learn";
+        }
+    }
+
     /**
      * make a slider
+     * @param {BleepSynthModule} model
+     * @param {number} index
+     * @param {Map<number, BleepSynthModule>} playerForNote
      * @param {string} containerName
-     * @param {number} id
-     * @param {string} docstring
-     * @param {number} min
-     * @param {number} max
-     * @param {number} val
-     * @param {number} step
+     * @param {object} params
      */
-    static makeSlider(playerForNote, containerName, id, docstring, min, max, val, step) {
+    static makeSlider(model, index, playerForNote, containerName, params) {
         // get the root container
         const container = document.getElementById(containerName);
         // make the slider container
         const sliderContainer = Object.assign(document.createElement("div"), {
             className: "slider-container",
-            id: `param-${id}`
+            id: `param-${params.name}`
         });
         // make the slider
         const slider = Object.assign(document.createElement("input"), {
             className: "slider",
             type: "range",
-            id: `slider-${id}`,
-            min: min,
-            max: max,
-            step: step,
-            value: val
-        });        
+            id: `slider-${params.name}`,
+            min: params.min,
+            max: params.max,
+            step: params.step,
+            value: params.default
+        });
         // doc string
         if (GUI.SHOW_DOC_STRINGS) {
             const doc = Object.assign(document.createElement("label"), {
                 className: "docstring",
-                id: `doc-${id}`,
-                textContent: docstring
+                id: `doc-${params.name}`,
+                textContent: params.docstring
             });
             container.appendChild(doc);
         }
         // label
         const label = document.createElement("label");
-        label.id = "label-" + id;
-        label.setAttribute("for", "slider-" + id);
-        label.textContent = `${id} [${val}]`;
+        label.id = "label-" + params.name;
+        label.setAttribute("for", "slider-" + params.name);
+        label.textContent = `${params.name} [${params.default}]`;
         // add a callback to the slider
         slider.addEventListener("input", function () {
             let val = parseFloat(this.value);
-            GUI.tag(label.id).textContent = `${id} [${val}]`;
+            GUI.tag(label.id).textContent = `${params.name} [${val}]`;
+            model.lastSliderMoved = index;
             playerForNote.forEach((player, note) => {
-                player.applyTweakNow(id, val);
+                player.applyTweakNow(params.name, val);
             });
         });
         // add to the document
@@ -122,7 +133,7 @@ export default class GUI {
             fxSelector.appendChild(option);
         });
     }
-      
+
     /**
      * set the value of a control to a real number
      * @param {string} label
@@ -135,7 +146,7 @@ export default class GUI {
 
     /**
      * get the value of a slider
-     * @param {string} label 
+     * @param {string} label
      * @returns {number}
      */
     static getSliderValue(label) {
@@ -144,7 +155,7 @@ export default class GUI {
 
     /**
      * get an integer parameter with a given name
-     * @param {string} name 
+     * @param {string} name
      * @returns {number}
      */
     static getIntParam(name) {
@@ -153,11 +164,11 @@ export default class GUI {
 
     /**
      * get a float parameter with a given name
-     * @param {string} name 
+     * @param {string} name
      * @returns {number}
      */
     static getFloatParam(name) {
         return parseFloat(document.getElementById(name).value);
     }
-  
+
 }
