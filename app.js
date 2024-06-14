@@ -61,9 +61,9 @@ function addListenersToGUI() {
   GUI.tag("save-as-button").onclick = saveAsFile.bind(this);
   GUI.tag("clip-button").onclick = copyParamsToClipboard.bind(this);
   GUI.tag("docs-button").onclick = copyDocsToClipboard.bind(this);
-  GUI.tag("play-button").onmousedown = playNote.bind(this);
-  GUI.tag("play-button").onmouseup = stopNote.bind(this);
-  GUI.tag("play-button").onmouseout = stopNote.bind(this);
+  GUI.tag("play-button").onmousedown = playNoteWithButton.bind(this);
+  GUI.tag("play-button").onmouseup = stopNoteWithButton.bind(this);
+  GUI.tag("play-button").onmouseout = stopNoteWithButton.bind(this);
   GUI.tag("start-button").onclick = start.bind(this);
   GUI.tag("slider-pitch").addEventListener("input", updatePitch.bind(this));
   GUI.tag("slider-level").addEventListener("input", updateLevel.bind(this));
@@ -270,26 +270,34 @@ async function start() {
 }
 
 /**
+ * Play a note when the play button is pressed
+ */
+function playNoteWithButton() {
+  const midiNote = GUI.getIntParam("slider-pitch");
+  const velocity = GUI.getFloatParam("slider-level");
+  playNote(midiNote, velocity);
+}
+
+/**
  * Play a note
  */
-function playNote() {
-  const midiNoteNumber = GUI.getIntParam("slider-pitch");
+function playNote(midiNote, velocity) {
   if (model.generator && model.generator.isValid) {
-    let player = playerForNote.get(midiNoteNumber);
+    let player = playerForNote.get(midiNote);
     // possibly we triggered the same note during the release phase of an existing note
     // in which case we must stop it and release the object
     if (player) {
       player.stopAfterRelease(model.context.currentTime);
-      playerForNote.delete(midiNoteNumber);
+      playerForNote.delete(midiNote);
     }
     // get the pitch and parameters
     let params = getParametersForGenerator();
     params["level"] = GUI.getFloatParam("slider-level");
-    params["pitch"] = Utility.midiNoteToFreqHz(midiNoteNumber);
+    params["pitch"] = Utility.midiNoteToFreqHz(midiNote);
     // make a player and store a reference to it so we can stop it later
     player = model.synthEngine.getPlayer(model.generator, params);
     if (Flags.VERBOSE) console.log(player);
-    playerForNote.set(midiNoteNumber, player);
+    playerForNote.set(midiNote, player);
     player.out.connect(model.fx.in);
     model.fx.out.connect(scope.in);
     player.start(model.context.currentTime);
@@ -298,14 +306,21 @@ function playNote() {
 }
 
 /**
+ * stop a note when the play button is released
+ */
+function stopNoteWithButton() {
+  const midiNote = GUI.getIntParam("slider-pitch");
+  stopNote(midiNote);
+}
+
+/**
  * Stop a note
  */
-function stopNote() {
-  const midiNoteNumber = GUI.getIntParam("slider-pitch");
-  let player = playerForNote.get(midiNoteNumber);
+function stopNote(midiNote) {
+  let player = playerForNote.get(midiNote);
   if (player) {
     player.stopAfterRelease(model.context.currentTime);
-    playerForNote.delete(midiNoteNumber);
+    playerForNote.delete(midiNote);
   }
 }
 
