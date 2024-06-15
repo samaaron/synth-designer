@@ -61,7 +61,7 @@ const MODULE_CLASSES = {
   "VCA": Amplifier
 };
 
-const EFFECT_NAMES = {
+const EFFECT_CLASSES = {
   "reverb_large": Reverb,
   "reverb_medium": Reverb,
   "reverb_small": Reverb,
@@ -109,15 +109,25 @@ const REVERB_IMPULSES = {
   "ambience_gated": "ambience-gated.flac"
 };
 
+const SYNTH_PRESETS = [
+  "default",
+  "fairvoice",
+  "hammond",
+  "supersaw",
+  "synflute",
+  "thickbass",
+];
+
 const Constants = {
-  MAX_MIDI_FREQ,
-  MIN_MIDI_FREQ,
-  MIN_LEVEL,
+  EFFECT_CLASSES,
   MAX_LEVEL,
+  MAX_MIDI_FREQ,
   MIDDLE_C,
+  MIN_LEVEL,
+  MIN_MIDI_FREQ,
   MODULE_CLASSES,
-  EFFECT_CLASSES: EFFECT_NAMES,
-  REVERB_IMPULSES
+  REVERB_IMPULSES,
+  SYNTH_PRESETS,
 };
 
 export default Constants;

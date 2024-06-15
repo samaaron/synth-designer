@@ -130,6 +130,18 @@ label {
   background-color: #4f65d4;
 }
 
+.midibutton:disabled {
+  opacity:0.3
+}
+
+.midibutton[disabled]:hover {
+  opacity:0.3
+}
+
+.midibutton:hover {
+  opacity: 1
+}
+
 .dropdown {
   background-color: #4f4f4f;
   color: #ffffff;

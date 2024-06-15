@@ -115,7 +115,7 @@ export default class Model {
     * load file
     * https://developer.chrome.com/articles/file-system-access/
     */
-    async loadFile() {
+    async loadFileWithPicker() {
         [this.#fileHandle] = await window.showOpenFilePicker();
         const file = await this.#fileHandle.getFile();
         this.#spec = await file.text();
@@ -125,6 +125,23 @@ export default class Model {
         this.#message = result.message;
     }
 
+    async loadFileWithName(name) {
+        try {
+            const response = await fetch(`bleepsynth/presets/${name}.txt`);
+            if (!response.ok) {
+                throw new Error(`HTTP error when fetching file: ${response.status}`);
+            }
+            const spec = await response.text();
+            this.#spec = spec;
+            this.#wasEdited = false;
+            const result = this.#synthEngine.getGeneratorFromSpec(this.#spec);
+            this.#generator = result.generator;
+            this.#message = result.message;
+        } catch (error) {
+            console.error("Unable to fetch file:", error);
+        }
+    }
+    
     /**
     * save file
     * https://developer.chrome.com/articles/file-system-access/
