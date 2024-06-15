@@ -110,6 +110,7 @@ const REVERB_IMPULSES = {
 };
 
 const SYNTH_PRESETS = [
+  "default",
   "fairvoice",
   "hammond",
   "supersaw",

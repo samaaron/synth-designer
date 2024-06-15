@@ -1,0 +1,289 @@
+@synth spiral
+longname : Spiral wavefolding synth
+type : synth
+author : Guy J Brown
+version : 1.0
+doc : A wavefolding synth roughly based on Fors Chiral
+@end
+
+# parameters
+
+@param cutoff
+type : float
+mutable: yes
+step : 0.01
+min : 100
+max : 8000
+default : 2000
+doc : cutoff frequency
+@end
+
+@param cutoff_mod
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : amount of cutoff modulation by the LFO
+@end
+
+@param gain
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.5
+doc : wavefolder gain
+@end
+
+@param gain_mod
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : amount of gain modulation by the LFO
+@end
+
+@param symmetry
+type : float
+mutable: yes
+step : 0.01
+min : -1
+max : 1
+default : 0
+doc : wavefolder symmetry
+@end
+
+@param symmetry_mod
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : amount of symmetry modulation by the LFO
+@end
+
+@param fm_depth
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 20
+default : 0
+doc : FM depth
+@end
+
+@param fm_ratio
+type : int
+mutable: yes
+step : 0.01
+min : 1
+max : 12
+default : 1
+doc : FM depth
+@end
+
+@param fm_mod
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : amount of FM pitch modulation by the LFO
+@end
+
+@param noise
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 0.5
+default : 0
+doc : noise level
+@end
+
+@param am_ratio
+type : float
+mutable: yes
+step : 0.01
+min : 0.01
+max : 12
+default : 1
+doc : AM rate
+@end
+
+@param am_depth
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : AM depth
+@end
+
+@param am_mod
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : amount of AM pitch modulation by the LFO
+@end
+
+@param lfo_rate
+type : float
+mutable : yes
+step : 0.01
+min : 0.01
+max : 5
+default : 0.1
+doc : LFO rate
+@end
+
+@param attack
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 5
+default : 0.1
+doc : attack
+@end
+
+@param decay
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 5
+default : 1
+doc : decay
+@end
+
+@param sustain
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.8
+doc : sustain
+@end
+
+@param release
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 5
+default : 0.1
+doc : release
+@end
+
+@param volume
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.8
+doc : master volume
+@end
+
+
+# modules
+
+SIN-OSC : carrier
+SIN-OSC : modulator
+SIN-OSC : am
+TRI-OSC : lfo
+FOLDER : folder
+LPF : lowpass
+VCA : vca
+VCA : modgain
+NOISE : noise
+VCA : noisegain
+VCA : amgain
+VCA : mix
+VCA : symmetrymod
+VCA : gainmod
+VCA : fmmod
+VCA : ammod
+ADSR : env
+ADSR : filterenv
+
+# patch
+
+carrier.out -> mix.in
+
+noise.out -> noisegain.in
+noisegain.out -> mix.in
+
+mix.out -> folder.in
+
+folder.out -> lowpass.in
+lowpass.out -> vca.in
+vca.out -> audio.in
+
+modulator.out -> modgain.in
+modgain.out -> carrier.pitchCV
+
+am.out -> amgain.in
+amgain.out -> mix.levelCV
+
+env.out -> vca.levelCV
+
+filterenv.out -> lowpass.cutoffCV
+
+lfo.out -> symmetrymod.in
+symmetrymod.out -> folder.symmetryCV
+
+lfo.out -> gainmod.in
+gainmod.out -> folder.gainCV
+
+lfo.out -> fmmod.in
+fmmod.out -> modulator.pitchCV
+
+lfo.out -> ammod.in
+ammod.out -> am.pitchCV
+
+# tweak
+
+carrier.pitch = param.pitch
+modulator.pitch = param.pitch*param.fm_ratio
+lowpass.cutoff = param.cutoff
+folder.gain = param.gain
+folder.symmetry = param.symmetry
+modgain.level = param.fm_depth*800
+noisegain.level = param.noise
+amgain.level=param.am_depth
+am.pitch = param.pitch*param.am_ratio
+symmetrymod.level = param.symmetry_mod
+lfo.pitch = param.lfo_rate
+gainmod.level = param.gain_mod
+fmmod.level = param.fm_mod
+
+# envelope
+
+env.attack = param.attack
+env.decay = param.decay
+env.sustain = param.sustain*param.volume*param.level
+env.release = param.release
+env.level = param.volume*param.level
+
+filterenv.attack = param.attack
+filterenv.decay = param.decay
+filterenv.sustain = param.cutoff*(1-param.cutoff_mod)
+filterenv.release = param.release
+filterenv.level = param.cutoff
+
+
+# end
