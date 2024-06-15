@@ -7,10 +7,14 @@ import BleepSynthTests from './bleepsynth/core/bleep_synth_tests.js';
 import MidiSystem from './midi/midi_system.js';
 import Flowchart from './js/flowchart.js';
 import Model from './js/model.js';
+import BleepSynthEngine from './bleepsynth/core/bleep_synth_engine.js';
 
 window.addEventListener('DOMContentLoaded', init);
 
 const MONITOR_UPDATE_INTERVAL = 100;    // msec
+const DEFAULT_WET_LEVEL = 0.1;          // default wet level
+const DEFAULT_VELOCITY = 0.8;           // default velocity
+const MAX_SLIDERS_PER_ROW = 12;         // max sliders per row
 
 let model;                              // the model
 const midiSystem = new MidiSystem();    // the MIDI system
@@ -23,11 +27,13 @@ let scope;                              // the scope
 async function init() {
   await midiSystem.connect();
   Flowchart.initialize();
-  GUI.disableGUI(true);
-  GUI.makeFXdropdown();
+  makeEffectsDropdown();
+  makeMIDIinputDropdown();
+  makeMIDIlisteners();
   addListenersToGUI();
-  setupMidi();
   setDefaultValues();
+  makePresetDropdown();
+  GUI.setGUIState(GUI.STATE_LOCKED);
 }
 
 /**
@@ -43,8 +49,8 @@ function startMonitorTimer() {
  * Set the default values for the sliders
  */
 function setDefaultValues() {
-  GUI.setSliderValue("level", 0.8);
-  GUI.setSliderValue("wetLevel", 0.1);
+  GUI.setSliderValue("level", DEFAULT_VELOCITY);
+  GUI.setSliderValue("wetLevel", DEFAULT_WET_LEVEL);
 }
 
 /**
@@ -68,6 +74,7 @@ function addListenersToGUI() {
   GUI.tag("slider-wetLevel").addEventListener("input", updateWetLevel.bind(this));
   GUI.tag("midi-input").addEventListener("change", changeMIDIInput.bind(this));
   GUI.tag("fx-select").addEventListener("change", loadSelectedEffect.bind(this));
+  GUI.tag("preset-select").addEventListener("change", loadPreset.bind(this));
 }
 
 /**
@@ -83,6 +90,20 @@ function handleMIDILearnButton() {
       GUI.setMidiLearnState(true, model.lastSliderMoved);
     }
   }
+}
+
+/**
+ * Load a preset
+ */
+async function loadPreset() {
+  const selectedName = GUI.getDropdownValue("preset-select");
+  await model.loadFileWithName(selectedName);
+  createControls();
+  Flowchart.drawGraphAsMermaid(model.generator);
+  GUI.tag("synth-spec").value = model.spec;
+  GUI.tag("file-label").textContent = "Preset: " + selectedName;
+  GUI.tag("parse-errors").value = model.message;
+  GUI.setGUIState(GUI.STATE_PRESET_LOADED);
 }
 
 /**
@@ -109,12 +130,13 @@ function handleSpecInput() {
  * Load a file
  */
 async function loadFile() {
-  await model.loadFile();
+  await model.loadFileWithPicker();
   createControls();
   Flowchart.drawGraphAsMermaid(model.generator);
   GUI.tag("synth-spec").value = model.spec;
   GUI.tag("file-label").textContent = "Current file: " + model.fileHandle.name;
   GUI.tag("parse-errors").value = model.message;
+  GUI.setGUIState(GUI.STATE_FILE_LOADED);
 }
 
 /**
@@ -131,6 +153,7 @@ async function saveFile() {
 async function saveAsFile() {
   await model.saveAsFile();
   GUI.tag("file-label").textContent = "Current file: " + model.fileHandle.name;
+  GUI.setGUIState(GUI.STATE_FILE_LOADED);
 }
 
 /**
@@ -190,9 +213,13 @@ function updateWetLevel(event) {
  * Change the MIDI input
  */
 function changeMIDIInput() {
-  var selectedIndex = GUI.tag("midi-input").selectedIndex;
-  var selectedName = GUI.tag("midi-input").options[selectedIndex].text;
+  const selectedName = GUI.getDropdownValue("midi-input");
   midiSystem.selectInput(selectedName);
+  if (selectedName === "None") {
+    GUI.setGUIState(GUI.STATE_MIDI_NOT_CONNECTED);
+  } else {
+    GUI.setGUIState(GUI.STATE_MIDI_CONNECTED);
+  }
 }
 
 /**
@@ -206,33 +233,26 @@ function getParameterListAsString(params) {
 }
 
 /**
- * Set up the MIDI system
+ * Make the preset dropdown
  */
-function setupMidi() {
-  makeMIDIdropdown();
-  makeMIDIlisteners();
+function makePresetDropdown() {
+  GUI.makeMenu("preset-select", BleepSynthEngine.getPresetNames());
+}
+
+/**
+ * Make the effects dropdown
+ */
+function makeEffectsDropdown() {
+  GUI.makeMenu("fx-select", BleepSynthEngine.getEffectNames());
 }
 
 /**
  * Make the MIDI dropdown
  */
-function makeMIDIdropdown() {
-  const midiInputs = midiSystem.inputs;
-  const inputSelector = GUI.tag("midi-input");
-  // first element in the list is no input
-  const noneOption = Object.assign(document.createElement("option"), {
-    text: "None",
-    value: 0
-  });
-  inputSelector.appendChild(noneOption);
-  // set the options for the remaining html elements
-  midiInputs.forEach((name, index) => {
-    const option = Object.assign(document.createElement("option"), {
-      text: name,
-      value: index + 1
-    });
-    inputSelector.appendChild(option);
-  });
+function makeMIDIinputDropdown() {
+  let items = midiSystem.inputs;
+  items.unshift("None");
+  GUI.makeMenu("midi-input", items);
 }
 
 /**
@@ -262,8 +282,8 @@ function makeMIDIlisteners() {
     const param = model.generator.parameters[index];
     // only proceed if the parameter is valid
     if (param) {
-      let el = GUI.tag("slider-" + param.name);
-      let value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * e.detail.value;
+      const el = GUI.tag("slider-" + param.name);
+      const value = parseFloat(el.min) + (parseFloat(el.max) - parseFloat(el.min)) * e.detail.value;
       GUI.setSliderValue(param.name, value);
       playerForNote.forEach((player, note) => {
         player.applyTweakNow(param.name, value);
@@ -281,15 +301,16 @@ async function start() {
     BleepSynthTests.testSynths(model.context);
   }
   startMonitorTimer();
-  GUI.disableGUI(false);
+  GUI.setGUIState(GUI.STATE_READY);
   await loadSelectedEffect(model);
-  setWetLevel(0.1);
+  setWetLevel(DEFAULT_WET_LEVEL);
   let view = new ScopeView(GUI.tag("scope-canvas"), {
     lineWidth: 2,
     sync: true
   });
   scope = new Scope(model.context, view);
   scope.draw();
+  loadPreset();
 }
 
 /**
@@ -340,7 +361,7 @@ function stopNoteWithButton() {
  * Stop a note
  */
 function stopNote(midiNote) {
-  let player = playerForNote.get(midiNote);
+  const player = playerForNote.get(midiNote);
   if (player) {
     player.stopAfterRelease(model.context.currentTime);
     playerForNote.delete(midiNote);
@@ -368,23 +389,20 @@ function getParametersForGenerator() {
  */
 function createControls() {
   GUI.removeAllSliders();
-  let count = 0;
-  let row = 1;
-  for (const params of model.generator.parameters) {
-    if (count > 11) {
-      row = 2;
+  let rowIndex = 1;
+  model.generator.parameters.forEach((param, index) => {
+    if (index >= MAX_SLIDERS_PER_ROW) {
+      rowIndex = 2;
     }
-    GUI.makeSlider(model, count, playerForNote, `container${row}`, params);
-    count++;
-  }
+    GUI.makeSlider(model, index, playerForNote, `container${rowIndex}`, param);
+  });
 }
 
 /**
  * make a effects unit and connect it to the audio output
  */
 async function loadSelectedEffect() {
-  const selectedIndex = GUI.tag("fx-select").selectedIndex;
-  const selectedName = GUI.tag("fx-select").options[selectedIndex].text;
+  const selectedName = GUI.getDropdownValue("fx-select");
   if (model.fx) {
     model.fx.stop();
   }

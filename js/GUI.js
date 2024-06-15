@@ -4,6 +4,12 @@ export default class GUI {
 
     static SHOW_DOC_STRINGS = false;
     static DOT_DURATION_MS = 50;
+    static STATE_LOCKED = 1;
+    static STATE_READY = 2;
+    static STATE_MIDI_CONNECTED = 3;
+    static STATE_MIDI_NOT_CONNECTED = 4;
+    static STATE_FILE_LOADED = 5;
+    static STATE_PRESET_LOADED = 6;
 
     /**
      * get the element with the given name
@@ -15,29 +21,82 @@ export default class GUI {
     }
 
     /**
-     * disable or enable the GUI elements
-     * @param {boolean} b
+     * set the state of the GUI
+     * @param {number} state 
      */
-    static disableGUI(b) {
-        GUI.tag("start-button").disabled = !b;
-        GUI.tag("load-button").disabled = b;
-        GUI.tag("save-button").disabled = b;
-        GUI.tag("save-as-button").disabled = b;
-        GUI.tag("clip-button").disabled = b;
-        GUI.tag("docs-button").disabled = b;
-        GUI.tag("play-button").disabled = b;
-        GUI.tag("midi-learn-button").disabled = b;
-        GUI.tag("midi-label").disabled = b;
-        GUI.tag("midi-input").disabled = b;
-        GUI.tag("fx-select").disabled = b;
-        GUI.tag("fx-label").disabled = b;
+    static setGUIState(state) {
+        switch (state) {
+            case GUI.STATE_LOCKED:
+                GUI.tag("start-button").disabled = false;
+                GUI.tag("load-button").disabled = true;
+                GUI.tag("save-button").disabled = true;
+                GUI.tag("save-as-button").disabled = true;
+                GUI.tag("clip-button").disabled = true;
+                GUI.tag("docs-button").disabled = true;
+                GUI.tag("play-button").disabled = true;
+                GUI.tag("midi-learn-button").disabled = true;
+                GUI.tag("midi-input").disabled = true;
+                GUI.tag("fx-select").disabled = true;
+                GUI.tag("preset-select").disabled = true;
+                break;
+            case GUI.STATE_READY:
+                GUI.tag("start-button").disabled = true;
+                GUI.tag("load-button").disabled = false;
+                GUI.tag("save-button").disabled = true;
+                GUI.tag("save-as-button").disabled = true;
+                GUI.tag("clip-button").disabled = true;
+                GUI.tag("docs-button").disabled = true;
+                GUI.tag("play-button").disabled = true;
+                GUI.tag("midi-learn-button").disabled = true;
+                GUI.tag("midi-input").disabled = false;
+                GUI.tag("fx-select").disabled = false;
+                GUI.tag("preset-select").disabled = false;
+                break;
+            case GUI.STATE_MIDI_CONNECTED:
+                GUI.tag("midi-learn-button").disabled = false;
+                break;
+            case GUI.STATE_MIDI_NOT_CONNECTED:
+                GUI.tag("midi-learn-button").disabled = true;
+                break;
+            case GUI.STATE_PRESET_LOADED:
+                GUI.tag("load-button").disabled = false;
+                GUI.tag("save-button").disabled = true;
+                GUI.tag("save-as-button").disabled = false;
+                GUI.tag("clip-button").disabled = false;
+                GUI.tag("docs-button").disabled = false;
+                GUI.tag("play-button").disabled = false;
+                break;    
+            case GUI.STATE_FILE_LOADED:
+                GUI.tag("load-button").disabled = false;
+                GUI.tag("save-button").disabled = false;
+                GUI.tag("save-as-button").disabled = false;
+                GUI.tag("clip-button").disabled = false;
+                GUI.tag("docs-button").disabled = false;
+                GUI.tag("play-button").disabled = false;
+                break;
+        }
     }
 
-    static setMidiLearnState(learning,index) {
+    /**
+     * get te current state of a dropdown
+     * @param {string} name 
+     * @returns {string}
+     */
+    static getDropdownValue(name) {
+        const selectedIndex = GUI.tag(name).selectedIndex;
+        return GUI.tag(name).options[selectedIndex].text;
+    }
+    
+    /**
+     * set the state of the MIDi learn button
+     * @param {boolean} learning 
+     * @param {number} index 
+     */
+    static setMidiLearnState(learning, index) {
         const button = GUI.tag("midi-learn-button");
         if (learning) {
             button.classList.add("learning");
-            button.textContent = `Learning ${index+1}`;
+            button.textContent = `Learning ${index + 1}`;
         } else {
             button.classList.remove("learning");
             button.textContent = "MIDI Learn";
@@ -122,17 +181,20 @@ export default class GUI {
     }
 
     /**
-     * make a dropdown for the effects
+     * populate a dropdown menu with a list of items
+     * @param {string} name 
+     * @param {Array<string>} items 
      */
-    static makeFXdropdown() {
-        const fxSelector = GUI.tag("fx-select");
-        BleepSynthEngine.getEffectNames().forEach((name, index) => {
+    static makeMenu(name, items) {
+        const selector = GUI.tag(name);
+        items.forEach((item, index) => {
             const option = document.createElement("option");
-            option.text = name;
+            option.text = item;
             option.value = index;
-            fxSelector.appendChild(option);
+            selector.appendChild(option);
         });
     }
+
 
     /**
      * set the value of a control to a real number

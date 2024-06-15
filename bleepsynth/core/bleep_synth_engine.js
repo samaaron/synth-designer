@@ -11,7 +11,8 @@ const privateContructorKey = Symbol("privateContructorKey");
 
 export default class BleepSynthEngine {
 
-    static WAVE_CYCLE_DATA = `bleepsynth/cycles/cycle_defs.json`;
+    static WAVE_CYCLE_DATA = "bleepsynth/cycles/cycle_defs.json";
+    static PRESETS_FOLDER = "bleepsynth/presets";
 
     #monitor
     #cache
@@ -158,6 +159,14 @@ export default class BleepSynthEngine {
      */
     static getModuleNames() {
         return Object.keys(Constants.MODULE_CLASSES);
+    }
+
+    /**
+     * get the array of synth presets
+     * @returns {Array<string>}
+     */
+    static getPresetNames() {
+        return Constants.SYNTH_PRESETS;
     }
 
 }
