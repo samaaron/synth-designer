@@ -1,0 +1,266 @@
+@synth default
+longname : Default patch
+type : synth
+author : Guy J Brown
+version : 1.0
+doc : A very simple default patch
+@end
+
+# parameters
+
+@param cutoff
+type : float
+mutable: yes
+step : 0.01
+min : 100
+max : 8000
+default : 1930
+doc : cutoff frequency
+@end
+
+@param cutoff_mod
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.1
+doc : effect of envelope on cutoff frequency
+@end
+
+@param tone
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.15
+doc : tone
+@end
+
+@param complexity
+type : int
+mutable: yes
+step : 1
+min : 1
+max : 12
+default : 2
+doc : harmonic complexity
+@end
+
+@param noise
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 0.1
+default : 0.01
+doc : noise level
+@end
+
+@param gain
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.5
+doc : gain
+@end
+
+@param gain_mod
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.4
+doc : gain modulation by LFO
+@end
+
+@param symmetry
+type : float
+mutable: yes
+step : 0.01
+min : -1
+max : 1
+default : 0
+doc : symmetry
+@end
+
+@param symmetry_mod
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.72
+doc : symmetry modulation by LFO
+@end
+
+@param lfo_rate
+type : float
+mutable: yes
+step : 0.01
+min : 0.01
+max : 5
+default : 0.32
+doc : lfo rate
+@end
+
+@param am_rate
+type : float
+mutable: yes
+step : 0.01
+min : 0.5
+max : 12
+default : 0.5
+doc : AM rate
+@end
+
+@param am_depth
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.57
+doc : AM depth
+@end
+
+@param attack
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 5
+default : 0.1
+doc : attack
+@end
+
+@param decay
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 5
+default : 1
+doc : decay
+@end
+
+@param sustain
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.8
+doc : sustain
+@end
+
+@param release
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 5
+default : 0.1
+doc : release
+@end
+
+@param volume
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.8
+doc : master volume
+@end
+
+# modules
+
+SIN-OSC : osc
+SIN-OSC : sin
+SIN-OSC : am
+NOISE : noise
+TRI-OSC : lfo
+VCA : mix
+VCA : mod
+VCA : gainmod
+VCA : symmetrymod
+LPF : lowpass
+VCA : vca
+VCA : ammod
+VCA : amlevel
+VCA : noiselevel
+FOLDER : folder
+ADSR : env
+ADSR : filterenv
+
+# patch
+
+osc.out -> mix.in
+sin.out -> mod.in
+mod.out -> mix.levelCV
+
+noise.out -> noiselevel.in
+noiselevel.out -> mix.in
+
+mix.out -> folder.in
+folder.out -> ammod.in
+
+am.out -> amlevel.in
+amlevel.out -> ammod.levelCV
+ammod.out -> lowpass.in
+
+lowpass.out -> vca.in
+vca.out -> audio.in
+
+lfo.out -> gainmod.in
+gainmod.out -> folder.gainCV
+
+lfo.out -> symmetrymod.in
+symmetrymod.out -> folder.symmetryCV
+
+env.out -> vca.levelCV
+filterenv.out -> lowpass.cutoffCV
+
+# tweak
+
+osc.pitch = param.pitch
+sin.pitch = param.pitch*param.complexity
+vca.level = param.level
+lowpass.cutoff = param.cutoff
+
+mod.level = param.tone
+
+folder.gain = param.gain
+folder.symmetry = param.symmetry
+
+gainmod.level = param.gain_mod*0.5
+symmetrymod.level = param.symmetry_mod
+
+lfo.pitch = param.lfo_rate
+
+noiselevel.level = param.noise
+
+am.pitch = param.pitch*param.am_rate
+amlevel.level = param.am_depth
+
+# envelope
+
+env.attack = param.attack
+env.decay = param.decay
+env.sustain = param.sustain*param.volume*param.level
+env.release = param.release
+env.level = param.volume*param.level
+
+filterenv.attack = param.attack
+filterenv.decay = param.decay
+filterenv.sustain = param.cutoff*(1-param.cutoff_mod)
+filterenv.release = param.release
+filterenv.level = param.cutoff
+
+
+# end
