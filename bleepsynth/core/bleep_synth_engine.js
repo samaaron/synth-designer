@@ -74,6 +74,11 @@ export default class BleepSynthEngine {
         }
     }
 
+    /**
+     * get a synth generator from a URL
+     * @param {string} url 
+     * @returns {Promise<{generator: BleepGenerator, message: string}>}
+     */
     async getGeneratorFromURL(url) {
         const response = await fetch(url);
         if (!response.ok) {
@@ -84,7 +89,7 @@ export default class BleepSynthEngine {
     }
 
     /**
-     * get a generator from a synth specification
+     * get a generator from a text synth specification
      * @param {string} spec
      */
     getGeneratorFromSpec(spec) {
@@ -124,6 +129,12 @@ export default class BleepSynthEngine {
         return new BleepPlayer(this.#context, this.#monitor, generator, this.#cycles, params);
     }
 
+    /**
+     * get a named synth player
+     * @param {string} name 
+     * @param {object} params 
+     * @returns {BleepPlayer}
+     */
     getPlayer(name, params = {}) {
         if (this.#synthCache.has(name)) {
             const generator = this.#synthCache.get(name);
@@ -133,6 +144,10 @@ export default class BleepSynthEngine {
         }
     }
 
+    /**
+     * load a synth definition from a file into the synthdef cache
+     * @param {string} filename 
+     */
     async loadSynthDef(filename) {
         const url = `${BleepSynthEngine.PRESETS_PATH}/${filename}.txt`;
         const { generator, message } = await this.getGeneratorFromURL(url);
@@ -140,16 +155,30 @@ export default class BleepSynthEngine {
         this.#synthCache.set(generator.shortname, generator);
     }
 
+    /**
+     * load all the preset synth definitions into the cache
+     */
     async loadPresetSynthDefs() {
         for (let filename of Constants.SYNTH_PRESETS) {
             await this.loadSynthDef(filename);
         }
     }
 
+    /**
+     * load a sample into the buffer cache
+     * @param {string} sampleName
+     */
     loadSample(sampleName) {
         this.#bufferCache.loadBuffer(`${BleepSynthEngine.SAMPLES_PATH}/${sampleName}.flac`, this.#context);
     }
 
+    /**
+     * play a sample
+     * @param {number} when 
+     * @param {string} sampleName 
+     * @param {AudioNode} outputNode 
+     * @param {object} params 
+     */
     playSample(when = this.#context.currentTime, sampleName, outputNode, params = {}) {
         const samplePath = `${BleepSynthEngine.SAMPLES_PATH}/${sampleName}.flac`;
         this.#bufferCache.loadBuffer(samplePath, this.#context)
@@ -211,6 +240,7 @@ export default class BleepSynthEngine {
 
     /**
      * get the audio context
+     * @returns {AudioContext}
      */
     get context() {
         return this.#context;
@@ -218,11 +248,16 @@ export default class BleepSynthEngine {
 
     /**
      * get the current time (of the audio context)
+     * @returns {number}
      */
     get currentTime() {
         return this.#context.currentTime;
     }
 
+    /**
+     * get the destination (of the audio context)
+     * @returns {AudioDestinationNode}
+     */
     get destination() {
         return this.#context.destination;
     }
