@@ -298,7 +298,8 @@ function makeMIDIlisteners() {
 async function start() {
   model = await Model.getInstance();
   if (Flags.RUN_TESTS) {
-    BleepSynthTests.testSynthCache();
+    //BleepSynthTests.testSynthCache();
+    BleepSynthTests.testSampler();
   }
   startMonitorTimer();
   GUI.setGUIState(GUI.STATE_READY);

@@ -4,18 +4,20 @@ import Constants from './constants.js';
 import Grammar from './grammar.js';
 import Monitor from './monitor.js';
 import Reverb from '../effects/reverb.js';
-import SampleCache from './samplecache.js';
+import BufferCache from './buffer_cache.js';
 import BleepEffect from '../effects/effect.js';
+import Sampler from './sampler.js';
 
 const privateContructorKey = Symbol("privateContructorKey");
 
 export default class BleepSynthEngine {
 
     static WAVE_CYCLE_DATA = "bleepsynth/cycles/cycle_defs.json";
-    static PRESETS_FOLDER = "bleepsynth/presets";
+    static PRESETS_PATH = "bleepsynth/presets";
+    static SAMPLES_PATH = "bleepsynth/samples";
 
     #monitor
-    #sampleCache
+    #bufferCache
     #synthCache
     #synthSemantics
     #synthGrammar
@@ -33,7 +35,7 @@ export default class BleepSynthEngine {
         }
         this.#context = new AudioContext();
         this.#monitor = new Monitor();
-        this.#sampleCache = new SampleCache(this.#context);
+        this.#bufferCache = new BufferCache(this.#context);
         this.#synthCache = new Map();
         ({ semantics: this.#synthSemantics, grammar: this.#synthGrammar } = Grammar.makeGrammar());
     }
@@ -132,7 +134,7 @@ export default class BleepSynthEngine {
     }
 
     async loadSynthDef(filename) {
-        const url = `${BleepSynthEngine.PRESETS_FOLDER}/${filename}.txt`;
+        const url = `${BleepSynthEngine.PRESETS_PATH}/${filename}.txt`;
         const { generator, message } = await this.getGeneratorFromURL(url);
         console.log(message);
         this.#synthCache.set(generator.shortname, generator);
@@ -144,6 +146,20 @@ export default class BleepSynthEngine {
         }
     }
 
+    loadSample(sampleName) {
+        this.#bufferCache.loadBuffer(`${BleepSynthEngine.SAMPLES_PATH}/${sampleName}.flac`, this.#context);
+    }
+
+    playSample(when = this.#context.currentTime, sampleName, outputNode, params = {}) {
+        const samplePath = `${BleepSynthEngine.SAMPLES_PATH}/${sampleName}.flac`;
+        this.#bufferCache.loadBuffer(samplePath, this.#context)
+            .then(buffer => {
+                const sampler = new Sampler(this.#context, this.#monitor, buffer, params);
+                sampler.out.connect(outputNode);
+                sampler.play(when);
+            });
+    }
+
     /**
      * get an effect
      * @param {string} name
@@ -153,7 +169,7 @@ export default class BleepSynthEngine {
         let effect = null;
         const className = Constants.EFFECT_CLASSES[name];
         if (className === Reverb) {
-            effect = new Reverb(this.#context, this.#monitor, this.#sampleCache);
+            effect = new Reverb(this.#context, this.#monitor, this.#bufferCache);
             await effect.load(Constants.REVERB_IMPULSES[name]);
         } else {
             effect = new className(this.#context, this.#monitor);
@@ -205,6 +221,10 @@ export default class BleepSynthEngine {
      */
     get currentTime() {
         return this.#context.currentTime;
+    }
+
+    get destination() {
+        return this.#context.destination;
     }
 
 }

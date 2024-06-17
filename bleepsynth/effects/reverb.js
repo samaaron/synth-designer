@@ -1,7 +1,7 @@
 import Monitor from "../core/monitor.js"
 import { MonitoredConvolverNode } from "../core/monitored_components.js"
 import BleepEffect from "./effect.js"
-import SampleCache from "../core/samplecache.js"
+import BufferCache from "../core/buffer_cache.js"
 
 export default class Reverb extends BleepEffect {
 
@@ -12,9 +12,9 @@ export default class Reverb extends BleepEffect {
 
     /**
      * make a reverb effect
-     * @param {AudioContext} context 
-     * @param {Monitor} monitor 
-     * @param {SampleCache} cache 
+     * @param {AudioContext} context
+     * @param {Monitor} monitor
+     * @param {BufferCache} cache
      */
     constructor(context, monitor, cache) {
         super(context, monitor);
@@ -30,11 +30,11 @@ export default class Reverb extends BleepEffect {
 
     /**
      * load an impulse response
-     * @param {string} filename 
+     * @param {string} filename
      */
     async load(filename) {
-        const impulseName = `${Reverb.IMPULSE_PATH}${filename}`;
-        const buffer = await this.#cache.getSample(this._context, impulseName);
+        const url = `${Reverb.IMPULSE_PATH}${filename}`;
+        const buffer = await this.#cache.loadBuffer(url, this._context);
         this.#convolver.buffer = buffer;
     }
 
