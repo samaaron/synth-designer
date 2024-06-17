@@ -6,28 +6,46 @@ import Constants from "./constants.js";
 export default class BleepSynthTests {
 
   static TEST_PATCHES = ["buzzer", "synflute", "noise","elpiano","fmbell","fmpluck","filterwobble"];
-  static TEST_DURATION = 1; // seconds
-  static TEST_GAP = 1; // seconds
 
-  static async testSynths(context) {
+  static async testSynths() {
     console.log("testing synths");
-    const synthEngine = await BleepSynthEngine.createInstance(context);
-    let playTime = context.currentTime;
+    const synthEngine = await BleepSynthEngine.createInstance();
+    let playTime = synthEngine.currentTime;
     for (let patch of BleepSynthTests.TEST_PATCHES) {
       const patchFile = `bleepsynth/presets/${patch}.txt`;
       console.log(`testing ${patchFile}`);
-      const result = await synthEngine.getGeneratorFromFile(patchFile);
+      const result = await synthEngine.getGeneratorFromURL(patchFile);
       const generator = result.generator;
       console.log(result.message);
-      const player = synthEngine.getPlayer(generator, {
+      const player = synthEngine.getPlayerFromGenerator(generator, {
         pitch: Constants.MIDDLE_C,
         level: 0.8,
-        duration: BleepSynthTests.TEST_DURATION
+        duration: 1
       });
-      player.out.connect(context.destination);
+      player.out.connect(synthEngine.context.destination);
       player.play(playTime);
-      //player.stopAfterRelease(playTime + BleepSynthTests.TEST_DURATION);
-      playTime += BleepSynthTests.TEST_DURATION + BleepSynthTests.TEST_GAP;
+      playTime += 1.5;
+    }
+  }
+
+  static async testSynthCache() {
+    // start the engine
+    const synthEngine = await BleepSynthEngine.createInstance();
+    // load all presets
+    await synthEngine.loadPresetSynthDefs();
+    // play a scale
+    let playTime = synthEngine.currentTime;
+    for (let note = 60; note <= 72; note++) {
+      const player = synthEngine.getPlayer("breton", {
+        pitch: Utility.midiNoteToFreqHz(note),
+        level: 0.8,
+        duration: 0.5
+      });
+      player.out.connect(synthEngine.context.destination);
+      // play immediately
+      player.play(playTime);
+      // play after 1 second
+      playTime += 0.25;
     }
   }
 

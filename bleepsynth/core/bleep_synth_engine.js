@@ -5,7 +5,7 @@ import Grammar from './grammar.js';
 import Monitor from './monitor.js';
 import Reverb from '../effects/reverb.js';
 import SampleCache from './samplecache.js';
-import BleepEffect from '../effects/effect.js'; 
+import BleepEffect from '../effects/effect.js';
 
 const privateContructorKey = Symbol("privateContructorKey");
 
@@ -15,7 +15,8 @@ export default class BleepSynthEngine {
     static PRESETS_FOLDER = "bleepsynth/presets";
 
     #monitor
-    #cache
+    #sampleCache
+    #synthCache
     #synthSemantics
     #synthGrammar
     #context
@@ -23,16 +24,17 @@ export default class BleepSynthEngine {
 
     /**
      * make a bleep synth engine
-     * do not call this directly, use createInstance(context)
+     * cannot not call this directly, use createInstance(context)
      * @param {AudioContext} context
      */
-    constructor(context, key) {
+    constructor(key) {
         if (key !== privateContructorKey) {
             throw new Error("BleepSynthEngine: Cannot call constructor directly, use createInstance(context)");
         }
-        this.#context = context;
+        this.#context = new AudioContext();
         this.#monitor = new Monitor();
-        this.#cache = new SampleCache(context);
+        this.#sampleCache = new SampleCache(this.#context);
+        this.#synthCache = new Map();
         ({ semantics: this.#synthSemantics, grammar: this.#synthGrammar } = Grammar.makeGrammar());
     }
 
@@ -41,16 +43,16 @@ export default class BleepSynthEngine {
      * @param {AudioContext} context
      * @returns {Promise<BleepSynthEngine>}
      */
-    static async createInstance(context) {
-        const engine = new BleepSynthEngine(context, privateContructorKey);
-        await engine.initialise();
+    static async createInstance() {
+        const engine = new BleepSynthEngine(privateContructorKey);
+        await engine.#initialise();
         return engine;
     }
 
     /**
      * initialise the engine
      */
-    async initialise() {
+    async #initialise() {
         await this.#loadCycles();
     }
 
@@ -69,9 +71,9 @@ export default class BleepSynthEngine {
             console.error("Unable to fetch wave cycles:", error);
         }
     }
-    
-    async getGeneratorFromFile(filename) {
-        const response = await fetch(filename);
+
+    async getGeneratorFromURL(url) {
+        const response = await fetch(url);
         if (!response.ok) {
             throw new Error(`HTTP error when fetching file: ${response.status}`);
         }
@@ -81,7 +83,7 @@ export default class BleepSynthEngine {
 
     /**
      * get a generator from a synth specification
-     * @param {string} spec 
+     * @param {string} spec
      */
     getGeneratorFromSpec(spec) {
         let generator = null;
@@ -110,26 +112,48 @@ export default class BleepSynthEngine {
 
     /**
      * get a player from a generator
-     * @param {BleepGenerator} generator 
-     * @param {number} pitchHz 
-     * @param {number} level 
-     * @param {object} params 
+     * @param {BleepGenerator} generator
+     * @param {number} pitchHz
+     * @param {number} level
+     * @param {object} params
      * @returns {BleepPlayer}
      */
-    getPlayer(generator, params={}) {
+    getPlayerFromGenerator(generator, params={}) {
         return new BleepPlayer(this.#context, this.#monitor, generator, this.#cycles, params);
+    }
+
+    getPlayer(name, params = {}) {
+        if (this.#synthCache.has(name)) {
+            const generator = this.#synthCache.get(name);
+            return this.getPlayerFromGenerator(generator, params);
+        } else {
+            throw new Error(`No generator found for ${name}`);
+        }
+    }
+
+    async loadSynthDef(filename) {
+        const url = `${BleepSynthEngine.PRESETS_FOLDER}/${filename}.txt`;
+        const { generator, message } = await this.getGeneratorFromURL(url);
+        console.log(message);
+        this.#synthCache.set(generator.shortname, generator);
+    }
+
+    async loadPresetSynthDefs() {
+        for (let filename of Constants.SYNTH_PRESETS) {
+            await this.loadSynthDef(filename);
+        }
     }
 
     /**
      * get an effect
-     * @param {string} name 
+     * @param {string} name
      * @returns {BleepEffect}
      */
     async getEffect(name) {
         let effect = null;
         const className = Constants.EFFECT_CLASSES[name];
         if (className === Reverb) {
-            effect = new Reverb(this.#context, this.#monitor, this.#cache);
+            effect = new Reverb(this.#context, this.#monitor, this.#sampleCache);
             await effect.load(Constants.REVERB_IMPULSES[name]);
         } else {
             effect = new className(this.#context, this.#monitor);
@@ -147,7 +171,7 @@ export default class BleepSynthEngine {
 
     /**
      * get the effect names
-     * @returns {Array<string>} 
+     * @returns {Array<string>}
      */
     static getEffectNames() {
         return Object.keys(Constants.EFFECT_CLASSES);
@@ -167,6 +191,20 @@ export default class BleepSynthEngine {
      */
     static getPresetNames() {
         return Constants.SYNTH_PRESETS;
+    }
+
+    /**
+     * get the audio context
+     */
+    get context() {
+        return this.#context;
+    }
+
+    /**
+     * get the current time (of the audio context)
+     */
+    get currentTime() {
+        return this.#context.currentTime;
     }
 
 }

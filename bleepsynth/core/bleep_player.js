@@ -18,10 +18,10 @@ export default class BleepPlayer {
 
   /**
    * constructor
-   * @param {AudioContext} ctx 
-   * @param {Monitor} monitor 
-   * @param {BleepGenerator} generator 
-   * @param {object} params 
+   * @param {AudioContext} ctx
+   * @param {Monitor} monitor
+   * @param {BleepGenerator} generator
+   * @param {object} params
    */
   constructor(context, monitor, generator, cycles, params) {
     this.#context = context;
@@ -78,8 +78,8 @@ export default class BleepPlayer {
   /**
    * apply a tweak now as an instantaneous change
    *y ou can only do this to parameters that have been identified as mutable
-   * @param {string} param 
-   * @param {number} value 
+   * @param {string} param
+   * @param {number} value
    */
   applyTweakNow(param, value) {
     // is the parameter mutable?
@@ -99,9 +99,9 @@ export default class BleepPlayer {
 
   /**
    * start playing the webaudio network
-   * @param {number} when 
+   * @param {number} when
    */
-  start(when) {
+  start(when=this.#context.currentTime) {
     // apply the envelopes
     for (let e of this.#generator.envelopes) {
       let env = this.#node[e.from.id];
@@ -127,9 +127,9 @@ export default class BleepPlayer {
 
   /**
    * stop the webaudio network after the release phase of the envelopes has completed
-   * @param {number} when 
+   * @param {number} when
    */
-  stopAfterRelease(when) {
+  stopAfterRelease(when=this.#context.currentTime) {
     if (Flags.VERBOSE) console.log("stopping after release");
     let longestRelease = 0;
     Object.values(this.#node).forEach((m) => {
@@ -145,7 +145,7 @@ export default class BleepPlayer {
     });
   }
 
-  play(when) {
+  play(when=this.#context.currentTime) {
     // since a player may have several different envelopes we need to work
     // out which one will finish last
     let longestRelease = 0;
@@ -157,10 +157,10 @@ export default class BleepPlayer {
       // update the longest envelope
       if (env.release && env.release > longestRelease) {
         longestRelease = env.release;
-      }      
+      }
     }
     // stop time
-    // was there a pitch bend? 
+    // was there a pitch bend?
     if (this.#params.bend !== undefined && this.#params.bend > 0) {
       // was a bend time specified?
       let stopBendTime;

@@ -130,15 +130,6 @@ export default class Flanger extends BleepEffect {
     }
 
     /**
-     * Calculates the time it takes for the chorus effect to fade out.
-     * @returns {number} The estimated fade out time.
-     */
-    timeToFadeOut() {
-        // delay line is very short for a flanger, this will cover it
-        return 0.05;
-    }
-
-    /**
      * set ths parameters for the effect
      * @param {object} params - key value list of parameters
      * @param {number} when - the time at which the change should occur

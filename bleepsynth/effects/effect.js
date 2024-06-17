@@ -103,10 +103,10 @@ export default class BleepEffect {
   }
 
   /**
-   * return the time it takes for the effect to fade out - must be overriden
+   * return the time it takes for the effect to fade out (in seconds)
    */
   timeToFadeOut() {
-    throw new Error("BleepEffect is abstract, you must implement this");
+    return 0.05;
   }
 
   static getTweaks() {

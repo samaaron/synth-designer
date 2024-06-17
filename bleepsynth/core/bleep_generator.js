@@ -2,7 +2,7 @@ import Constants from "./constants.js"
 import Expression from "./expression.js"
 
 export default class BleepGenerator {
-  
+
   #isValid = true;
   #hasWarning = false;
   #longname
@@ -17,7 +17,7 @@ export default class BleepGenerator {
   #parameters = [];
   #maxima = { pitch : Constants.MAX_MIDI_FREQ, level : Constants.MAX_LEVEL };
   #minima = { pitch : Constants.MIN_MIDI_FREQ, level : Constants.MIN_LEVEL };
-  #defaults = {};
+  #defaults = { pitch : Constants.MIDDLE_C, level : 0.8};
   #mutable = {};
   #errorString = "";
   #warningString = "";
@@ -244,7 +244,7 @@ export default class BleepGenerator {
     const module = this.#modules.find(m => m.id === id);
     return module ? module.type : null;
   }
-  
+
   // get the long name of the generator
 
   get longname() {

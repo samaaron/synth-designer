@@ -15,7 +15,7 @@ class PhaserPrototype extends BleepEffect {
     _phase
 
     /**
-     * Make a phaser prototype 
+     * Make a phaser prototype
      * @param {AudioContext} context - the audio context
      * @param {Monitor} monitor - the monitor object to track this effect
      * @param {object} config - configuration parameters
@@ -85,7 +85,7 @@ class PhaserPrototype extends BleepEffect {
     }
 
     /**
-     * Set the stereo spread 
+     * Set the stereo spread
      * @param {number} s - stereo spread in the range [0,1]
      * @param {number} when - the time at which the change should occur
      */
@@ -107,7 +107,7 @@ class PhaserPrototype extends BleepEffect {
     /**
      * Set the depth of the phaser effect
      * @param {number} d - depth in the range [0,1]
-     * @param {number} when - the time at which the change should occur 
+     * @param {number} when - the time at which the change should occur
      */
     setDepth(d, when = this._context.currentTime) {
         this._leftChannel.setDepth(d, when);
@@ -117,7 +117,7 @@ class PhaserPrototype extends BleepEffect {
     /**
      * Set the rate of the phaser
      * @param {number} r - the rate of the phaser in Hz
-     * @param {number} when - the time at which the change should occur 
+     * @param {number} when - the time at which the change should occur
      */
     setRate(r, when = this._context.currentTime) {
         this._leftChannel.setRate(r * (1 - this._phase), when);
@@ -127,20 +127,11 @@ class PhaserPrototype extends BleepEffect {
     /**
      * Set the resonance, numbers close to 1 give a stronger effect
      * @param {number} q - the resonance of the allpass filters in the range [0,1]
-     * @param {number} when - the time at which the change should occur 
+     * @param {number} when - the time at which the change should occur
      */
     setResonance(q, when = this._context.currentTime) {
         this._leftChannel.setResonance(q, when);
         this._rightChannel.setResonance(q, when);
-    }
-
-    /**
-     * Calculates the time it takes for the chorus effect to fade out.
-     * @returns {number} The estimated fade out time.
-     */
-    timeToFadeOut() {
-        // delay line is very short for a phaser, this will cover it
-        return 0.05;
     }
 
     /**
@@ -262,7 +253,7 @@ class PhaserChannel {
     /**
      * Set the rate of the phaser
      * @param {number} r - the rate of the phaser in Hz
-     * @param {number} when - the time at which the change should occur 
+     * @param {number} when - the time at which the change should occur
      */
     setRate(r, when = this.#context.currentTime) {
         this.#lfo.frequency.setValueAtTime(r, when);
@@ -271,7 +262,7 @@ class PhaserChannel {
     /**
      * Set the resonance, numbers close to 1 give a stronger effect
      * @param {number} q - the resonance of the allpass filters in the range [0,1]
-     * @param {number} when - the time at which the change should occur 
+     * @param {number} when - the time at which the change should occur
      */
     setResonance(q, when = this.#context.currentTime) {
         for (let i = 0; i < this.#numStages; i++) {
@@ -282,7 +273,7 @@ class PhaserChannel {
     /**
      * Set the depth of the phaser effect
      * @param {number} d - depth in the range [0,1]
-     * @param {number} when - the time at which the change should occur 
+     * @param {number} when - the time at which the change should occur
      */
     setDepth(d, when = this.#context.currentTime) {
         for (let i = 0; i < this.#numStages; i++) {

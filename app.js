@@ -298,7 +298,7 @@ function makeMIDIlisteners() {
 async function start() {
   model = await Model.getInstance();
   if (Flags.RUN_TESTS) {
-    BleepSynthTests.testSynths(model.context);
+    BleepSynthTests.testSynthCache();
   }
   startMonitorTimer();
   GUI.setGUIState(GUI.STATE_READY);
@@ -308,7 +308,7 @@ async function start() {
     lineWidth: 2,
     sync: true
   });
-  scope = new Scope(model.context, view);
+  scope = new Scope(model.synthEngine.context, view);
   scope.draw();
   loadPreset();
 }
@@ -331,7 +331,7 @@ function playNote(midiNote, velocity) {
     // possibly we triggered the same note during the release phase of an existing note
     // in which case we must stop it and release the object
     if (player) {
-      player.stopAfterRelease(model.context.currentTime);
+      player.stopAfterRelease();
       playerForNote.delete(midiNote);
     }
     // get the pitch and parameters
@@ -339,12 +339,12 @@ function playNote(midiNote, velocity) {
     params["level"] = GUI.getFloatParam("slider-level");
     params["pitch"] = Utility.midiNoteToFreqHz(midiNote);
     // make a player and store a reference to it so we can stop it later
-    player = model.synthEngine.getPlayer(model.generator, params);
+    player = model.synthEngine.getPlayerFromGenerator(model.generator, params);
     if (Flags.VERBOSE) console.log(player);
     playerForNote.set(midiNote, player);
     player.out.connect(model.fx.in);
     model.fx.out.connect(scope.in);
-    player.start(model.context.currentTime);
+    player.start();
     scope.resetRMS();
   }
 }
@@ -363,7 +363,7 @@ function stopNoteWithButton() {
 function stopNote(midiNote) {
   const player = playerForNote.get(midiNote);
   if (player) {
-    player.stopAfterRelease(model.context.currentTime);
+    player.stopAfterRelease();
     playerForNote.delete(midiNote);
   }
 }
@@ -406,8 +406,9 @@ async function loadSelectedEffect() {
   if (model.fx) {
     model.fx.stop();
   }
+  // needs to add to fx chain
   model.fx = await model.synthEngine.getEffect(selectedName);
-  model.fx.out.connect(model.context.destination);
+  model.fx.out.connect(model.synthEngine.context.destination);
   setWetLevel(GUI.getSliderValue("wetLevel"));
 }
 

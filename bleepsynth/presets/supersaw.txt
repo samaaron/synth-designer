@@ -16,6 +16,16 @@ default: 4000
 doc: changes the filter cutoff
 @end
 
+@param resonance
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 20
+default: 0
+doc: changes the filter resonance
+@end
+
 @param detune
 type: float
 mutable: yes
@@ -36,25 +46,87 @@ default: 0.5
 doc: changes the stereo spread
 @end
 
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.01
+doc: attack time
+@end
+
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: decay time
+@end
+
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 1
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: release time
+@end
+
+@param volume
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.8
+doc: volume
+@end
+
 # modules
 
 SUPERSAW : osc
 LPF : lowpass
 VCA : vca
+ADSR : env
 
 # patch
 
 osc.out -> lowpass.in
 lowpass.out -> vca.in
 vca.out -> audio.in
+env.out -> vca.levelCV
 
 # tweak
 
 osc.pitch = param.pitch
-vca.level = param.level*0.5
 lowpass.cutoff = param.cutoff
+lowpass.resonance = param.resonance
 osc.detune = param.detune
 osc.spread = param.spread
-osc.level = 1
+osc.level = 0.4
+
+# envelope
+
+env.level = param.level*param.volume
+env.attack = param.attack
+env.decay = param.decay
+env.sustain = param.sustain*param.level*param.volume
+env.release = param.release
 
 # end

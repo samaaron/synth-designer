@@ -5,7 +5,7 @@ export default class Model {
     #fileHandle = null;
     #wasEdited = false;
     #generator = null;
-    #context = null;
+    //#context = null;
     #synthEngine = null;
     #fx = null;
     #spec = null;
@@ -23,8 +23,8 @@ export default class Model {
     }
 
     async #initialize() {
-        this.#context = new AudioContext();
-        this.#synthEngine = await BleepSynthEngine.createInstance(this.#context);
+        //this.#context = new AudioContext();
+        this.#synthEngine = await BleepSynthEngine.createInstance();
     }
 
     static async getInstance() {
@@ -35,9 +35,9 @@ export default class Model {
         return Model.#instance;
     }
 
-    get context() {
-        return this.#context;
-    }
+    // get context() {
+    //     return this.#context;
+    // }
 
     get wasEdited() {
         return this.#wasEdited;
@@ -141,7 +141,7 @@ export default class Model {
             console.error("Unable to fetch file:", error);
         }
     }
-    
+
     /**
     * save file
     * https://developer.chrome.com/articles/file-system-access/

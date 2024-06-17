@@ -1,7 +1,6 @@
 import BleepEffect from "./effect.js";
-import Waveshaper from "../modules/wave_shaper.js";
 import Utility from "../core/utility.js";
-import { MonitoredBiquadFilterNode, MonitoredOscillatorNode, MonitoredGainNode, 
+import { MonitoredBiquadFilterNode, MonitoredOscillatorNode, MonitoredGainNode,
     MonitoredStereoPannerNode, MonitoredDelayNode } from "../core/monitored_components";
 
 export default class Leslie extends BleepEffect {
@@ -11,7 +10,6 @@ export default class Leslie extends BleepEffect {
     static DEFAULT_MOD_DEPTH = 0.0003;
     static DEFAULT_WET_LEVEL = 1;
     static DEFAULT_DRY_LEVEL = 0;
-    static DEFAULT_DRIVE = 0.2;
     static FILTER_CUTOFF = 800;
     static DELAY_TIME = 0.01;
     static SPEED_FACTOR = 1.17;  // treble rotor is faster than bass rotor
@@ -19,7 +17,6 @@ export default class Leslie extends BleepEffect {
     static HIGH_MOD_GAIN = 6;
     static GAIN_ADJUST = 0.75;
 
-    #shaper
     #lowpass
     #highpass
     #lowlfo
@@ -36,8 +33,6 @@ export default class Leslie extends BleepEffect {
 
     constructor(context, monitor) {
         super(context, monitor);
-        // overdrive
-        this.#shaper = new Waveshaper(context, monitor);
         // filters
         this.#lowpass = new MonitoredBiquadFilterNode(context, monitor, {
             type: "lowpass",
@@ -83,9 +78,8 @@ export default class Leslie extends BleepEffect {
             pan: 0
         });
 
-        this._wetGain.connect(this.#shaper.in);
-        this.#shaper.out.connect(this.#lowpass);
-        this.#shaper.out.connect(this.#highpass);
+        this._wetGain.connect(this.#lowpass);
+        this._wetGain.connect(this.#highpass);
 
         // low channel
 
@@ -120,17 +114,21 @@ export default class Leslie extends BleepEffect {
 
         // defaults
 
-        this.setDrive(Leslie.DEFAULT_DRIVE);
         this.setSpeed(Leslie.TREMOLO_ROTATION_SPEED);
+        this.setWetLevel(Leslie.DEFAULT_WET_LEVEL);
+        this.setDryLevel(Leslie.DEFAULT_DRY_LEVEL);
     }
 
-    setDrive(d) {
-        this.#shaper.fuzz=Utility.clamp(d, 0, 8);
+    setSpeed(s, when = this._context.currentTime) {
+        this.#lowlfo.frequency.setValueAtTime(s,when);
+        this.#highlfo.frequency.setValueAtTime(s*Leslie.SPEED_FACTOR,when);
     }
 
-    setSpeed(s) {
-        this.#lowlfo.frequency.value = s;
-        this.#highlfo.frequency.value = s*Leslie.SPEED_FACTOR;
+    setParams(params, when = this._context.currentTime) {
+        super.setParams(params, when);
+        if (params.speed !== undefined) {
+            this.setSpeed(params.speed, when);
+        }
     }
 
     stop() {
@@ -139,7 +137,6 @@ export default class Leslie extends BleepEffect {
         this.#highlfo.stop();
         this.#lowlfo.disconnect();
         this.#highlfo.disconnect();
-        this.#shaper.stop(this._context.currentTime);
         this.#lowpass.disconnect();
         this.#highpass.disconnect();
         this.#lowlag.disconnect();
@@ -150,7 +147,11 @@ export default class Leslie extends BleepEffect {
         this.#highgain.disconnect();
         this.#lowmod.disconnect();
         this.#highmod.disconnect();
-        this.#inverter.disconnect();    
+        this.#inverter.disconnect();
+    }
+
+    static getTweaks() {
+        return super.getTweaks().concat(["speed"]);
     }
 
 }

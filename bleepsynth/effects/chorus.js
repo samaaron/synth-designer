@@ -6,7 +6,7 @@ export default class Chorus extends BleepEffect {
     static DEFAULT_CHORUS_RATE = 0.8;
     static DEFAULT_STEREO_SPREAD = 0.9;
     static DEFAULT_CHORUS_DEPTH = 0.3;
-    static DEFAULT_DELAY_TIME = 0.0035; 
+    static DEFAULT_DELAY_TIME = 0.0035;
 
     #lfo
     #leftDelay
@@ -20,8 +20,8 @@ export default class Chorus extends BleepEffect {
 
     /**
      * Creates an instance of the chorus
-     * @param {AudioContext} context 
-     * @param {Monitor} monitor 
+     * @param {AudioContext} context
+     * @param {Monitor} monitor
      */
     constructor(context, monitor) {
         super(context, monitor);
@@ -105,15 +105,6 @@ export default class Chorus extends BleepEffect {
         this.#lfo.connect(this.#rightGain);
         this.#leftGain.connect(this.#leftDelay.delayTime);
         this.#rightGain.connect(this.#rightDelay.delayTime);
-    }
-
-    /**
-     * Calculates the time it takes for the chorus effect to fade out.
-     * @returns {number} The estimated fade out time.
-     */
-    timeToFadeOut() {
-        // delay line is very short for a chorus, this will cover it
-        return 0.05;
     }
 
     /**
