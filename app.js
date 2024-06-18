@@ -112,7 +112,7 @@ async function loadPreset() {
 function handleSpecInput() {
   if (GUI.tag("synth-spec").value.length > 0) {
     model.spec = GUI.tag("synth-spec").value;
-    const result = model.synthEngine.getGeneratorFromSpec(model.spec);
+    const result = model.synthEngine.createGeneratorFromSpec(model.spec);
     model.generator = result.generator;
     GUI.tag("parse-errors").value = result.message;
     if (model.generator && model.generator.isValid) {
@@ -340,7 +340,7 @@ function playNote(midiNote, velocity) {
     params["level"] = GUI.getFloatParam("slider-level");
     params["pitch"] = Utility.midiNoteToFreqHz(midiNote);
     // make a player and store a reference to it so we can stop it later
-    player = model.synthEngine.getPlayerFromGenerator(model.generator, params);
+    player = model.synthEngine.createPlayerFromGenerator(model.generator, params);
     if (Flags.VERBOSE) console.log(player);
     playerForNote.set(midiNote, player);
     player.out.connect(model.fx.in);
@@ -408,7 +408,7 @@ async function loadSelectedEffect() {
     model.fx.stop();
   }
   // needs to add to fx chain
-  model.fx = await model.synthEngine.getEffect(selectedName);
+  model.fx = await model.synthEngine.createEffect(selectedName);
   model.fx.out.connect(model.synthEngine.context.destination);
   setWetLevel(GUI.getSliderValue("wetLevel"));
 }

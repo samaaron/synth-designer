@@ -25,7 +25,7 @@ export default class Model {
 
     async #initialize() {
         this.#synthEngine = await BleepSynthEngine.createInstance();
-        this.#meter = this.#synthEngine.makeMeter();
+        this.#meter = this.#synthEngine.createMeter();
         this.#meter.out.connect(this.#synthEngine.destination);
     }
 
@@ -122,7 +122,7 @@ export default class Model {
         const file = await this.#fileHandle.getFile();
         this.#spec = await file.text();
         this.#wasEdited = false;
-        const result = this.#synthEngine.getGeneratorFromSpec(this.#spec);
+        const result = this.#synthEngine.createGeneratorFromSpec(this.#spec);
         this.#generator = result.generator;
         this.#message = result.message;
     }
@@ -136,7 +136,7 @@ export default class Model {
             const spec = await response.text();
             this.#spec = spec;
             this.#wasEdited = false;
-            const result = this.#synthEngine.getGeneratorFromSpec(this.#spec);
+            const result = this.#synthEngine.createGeneratorFromSpec(this.#spec);
             this.#generator = result.generator;
             this.#message = result.message;
         } catch (error) {

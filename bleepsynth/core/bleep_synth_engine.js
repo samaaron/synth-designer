@@ -77,23 +77,23 @@ export default class BleepSynthEngine {
 
     /**
      * get a synth generator from a URL
-     * @param {string} url 
+     * @param {string} url
      * @returns {Promise<{generator: BleepGenerator, message: string}>}
      */
-    async getGeneratorFromURL(url) {
+    async createGeneratorFromURL(url) {
         const response = await fetch(url);
         if (!response.ok) {
             throw new Error(`HTTP error when fetching file: ${response.status}`);
         }
         const spec = await response.text();
-        return this.getGeneratorFromSpec(spec);
+        return this.createGeneratorFromSpec(spec);
     }
 
     /**
      * get a generator from a text synth specification
      * @param {string} spec
      */
-    getGeneratorFromSpec(spec) {
+    createGeneratorFromSpec(spec) {
         let generator = null;
         let result = this.#synthGrammar.match(spec + "\n");
         let message = null;
@@ -126,20 +126,20 @@ export default class BleepSynthEngine {
      * @param {object} params
      * @returns {BleepPlayer}
      */
-    getPlayerFromGenerator(generator, params={}) {
+    createPlayerFromGenerator(generator, params={}) {
         return new BleepPlayer(this.#context, this.#monitor, generator, this.#cycles, params);
     }
 
     /**
      * get a named synth player
-     * @param {string} name 
-     * @param {object} params 
+     * @param {string} name
+     * @param {object} params
      * @returns {BleepPlayer}
      */
-    getPlayer(name, params = {}) {
+    createPlayer(name, params = {}) {
         if (this.#synthCache.has(name)) {
             const generator = this.#synthCache.get(name);
-            return this.getPlayerFromGenerator(generator, params);
+            return this.createPlayerFromGenerator(generator, params);
         } else {
             throw new Error(`No generator found for ${name}`);
         }
@@ -147,11 +147,11 @@ export default class BleepSynthEngine {
 
     /**
      * load a synth definition from a file into the synthdef cache
-     * @param {string} filename 
+     * @param {string} filename
      */
     async loadSynthDef(filename) {
         const url = `${BleepSynthEngine.PRESETS_PATH}/${filename}.txt`;
-        const { generator, message } = await this.getGeneratorFromURL(url);
+        const { generator, message } = await this.createGeneratorFromURL(url);
         console.log(message);
         this.#synthCache.set(generator.shortname, generator);
     }
@@ -175,10 +175,10 @@ export default class BleepSynthEngine {
 
     /**
      * play a sample
-     * @param {number} when 
-     * @param {string} sampleName 
-     * @param {AudioNode} outputNode 
-     * @param {object} params 
+     * @param {number} when
+     * @param {string} sampleName
+     * @param {AudioNode} outputNode
+     * @param {object} params
      */
     playSample(when = this.#context.currentTime, sampleName, outputNode, params = {}) {
         const samplePath = `${BleepSynthEngine.SAMPLES_PATH}/${sampleName}.flac`;
@@ -195,7 +195,7 @@ export default class BleepSynthEngine {
      * @param {string} name
      * @returns {BleepEffect}
      */
-    async getEffect(name) {
+    async createEffect(name) {
         let effect = null;
         const className = Constants.EFFECT_CLASSES[name];
         if (className === Reverb) {
@@ -207,7 +207,7 @@ export default class BleepSynthEngine {
         return effect;
     }
 
-    makeMeter() {
+    createMeter() {
         return new Meter(this.#context, this.#monitor);
     }
 

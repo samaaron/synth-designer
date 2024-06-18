@@ -14,10 +14,10 @@ export default class BleepSynthTests {
     for (let patch of BleepSynthTests.TEST_PATCHES) {
       const patchFile = `bleepsynth/presets/${patch}.txt`;
       console.log(`testing ${patchFile}`);
-      const result = await synthEngine.getGeneratorFromURL(patchFile);
+      const result = await synthEngine.createGeneratorFromURL(patchFile);
       const generator = result.generator;
       console.log(result.message);
-      const player = synthEngine.getPlayerFromGenerator(generator, {
+      const player = synthEngine.createPlayerFromGenerator(generator, {
         pitch: Constants.MIDDLE_C,
         level: 0.8,
         duration: 1
@@ -36,7 +36,7 @@ export default class BleepSynthTests {
     // play a scale
     let when = synthEngine.currentTime;
     for (let note = 60; note <= 72; note++) {
-      const player = synthEngine.getPlayer("breton", {
+      const player = synthEngine.createPlayer("breton", {
         pitch: Utility.midiNoteToFreqHz(note),
         level: 0.8,
         duration: 0.5
