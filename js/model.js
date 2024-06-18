@@ -5,13 +5,14 @@ export default class Model {
     #fileHandle = null;
     #wasEdited = false;
     #generator = null;
-    //#context = null;
     #synthEngine = null;
     #fx = null;
     #spec = null;
     #message = null;
     #learning = false;
     #lastSliderMoved = -1;
+    #meter = null;
+
 
     static #instance = null;
     static #privateKey = Symbol("privateKey");
@@ -23,8 +24,9 @@ export default class Model {
     }
 
     async #initialize() {
-        //this.#context = new AudioContext();
         this.#synthEngine = await BleepSynthEngine.createInstance();
+        this.#meter = this.#synthEngine.makeMeter();
+        this.#meter.out.connect(this.#synthEngine.destination);
     }
 
     static async getInstance() {
@@ -34,10 +36,6 @@ export default class Model {
         }
         return Model.#instance;
     }
-
-    // get context() {
-    //     return this.#context;
-    // }
 
     get wasEdited() {
         return this.#wasEdited;
@@ -109,6 +107,10 @@ export default class Model {
 
     get lastSliderMoved() {
         return this.#lastSliderMoved;
+    }
+
+    get meter() {
+        return this.#meter;
     }
 
     /**

@@ -309,7 +309,7 @@ async function start() {
     lineWidth: 2,
     sync: true
   });
-  scope = new Scope(model.synthEngine.context, view);
+  scope = new Scope(model.meter, view);
   scope.draw();
   loadPreset();
 }
@@ -344,9 +344,9 @@ function playNote(midiNote, velocity) {
     if (Flags.VERBOSE) console.log(player);
     playerForNote.set(midiNote, player);
     player.out.connect(model.fx.in);
-    model.fx.out.connect(scope.in);
+    model.fx.out.connect(model.meter.in);
+    model.meter.reset();
     player.start();
-    scope.resetRMS();
   }
 }
 

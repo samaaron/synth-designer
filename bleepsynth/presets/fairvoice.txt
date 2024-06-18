@@ -99,6 +99,7 @@ osc.level = 0.5
 lfo.pitch=param.rate
 noisegain.level = param.noise
 formant.vowel = random(-1,1)
+formant.gain = 5
 lowpass.cutoff = param.cutoff
 lowpass.resonance = 0.01
 

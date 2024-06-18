@@ -9,6 +9,7 @@ export default class ScopeView {
     #context
     #width
     #height
+    #halfHeight
     #sync
   
     /**
@@ -20,6 +21,7 @@ export default class ScopeView {
       this.#context = canvas.getContext("2d");
       this.#width = canvas.width;
       this.#height = canvas.height;
+      this.#halfHeight = this.#height/2;
       this.#context.fillStyle = (params && params.fillStyle) ? params.fillStyle : "#252525";
       this.#context.lineWidth = (params && params.lineWidth) ? params.lineWidth : 2;
       this.#context.strokeStyle = (params && params.strokeStyle) ? params.strokeStyle : "#e6983f";
@@ -27,8 +29,8 @@ export default class ScopeView {
     }
   
     /**
-     * 
-     * @param {Uint8Array} data - the array to display
+     * draw the waveform in the scope view
+     * @param {Float32Array} data - the array to display
      */
     draw(data) {
       let st = 0;
@@ -41,18 +43,17 @@ export default class ScopeView {
       const n = data.length - ScopeView.SYNC_WINDOW;
       const stepSize = this.#width / n;
       this.#context.fillRect(0, 0, this.#width, this.#height);
-      let x = 0;
       this.#context.beginPath();
-      let y = data[st] * this.#height / 256;
+      let x = 0;
+      let y = (data[st]+1) * this.#halfHeight;
       this.#context.moveTo(x, y);
       for (let i = 1; i < n; i++) {
-        y = data[st + i] * this.#height / 256;
+        y = (data[st + i]+1) * this.#halfHeight;
         this.#context.lineTo(x, y);
         x += stepSize;
       }
-      this.#context.lineTo(this.#width, this.#height / 2);
+      this.#context.lineTo(this.#width, this.#halfHeight);
       this.#context.stroke();
-  
     }
   
     /**
@@ -61,10 +62,10 @@ export default class ScopeView {
      * @returns an integer index
      */
     firstZeroCrossing(data) {
-      let idx = 0;
-      while ((idx < (data.length - 2)) && (data[idx] * data[idx + 1] > 0)) {
-        idx++;
+      let index = 0;
+      while ((index < (data.length - 2)) && (data[index] * data[index + 1] > 0)) {
+        index++;
       }
-      return idx;
+      return index;
     }
   }

@@ -7,6 +7,7 @@ import Reverb from '../effects/reverb.js';
 import BufferCache from './buffer_cache.js';
 import BleepEffect from '../effects/effect.js';
 import Sampler from './sampler.js';
+import Meter from '../effects/meter.js';
 
 const privateContructorKey = Symbol("privateContructorKey");
 
@@ -204,6 +205,10 @@ export default class BleepSynthEngine {
             effect = new className(this.#context, this.#monitor);
         }
         return effect;
+    }
+
+    makeMeter() {
+        return new Meter(this.#context, this.#monitor);
     }
 
     /**
