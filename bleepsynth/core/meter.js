@@ -1,4 +1,4 @@
-import { MonitoredAnalyserNode } from "../core/monitored_components.js"
+import { MonitoredAnalyserNode } from "./monitored_components.js";
 
 export default class Meter {
 

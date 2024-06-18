@@ -65,6 +65,21 @@ export default class BleepSynthTests {
     }
   }
 
+  static async testFinalMix() {
+    // start the engine
+    const synthEngine = await BleepSynthEngine.createInstance();
+    const finalMix = synthEngine.createFinalMix();
+    finalMix.out.connect(synthEngine.destination);
+    finalMix.setGain(0.8);
+    // play a sample slowly
+    let when = synthEngine.currentTime;
+    synthEngine.playSample(when, "guit_em9", finalMix.in, { rate: 0.2 });
+    // stop the sample after 5 seconds
+    setTimeout(() => {
+      finalMix.gracefulStop();
+    }, 5000);
+  }
+
   static testExpressionEvaluation() {
     let infix = [];
     infix.push("2*param.cutoff");
