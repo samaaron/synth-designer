@@ -27,7 +27,8 @@ export default class Scope {
     this.#meter.update();
     const data = this.#meter.buffer.getChannelData(0);
     this.#view.draw(data);
-    GUI.tag("rms-label").textContent = "\u00A0\u00A0" + `RMS=${this.#meter.rms.toFixed(4)}, Peak RMS=${this.#meter.peakRMS.toFixed(4)}`;
+    const clippedString = this.#meter.clipped ? "(clipped)" : "";
+    GUI.tag("rms-label").textContent = "\u00A0\u00A0" + `RMS=${this.#meter.rms.toFixed(4)}, Peak RMS=${this.#meter.peakRMS.toFixed(4)} ${clippedString}`;
     requestAnimationFrame(this.draw);
   }
 

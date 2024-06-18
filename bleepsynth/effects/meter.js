@@ -9,6 +9,7 @@ export default class Meter {
     #analyser
     #dataArray
     #buffer
+    #clipped = false
 
     constructor(context, monitor) {
         this.#analyser = new MonitoredAnalyserNode(context, monitor, {
@@ -39,6 +40,7 @@ export default class Meter {
     reset() {
         this.#rms = 0;
         this.#peakRMS = 0;
+        this.#clipped = false;
     }
 
     get buffer() {
@@ -53,6 +55,10 @@ export default class Meter {
         return this.#peakRMS;
     }
 
+    get clipped() {
+        return this.#clipped;
+    }
+
     update() {
         this.#analyser.getByteTimeDomainData(this.#dataArray);
         const data = this.#buffer.getChannelData(0);
@@ -61,6 +67,9 @@ export default class Meter {
             // put into the range [-1,1]
             data[i] = this.#dataArray[i] / 128 - 1;
             sumOfSquares += data[i] * data[i];
+            if (Math.abs(data[i])>0.99) {
+                this.#clipped = true;
+            }
         }
         this.#rms = Math.sqrt(sumOfSquares / Meter.FFT_SIZE);
         if (this.#rms > this.#peakRMS) {
