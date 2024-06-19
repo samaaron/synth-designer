@@ -1,4 +1,4 @@
-import { MonitoredGainNode } from "./monitored_components";
+import { MonitoredGainNode } from "./monitored_components.js";
 
 export default class FinalMix {
 

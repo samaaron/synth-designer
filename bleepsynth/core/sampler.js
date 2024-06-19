@@ -1,4 +1,4 @@
-import { MonitoredAudioBufferSourceNode, MonitoredBiquadFilterNode, MonitoredGainNode, MonitoredStereoPannerNode } from "./monitored_components";
+import { MonitoredAudioBufferSourceNode, MonitoredBiquadFilterNode, MonitoredGainNode, MonitoredStereoPannerNode } from "./monitored_components.js";
 
 export default class Sampler {
 

@@ -1,7 +1,7 @@
 import BleepEffect from "./effect.js";
 import Utility from "../core/utility.js";
 import { MonitoredBiquadFilterNode, MonitoredOscillatorNode, MonitoredGainNode,
-    MonitoredStereoPannerNode, MonitoredDelayNode } from "../core/monitored_components";
+    MonitoredStereoPannerNode, MonitoredDelayNode } from "../core/monitored_components.js";
 
 export default class Leslie extends BleepEffect {
 
