@@ -1,7 +1,7 @@
-import BleepEffect from "./effect";
-import { MonitoredGainNode, MonitoredStereoPannerNode, MonitoredOscillatorNode } from "../core/monitored_components";
-import Utility from "../core/utility";
-import Monitor from "../core/monitor";
+import BleepEffect from "./effect.js";
+import { MonitoredGainNode, MonitoredStereoPannerNode, MonitoredOscillatorNode } from "../core/monitored_components.js";
+import Utility from "../core/utility.js";
+import Monitor from "../core/monitor.js";
 
 export default class Tremolo extends BleepEffect {
 

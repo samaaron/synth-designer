@@ -14,26 +14,28 @@ mutable: yes
 step : 0.01
 min : 100
 max : 8000
-default : 1930
+default : 2000
 doc : cutoff frequency
 @end
 
-@param cutoff_mod
+@param resonance
 type : float
 mutable: yes
 step : 0.01
 min : 0
-max : 1
-default : 0.1
-doc : effect of envelope on cutoff frequency
+max : 20
+default : 0
+doc : filter resonance
 @end
 
-@param tone
+
+@param gain
 type : float
 mutable: yes
 step : 0.01
-min : 0
+min : 0.01
 max : 1
+<<<<<<< HEAD:bleepsynth/presets/chiral.txt
 default : 0.15
 doc : tone
 @end
@@ -46,26 +48,10 @@ min : 0.25
 max : 12
 default : 2
 doc : harmonic complexity
-@end
-
-@param noise
-type : float
-mutable: yes
-step : 0.01
-min : 0
-max : 0.1
-default : 0.01
-doc : noise level
-@end
-
-@param gain
-type : float
-mutable: yes
-step : 0.01
-min : 0.01
-max : 1
-default : 0.5
-doc : gain
+=======
+default : 0.1
+doc : wavefolder gain
+>>>>>>> 481e802fbd108df133bf643586fa957bed399a86:assets/presets/chiral.txt
 @end
 
 @param gain_mod
@@ -74,18 +60,22 @@ mutable: yes
 step : 0.01
 min : 0
 max : 1
-default : 0.4
-doc : gain modulation by LFO
+default : 0
+doc : gain modulation
 @end
 
 @param symmetry
 type : float
 mutable: yes
 step : 0.01
+<<<<<<< HEAD:bleepsynth/presets/chiral.txt
+min : 0.01
+=======
 min : -1
+>>>>>>> 481e802fbd108df133bf643586fa957bed399a86:assets/presets/chiral.txt
 max : 1
 default : 0
-doc : symmetry
+doc : wavefolder symmetry
 @end
 
 @param symmetry_mod
@@ -94,8 +84,38 @@ mutable: yes
 step : 0.01
 min : 0
 max : 1
-default : 0.72
-doc : symmetry modulation by LFO
+default : 0
+doc : symmetry modulation
+@end
+
+@param noise
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : noise level
+@end
+
+@param amp_level
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : amp mod level
+@end
+
+@param amp_rate
+type : float
+mutable: yes
+step : 0.01
+min : 0.125
+max : 8
+default : 1
+doc : amp mod rate
 @end
 
 @param lfo_rate
@@ -103,29 +123,9 @@ type : float
 mutable: yes
 step : 0.01
 min : 0.01
-max : 5
-default : 0.32
-doc : lfo rate
-@end
-
-@param am_rate
-type : float
-mutable: yes
-step : 0.01
-min : 0.5
 max : 12
-default : 0.5
-doc : AM rate
-@end
-
-@param am_depth
-type : float
-mutable: yes
-step : 0.01
-min : 0
-max : 1
-default : 0.57
-doc : AM depth
+default : 0.05
+doc : lfo rate
 @end
 
 @param attack
@@ -144,9 +144,10 @@ mutable: yes
 step : 0.01
 min : 0
 max : 5
-default : 1
+default : 0.1
 doc : decay
 @end
+
 
 @param sustain
 type : float
@@ -154,7 +155,7 @@ mutable: yes
 step : 0.01
 min : 0
 max : 1
-default : 0.8
+default : 1
 doc : sustain
 @end
 
@@ -175,47 +176,42 @@ step : 0.01
 min : 0
 max : 1
 default : 0.8
-doc : master volume
+doc : volume
 @end
 
 # modules
 
 SIN-OSC : osc
+<<<<<<< HEAD:bleepsynth/presets/chiral.txt
 SIN-OSC : sin
 SIN-OSC : am
 RAND-OSC : noise
-TRI-OSC : lfo
-VCA : mix
-VCA : mod
-VCA : gainmod
-VCA : symmetrymod
+=======
+SIN-OSC : mod
+RAND-OSC : noise
+FOLDER : folder
 LPF : lowpass
 VCA : vca
-VCA : ammod
-VCA : amlevel
-VCA : noiselevel
-FOLDER : folder
+VCA : noisegain
+VCA : crossmod
+VCA : modgain
+>>>>>>> 481e802fbd108df133bf643586fa957bed399a86:assets/presets/chiral.txt
+TRI-OSC : lfo
+VCA : gainmod
+VCA : symmetrymod
 ADSR : env
-ADSR : filterenv
 
 # patch
 
-osc.out -> mix.in
-sin.out -> mod.in
-mod.out -> mix.levelCV
-
-noise.out -> noiselevel.in
-noiselevel.out -> mix.in
-
-mix.out -> folder.in
-folder.out -> ammod.in
-
-am.out -> amlevel.in
-amlevel.out -> ammod.levelCV
-ammod.out -> lowpass.in
-
+osc.out -> folder.in
+noise.out -> noisegain.in
+noisegain.out -> folder.in
+folder.out -> crossmod.in
+crossmod.out -> lowpass.in
 lowpass.out -> vca.in
 vca.out -> audio.in
+mod.out -> modgain.in
+modgain.out -> crossmod.levelCV
 
 lfo.out -> gainmod.in
 gainmod.out -> folder.gainCV
@@ -224,43 +220,31 @@ lfo.out -> symmetrymod.in
 symmetrymod.out -> folder.symmetryCV
 
 env.out -> vca.levelCV
-filterenv.out -> lowpass.cutoffCV
 
 # tweak
 
 osc.pitch = param.pitch
-sin.pitch = param.pitch*param.complexity
-vca.level = param.level
-lowpass.cutoff = param.cutoff
+mod.pitch = param.pitch*param.amp_rate
+lfo.pitch = param.lfo_rate
 
-mod.level = param.tone
+modgain.level = param.amp_level
+lowpass.cutoff = param.cutoff
+lowpass.resonance = param.resonance
+vca.level=0
 
 folder.gain = param.gain
 folder.symmetry = param.symmetry
+noisegain.level = param.noise
 
-gainmod.level = param.gain_mod*0.5
+gainmod.level = param.gain_mod
 symmetrymod.level = param.symmetry_mod
-
-lfo.pitch = param.lfo_rate
-
-noiselevel.level = param.noise
-
-am.pitch = param.pitch*param.am_rate
-amlevel.level = param.am_depth
 
 # envelope
 
 env.attack = param.attack
 env.decay = param.decay
-env.sustain = param.sustain*param.volume*param.level
+env.sustain = param.sustain*param.level*param.volume
 env.release = param.release
-env.level = param.volume*param.level
-
-filterenv.attack = param.attack
-filterenv.decay = param.decay
-filterenv.sustain = param.cutoff*(1-param.cutoff_mod)
-filterenv.release = param.release
-filterenv.level = param.cutoff
-
+env.level = param.level*param.volume
 
 # end

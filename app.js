@@ -97,7 +97,7 @@ function handleMIDILearnButton() {
  */
 async function loadPreset() {
   const selectedName = GUI.getDropdownValue("preset-select");
-  await model.loadFileWithName(selectedName);
+  await model.loadPreset(selectedName);
   createControls();
   Flowchart.drawGraphAsMermaid(model.generator);
   GUI.tag("synth-spec").value = model.spec;

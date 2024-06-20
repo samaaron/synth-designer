@@ -1,5 +1,5 @@
-import GUI from "./GUI"
-import ScopeView from "./scopeview";
+import GUI from "./GUI.js"
+import ScopeView from "./scopeview.js";
 
 /**
 * Scope - model-controller for the scope
