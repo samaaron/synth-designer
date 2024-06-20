@@ -296,11 +296,11 @@ function makeMIDIlisteners() {
  * Start the application
  */
 async function start() {
-  model = await Model.getInstance();
+  model = Model.getInstance();
   if (Flags.RUN_TESTS) {
-    //BleepSynthTests.testSynthFromGenerator();
-    //BleepSynthTests.testSynthCache();
-    //BleepSynthTests.testSampler();
+    // BleepSynthTests.testSynthFromGenerator();
+    // BleepSynthTests.testSynthCache();
+    // BleepSynthTests.testSampler();
     BleepSynthTests.testFinalMix();
   }
   startMonitorTimer();

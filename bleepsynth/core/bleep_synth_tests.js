@@ -9,10 +9,11 @@ export default class BleepSynthTests {
 
   static async testSynthFromGenerator() {
     console.log("testing synths");
-    const synthEngine = await BleepSynthEngine.createInstance();
-    let when = synthEngine.currentTime;
+    const context = new AudioContext();
+    const synthEngine = new BleepSynthEngine(context);
+    let when = context.currentTime;
     for (let patch of BleepSynthTests.TEST_PATCHES) {
-      const patchFile = `bleepsynth/presets/${patch}.txt`;
+      const patchFile = `/synth-designer/assets/presets/${patch}.txt`;
       console.log(`testing ${patchFile}`);
       const result = await synthEngine.createGeneratorFromURL(patchFile);
       const generator = result.generator;
@@ -22,7 +23,7 @@ export default class BleepSynthTests {
         level: 0.8,
         duration: 1
       });
-      player.out.connect(synthEngine.context.destination);
+      player.out.connect(context.destination);
       player.play(when);
       when += 1.5;
     }
@@ -30,7 +31,8 @@ export default class BleepSynthTests {
 
   static async testSynthCache() {
     // start the engine
-    const synthEngine = await BleepSynthEngine.createInstance();
+    const context = new AudioContext();
+    const synthEngine = new BleepSynthEngine(context);
     // load all presets
     await synthEngine.loadPresetSynthDefs();
     // play a scale
@@ -41,7 +43,7 @@ export default class BleepSynthTests {
         level: 0.8,
         duration: 0.5
       });
-      player.out.connect(synthEngine.destination);
+      player.out.connect(context.destination);
       // play immediately
       player.play(when);
       // play after 1 second
@@ -51,28 +53,31 @@ export default class BleepSynthTests {
 
   static async testSampler() {
     // start the engine
-    const synthEngine = await BleepSynthEngine.createInstance();
+    const context = new AudioContext();
+    const synthEngine = new BleepSynthEngine(context);
     // play a sample
-    let when = synthEngine.currentTime;
-    synthEngine.playSample(when, "loop_amen", synthEngine.destination,{});
-    synthEngine.playSample(when+2, "loop_amen", synthEngine.destination,{ cutoff:800 });
+    let when = context.currentTime;
+    synthEngine.playSample(when, "loop_amen", context.destination,{});
+    synthEngine.playSample(when+2, "loop_amen", context.destination,{ cutoff:800 });
     // play some more samples to test the pan
     when+=2;
     for (let pan=-1; pan<=1; pan+=0.5) {
       console.log(`pan=${pan}`);
-      synthEngine.playSample(when+4, "guit_em9", synthEngine.destination,{ pan:pan, level:0.5});
+      synthEngine.playSample(when+4, "guit_em9", context.destination,{ pan:pan, level:0.5});
       when+=2;
     }
   }
 
   static async testFinalMix() {
     // start the engine
-    const synthEngine = await BleepSynthEngine.createInstance();
+    const context = new AudioContext();
+    // also test passing an asset path
+    const synthEngine = new BleepSynthEngine(context,"/synth-designer/server-assets");
     const finalMix = synthEngine.createFinalMix();
-    finalMix.out.connect(synthEngine.destination);
+    finalMix.out.connect(context.destination);
     finalMix.setGain(0.8);
     // play a sample slowly
-    let when = synthEngine.currentTime;
+    let when = context.currentTime;
     synthEngine.playSample(when, "guit_em9", finalMix.in, { rate: 0.2 });
     // stop the sample after 5 seconds
     setTimeout(() => {

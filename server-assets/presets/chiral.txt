@@ -1,9 +1,9 @@
-@synth default
-longname : Default patch
+@synth chiral
+longname : Chiral
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : A very simple default patch
+doc : Tone into wavefolder with modulation something like Fors Chiral
 @end
 
 # parameters
@@ -28,30 +28,14 @@ default : 0
 doc : filter resonance
 @end
 
-
 @param gain
 type : float
 mutable: yes
 step : 0.01
 min : 0.01
 max : 1
-<<<<<<< HEAD:bleepsynth/presets/chiral.txt
 default : 0.15
 doc : tone
-@end
-
-@param complexity
-type : float
-mutable: yes
-step : 0.25
-min : 0.25
-max : 12
-default : 2
-doc : harmonic complexity
-=======
-default : 0.1
-doc : wavefolder gain
->>>>>>> 481e802fbd108df133bf643586fa957bed399a86:assets/presets/chiral.txt
 @end
 
 @param gain_mod
@@ -68,11 +52,7 @@ doc : gain modulation
 type : float
 mutable: yes
 step : 0.01
-<<<<<<< HEAD:bleepsynth/presets/chiral.txt
-min : 0.01
-=======
 min : -1
->>>>>>> 481e802fbd108df133bf643586fa957bed399a86:assets/presets/chiral.txt
 max : 1
 default : 0
 doc : wavefolder symmetry
@@ -148,7 +128,6 @@ default : 0.1
 doc : decay
 @end
 
-
 @param sustain
 type : float
 mutable: yes
@@ -182,24 +161,20 @@ doc : volume
 # modules
 
 SIN-OSC : osc
-<<<<<<< HEAD:bleepsynth/presets/chiral.txt
 SIN-OSC : sin
 SIN-OSC : am
-RAND-OSC : noise
-=======
 SIN-OSC : mod
 RAND-OSC : noise
 FOLDER : folder
-LPF : lowpass
-VCA : vca
-VCA : noisegain
-VCA : crossmod
-VCA : modgain
->>>>>>> 481e802fbd108df133bf643586fa957bed399a86:assets/presets/chiral.txt
 TRI-OSC : lfo
 VCA : gainmod
 VCA : symmetrymod
 ADSR : env
+VCA : noisegain
+VCA : modgain
+VCA : crossmod
+LPF : lowpass
+VCA : vca
 
 # patch
 

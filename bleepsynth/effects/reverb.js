@@ -32,8 +32,7 @@ export default class Reverb extends BleepEffect {
      * load an impulse response
      * @param {string} filename
      */
-    async load(filename) {
-        const url = `${Reverb.IMPULSE_PATH}${filename}`;
+    async load(url) {
         const buffer = await this.#cache.loadBuffer(url, this._context);
         this.#convolver.buffer = buffer;
     }

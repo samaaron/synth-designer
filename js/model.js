@@ -12,6 +12,7 @@ export default class Model {
     #learning = false;
     #lastSliderMoved = -1;
     #meter = null;
+    #context = null;
 
 
     static #instance = null;
@@ -21,18 +22,15 @@ export default class Model {
         if (key !== Model.#privateKey) {
             throw new Error("Cannot instantiate a new Model. Use getInstance() instead.");
         }
-    }
-
-    async #initialize() {
-        this.#synthEngine = await BleepSynthEngine.createInstance();
+        this.#context = new AudioContext();
+        this.#synthEngine = new BleepSynthEngine(this.#context);
         this.#meter = this.#synthEngine.createMeter();
         this.#meter.out.connect(this.#synthEngine.destination);
     }
 
-    static async getInstance() {
+    static getInstance() {
         if (!Model.#instance) {
             Model.#instance = new Model(Model.#privateKey);
-            await Model.#instance.#initialize();
         }
         return Model.#instance;
     }
@@ -127,12 +125,12 @@ export default class Model {
         this.#message = result.message;
     }
 
-    /** 
+    /**
      * @TODO #11 refactor this to use a single fetch method @guyjbrown
      * */
     async loadPreset(name) {
         try {
-            const response = await fetch(`assets/presets/${name}.txt`);
+            const response = await fetch(`server-assets/presets/${name}.txt`);
             if (!response.ok) {
                 throw new Error(`HTTP error when fetching file: ${response.status}`);
             }

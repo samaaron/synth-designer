@@ -6,6 +6,7 @@ import BleepGenerator from "./bleep_generator.js"
 import { CustomOsc } from "../modules/oscillators.js"
 import Amplifier from "../modules/amplifier.js"
 import Utility from "./utility.js"
+import { WAVE_CYCLES } from "./wave_cycles.js"
 
 export default class BleepPlayer {
 
@@ -14,7 +15,6 @@ export default class BleepPlayer {
   #generator
   #params
   #monitor
-  #cycles
 
   /**
    * constructor
@@ -23,11 +23,10 @@ export default class BleepPlayer {
    * @param {BleepGenerator} generator
    * @param {object} params
    */
-  constructor(context, monitor, generator, cycles, params) {
+  constructor(context, monitor, generator, params) {
     this.#context = context;
     this.#monitor = monitor;
     this.#generator = generator;
-    this.#cycles = cycles;
     this.#params = { ...generator.defaults, ...params };
     this.#node = {};
     // create the webaudio network in three steps
@@ -43,7 +42,7 @@ export default class BleepPlayer {
     // make a webaudio object for each node
     for (let m of this.#generator.modules) {
       if (m.type === "CUSTOM-OSC") {
-        const cycle = this.#cycles[m.table];
+        const cycle = WAVE_CYCLES[m.table];
         this.#node[m.id] = new CustomOsc(this.#context, this.#monitor, cycle);
       } else {
         this.#node[m.id] = new Constants.MODULE_CLASSES[m.type](this.#context, this.#monitor);

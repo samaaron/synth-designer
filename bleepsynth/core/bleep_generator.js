@@ -1,5 +1,6 @@
 import Constants from "./constants.js"
 import Expression from "./expression.js"
+import { WAVE_CYCLES } from "./wave_cycles.js";
 
 export default class BleepGenerator {
 
@@ -21,10 +22,8 @@ export default class BleepGenerator {
   #mutable = {};
   #errorString = "";
   #warningString = "";
-  #cycles
 
-  constructor(json,cycles) {
-    this.#cycles = cycles;
+  constructor(json) {
     const tree = JSON.parse(json);
     // header
     this.#longname = tree.synth.longname;
@@ -92,7 +91,7 @@ export default class BleepGenerator {
     // check for invalid wave table names
     for (let m of this.#modules) {
       if (m.type === "CUSTOM-OSC") {
-        if (!this.#cycles[m.table]) {
+        if (!WAVE_CYCLES[m.table]) {
           throw new Error(`BleepGenerator error: unknown wave table "${m.table}"`);
         }
       }
