@@ -39,10 +39,10 @@ doc : tone
 @end
 
 @param complexity
-type : int
+type : float
 mutable: yes
-step : 1
-min : 1
+step : 0.25
+min : 0.25
 max : 12
 default : 2
 doc : harmonic complexity
@@ -62,7 +62,7 @@ doc : noise level
 type : float
 mutable: yes
 step : 0.01
-min : 0
+min : 0.01
 max : 1
 default : 0.5
 doc : gain
@@ -183,7 +183,7 @@ doc : master volume
 SIN-OSC : osc
 SIN-OSC : sin
 SIN-OSC : am
-NOISE : noise
+RAND-OSC : noise
 TRI-OSC : lfo
 VCA : mix
 VCA : mod
