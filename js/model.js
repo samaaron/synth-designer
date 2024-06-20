@@ -127,9 +127,12 @@ export default class Model {
         this.#message = result.message;
     }
 
-    async loadFileWithName(name) {
+    /** 
+     * @TODO #11 refactor this to use a single fetch method @guyjbrown
+     * */
+    async loadPreset(name) {
         try {
-            const response = await fetch(`bleepsynth/presets/${name}.txt`);
+            const response = await fetch(`assets/presets/${name}.txt`);
             if (!response.ok) {
                 throw new Error(`HTTP error when fetching file: ${response.status}`);
             }

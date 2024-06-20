@@ -1,0 +1,225 @@
+@synth default
+longname : Default patch
+type : synth
+author : Guy J Brown
+version : 1.0
+doc : A very simple default patch
+@end
+
+# parameters
+
+@param cutoff
+type : float
+mutable: yes
+step : 0.01
+min : 100
+max : 8000
+default : 2000
+doc : cutoff frequency
+@end
+
+@param resonance
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 20
+default : 0
+doc : filter resonance
+@end
+
+
+@param gain
+type : float
+mutable: yes
+step : 0.01
+min : 0.01
+max : 1
+default : 0.1
+doc : wavefolder gain
+@end
+
+@param gain_mod
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : gain modulation
+@end
+
+@param symmetry
+type : float
+mutable: yes
+step : 0.01
+min : -1
+max : 1
+default : 0
+doc : wavefolder symmetry
+@end
+
+@param symmetry_mod
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : symmetry modulation
+@end
+
+@param noise
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : noise level
+@end
+
+@param amp_level
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0
+doc : amp mod level
+@end
+
+@param amp_rate
+type : float
+mutable: yes
+step : 0.01
+min : 0.125
+max : 8
+default : 1
+doc : amp mod rate
+@end
+
+@param lfo_rate
+type : float
+mutable: yes
+step : 0.01
+min : 0.01
+max : 12
+default : 0.05
+doc : lfo rate
+@end
+
+@param attack
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 5
+default : 0.1
+doc : attack
+@end
+
+@param decay
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 5
+default : 0.1
+doc : decay
+@end
+
+
+@param sustain
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 1
+doc : sustain
+@end
+
+@param release
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 5
+default : 0.1
+doc : release
+@end
+
+@param volume
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.8
+doc : volume
+@end
+
+# modules
+
+SIN-OSC : osc
+SIN-OSC : mod
+RAND-OSC : noise
+FOLDER : folder
+LPF : lowpass
+VCA : vca
+VCA : noisegain
+VCA : crossmod
+VCA : modgain
+TRI-OSC : lfo
+VCA : gainmod
+VCA : symmetrymod
+ADSR : env
+
+# patch
+
+osc.out -> folder.in
+noise.out -> noisegain.in
+noisegain.out -> folder.in
+folder.out -> crossmod.in
+crossmod.out -> lowpass.in
+lowpass.out -> vca.in
+vca.out -> audio.in
+mod.out -> modgain.in
+modgain.out -> crossmod.levelCV
+
+lfo.out -> gainmod.in
+gainmod.out -> folder.gainCV
+
+lfo.out -> symmetrymod.in
+symmetrymod.out -> folder.symmetryCV
+
+env.out -> vca.levelCV
+
+# tweak
+
+osc.pitch = param.pitch
+mod.pitch = param.pitch*param.amp_rate
+lfo.pitch = param.lfo_rate
+
+modgain.level = param.amp_level
+lowpass.cutoff = param.cutoff
+lowpass.resonance = param.resonance
+vca.level=0
+
+folder.gain = param.gain
+folder.symmetry = param.symmetry
+noisegain.level = param.noise
+
+gainmod.level = param.gain_mod
+symmetrymod.level = param.symmetry_mod
+
+# envelope
+
+env.attack = param.attack
+env.decay = param.decay
+env.sustain = param.sustain*param.level*param.volume
+env.release = param.release
+env.level = param.level*param.volume
+
+# end

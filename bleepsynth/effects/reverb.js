@@ -5,7 +5,7 @@ import BufferCache from "../core/buffer_cache.js"
 
 export default class Reverb extends BleepEffect {
 
-    static IMPULSE_PATH = "./bleepsynth/impulses/";
+    static IMPULSE_PATH = "/synth-designer/assets/impulses/";
 
     #convolver
     #cache

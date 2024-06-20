@@ -14,9 +14,10 @@ const privateContructorKey = Symbol("privateContructorKey");
 
 export default class BleepSynthEngine {
 
-    static WAVE_CYCLE_DATA = "bleepsynth/cycles/cycle_defs.json";
-    static PRESETS_PATH = "bleepsynth/presets";
-    static SAMPLES_PATH = "bleepsynth/samples";
+    static ROOT = "/synth-designer";
+    static WAVE_CYCLE_PATH = `${BleepSynthEngine.ROOT}/bleepsynth/cycles/cycle_defs.json`;
+    static PRESETS_PATH = `${BleepSynthEngine.ROOT}/assets/presets`;
+    static SAMPLES_PATH = `${BleepSynthEngine.ROOT}/assets/samples`;
 
     #monitor
     #bufferCache
@@ -66,7 +67,7 @@ export default class BleepSynthEngine {
      */
     async #loadCycles() {
         try {
-            const response = await fetch(BleepSynthEngine.WAVE_CYCLE_DATA);
+            const response = await fetch(BleepSynthEngine.WAVE_CYCLE_PATH);
             if (!response.ok) {
                 throw new Error(`HTTP error when fetching wave cycles: ${response.status}`);
             }
