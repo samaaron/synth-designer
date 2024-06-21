@@ -9,6 +9,7 @@ import BleepEffect from '../effects/effect.js';
 import Sampler from './sampler.js';
 import Meter from './meter.js';
 import FinalMix from './final_mix.js';
+import Granulator from './granulator.js';
 
 export default class BleepSynthEngine {
 
@@ -150,6 +151,23 @@ export default class BleepSynthEngine {
                 const sampler = new Sampler(this.#context, this.#monitor, buffer, params);
                 sampler.out.connect(outputNode);
                 sampler.play(when);
+            });
+    }
+
+    /**
+     * play granular synthesis from a sample
+     * @param {number} when
+     * @param {string} sampleName
+     * @param {AudioNode} outputNode
+     * @param {object} params
+     */
+    playGrains(when = this.#context.currentTime, sampleName, outputNode, params = {}) {
+        const samplePath = `${this.#samplePath}/${sampleName}.flac`;
+        this.#bufferCache.loadBuffer(samplePath, this.#context)
+            .then(buffer => {
+                const granulator = new Granulator(this.#context, this.#monitor, buffer, params);
+                granulator.out.connect(outputNode);
+                granulator.play(when);
             });
     }
 

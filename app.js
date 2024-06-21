@@ -301,7 +301,8 @@ async function start() {
     // BleepSynthTests.testSynthFromGenerator();
     // BleepSynthTests.testSynthCache();
     // BleepSynthTests.testSampler();
-    BleepSynthTests.testFinalMix();
+    // BleepSynthTests.testFinalMix();
+    BleepSynthTests.testGranulator();
   }
   startMonitorTimer();
   GUI.setGUIState(GUI.STATE_READY);

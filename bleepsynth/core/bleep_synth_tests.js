@@ -68,6 +68,23 @@ export default class BleepSynthTests {
     }
   }
 
+  static async testGranulator() {
+    // start the engine
+    const context = new AudioContext();
+    const synthEngine = new BleepSynthEngine(context);
+    // play using granular synthesis
+    let when = context.currentTime;
+    synthEngine.playGrains(when, "grains_throat", context.destination,{
+      duration : 10,
+      attack:0.25,
+      release:0.5,
+      pan_var : 0.9,
+      level : 0.8,
+      density : 15,
+      size : 0.6
+    });
+  }
+
   static async testFinalMix() {
     // start the engine
     const context = new AudioContext();
