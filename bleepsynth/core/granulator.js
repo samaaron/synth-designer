@@ -22,7 +22,6 @@ export default class Granulator {
         rate: { min: 0.1, max: 10, default: 1 },            // sample rate multiplier
         release: { min: 0, max: 5, default: 2 },            // release in seconds
         resonance: { min: 0, max: 25, default: 0 },         // filter resonance
-        send: { min: 0, max: 1, default: 0 },               // gain to fx send
         shape: { min: 0, max: 1, default: 0.5 },            // grain shape
         size: { min: 0.1, max: 1, default: 0.2 },           // grain size in sec
         time_var: { min: 0, max: 0.1, default: 0.05 },      // time variance of grain start (jitter)

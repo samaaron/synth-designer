@@ -74,14 +74,57 @@ export default class BleepSynthTests {
     const synthEngine = new BleepSynthEngine(context);
     // play using granular synthesis
     let when = context.currentTime;
-    synthEngine.playGrains(when, "grains_throat", context.destination,{
-      duration : 10,
-      attack:0.25,
-      release:0.5,
-      pan_var : 0.9,
-      level : 0.8,
-      density : 15,
-      size : 0.6
+    synthEngine.playGrains(when, "grains_throat", context.destination, {
+      duration: 10,
+      attack: 0.25,
+      release: 1,
+      pan_var: 0.9,
+      level: 0.5,
+      index: 0.71,
+      index_var: 0.01,
+      density: 15,
+      size: 0.6,
+      shape: 0.5
+    });
+    synthEngine.playGrains(when+3, "grains_bells", context.destination, {
+      duration: 10,
+      attack: 0.25,
+      release: 0.5,
+      pan_var: 0.9,
+      level: 0.2,
+      density: 10,
+      size: 0.2,
+      rate: 1.2,
+      detune_var: 500,
+      shape: 0
+    });
+    synthEngine.playGrains(when + 10, "grains_soundtoys", context.destination, {
+      duration: 8,
+      attack: 0.25,
+      release: 0.5,
+      pan_var: 0.8,
+      level: 0.3,
+      density: 5,
+      size: 0.4,
+      index: 0.2,
+      index_var: 0.05,
+      rate: 1,
+      detune_var: 500,
+      shape: 0.05
+    });
+    synthEngine.playGrains(when+13, "grains_throat", context.destination, {
+      duration: 7,
+      attack: 0.25,
+      release: 1,
+      pan_var: 0.9,
+      level: 0.1,
+      index: 0,
+      index_var: 0.05,
+      density: 15,
+      size: 0.6,
+      shape: 0.5,
+      rate : 2,
+      cutoff : 1200
     });
   }
 
