@@ -3,19 +3,19 @@ longname : Analogue lead
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : Brassy analogue lead sound
+doc : Analogue lead with filter envelope control
 @end
 
 # parameters
 
-@param low_cutoff
+@param cutoff
 type : float
 mutable: yes
 step : 0.01
 min : 100
-max : 16000
-default : 5300
-doc : lowpass cutoff frequency
+max : 8000
+default : 3500
+doc : cutoff frequency
 @end
 
 @param resonance
@@ -23,89 +23,142 @@ type : float
 mutable: yes
 step : 0.01
 min : 0
-max : 25
-default : 0
-doc : resonance of lowpass filter
-@end
-
-@param high_cutoff
-type : float
-mutable: yes
-step : 0.01
-min : 20
-max : 16000
-default : 20
-doc : highpass cutoff frequency
+max : 20
+default : 2
+doc : filter resonance
 @end
 
 @param detune
 type : float
 mutable: yes
 step : 0.01
-min : -20
-max : 20
-default : 3.9
-doc : oscillator detune
+min : 0
+max : 200
+default : 5.6
+doc : detuning
 @end
 
-@param pwm_rate
+@param lfo1_rate
 type : float
 mutable: yes
 step : 0.01
 min : 0.01
-max : 5
-default : 0.2
-doc : PWM rate
+max : 10
+default : 3.4
+doc : rate of LFO1
 @end
 
-@param pwm_depth
+@param lfo1_depth
 type : float
 mutable: yes
 step : 0.01
 min : 0
-max : 1
-default : 0.7
-doc : PWM depth
+max : 10
+default : 0.05
+doc : depth of LFO1
+@end
+
+
+@param lfo2_rate
+type : float
+mutable: yes
+step : 0.01
+min : 0.01
+max : 10
+default : 1.3
+doc : rate of LFO2
+@end
+
+@param lfo2_depth
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 10
+default : 0.06
+doc : depth of LFO2
 @end
 
 @param attack
-type : float
+type: float
 mutable: yes
-step : 0.01
-min : 0
-max : 5
-default : 0.4
-doc : attack time
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: attack time
 @end
+
 
 @param decay
-type : float
+type: float
 mutable: yes
-step : 0.01
-min : 0
-max : 5
-default : 0.1
-doc : decay time
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: decay time
 @end
 
+
 @param sustain
-type : float
+type: float
 mutable: yes
-step : 0.01
-min : 0
-max : 1
-default : 1
-doc : sustain level
+step: 0.01
+min: 0
+max: 1
+default: 1
+doc: sustain level
 @end
 
 @param release
-type : float
+type: float
 mutable: yes
-step : 0.01
-min : 0
-max : 5
-default : 0.4
-doc : release time
+step: 0.01
+min: 0
+max: 5
+default: 0.5
+doc: release time
+@end
+
+@param vcf_attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.48
+doc: attack time
+@end
+
+@param vcf_decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 10
+default: 5
+doc: decay time
+@end
+
+@param vcf_sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.1
+doc: sustain level
+@end
+
+@param vcf_release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.6
+doc: release time
 @end
 
 @param volume
@@ -120,50 +173,69 @@ doc : overall volume
 
 # modules
 
-SAW-OSC : vco1
-PULSE-OSC : vco2
-SIN-OSC : lfo
+SAW-OSC : osc1
+SAW-OSC : osc2
+SIN-OSC : lfo1
+SIN-OSC : lfo2
 LPF : lowpass
-HPF : highpass
 VCA : vca
 VCA : mix
-ADSR : env
-VCA : pwm
+VCA : gain1
+VCA : gain2
+ADSR : ampenv
+ADSR : filterenv
 
 # patch
 
-vco1.out -> mix.in
-vco2.out -> mix.in
-mix.out -> highpass.in
-highpass.out -> lowpass.in
+osc1.out -> mix.in
+osc2.out -> mix.in
+mix.out -> lowpass.in
 lowpass.out -> vca.in
 vca.out -> audio.in
-env.out -> vca.levelCV
-lfo.out -> pwm.in
-pwm.out -> vco2.pulsewidthCV
+
+lfo1.out -> gain1.in
+gain1.out -> osc1.pitchCV
+
+lfo2.out -> gain2.in
+gain2.out -> osc2.pitchCV
+
+ampenv.out -> vca.levelCV
+
+filterenv.out -> lowpass.cutoffCV
 
 # tweak
 
-vco1.pitch = param.pitch
-vco2.pitch = param.pitch
-vco1.detune = param.detune
-vco2.detune = param.detune*-1
-mix.level = 0.4
-vca.level = param.level
-lowpass.cutoff = param.low_cutoff
+osc1.pitch = param.pitch
+osc2.pitch = param.pitch
+osc1.detune = param.detune
+osc2.detune = -1*param.detune
+lowpass.cutoff = param.cutoff
 lowpass.resonance = param.resonance
-highpass.cutoff = param.high_cutoff
 
-lfo.pitch=param.pwm_rate
-pwm.level = param.pwm_depth*0.49
-vco2.pulsewidth=0.5
+lfo1.pitch = param.lfo1_rate
+lfo2.pitch = param.lfo2_rate
 
-# envelope
+gain1.level = param.lfo1_depth
+gain2.level = param.lfo2_depth
 
-env.attack = param.attack
-env.decay = param.decay
-env.sustain = param.sustain*param.level*param.volume
-env.release = param.release
-env.level = param.level*param.volume
+mix.level = 0.3
+
+# amplitude envelope
+
+ampenv.level = param.level*param.volume
+ampenv.attack = param.attack
+ampenv.decay = param.decay
+ampenv.sustain = param.sustain*param.level*param.volume
+ampenv.release = param.release
+
+filterenv.level = param.cutoff
+filterenv.attack = param.vcf_attack
+filterenv.decay = param.vcf_decay
+filterenv.sustain = param.cutoff*param.vcf_sustain
+filterenv.release = param.vcf_release
+
+# filter envelope
+
+
 
 # end
