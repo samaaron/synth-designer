@@ -55,15 +55,17 @@ export default class BleepSynthTests {
     // start the engine
     const context = new AudioContext();
     const synthEngine = new BleepSynthEngine(context);
+    const effect = await synthEngine.createEffect("reverb_large");
+    effect.out.connect(context.destination);
     // play a sample
     let when = context.currentTime;
-    synthEngine.playSample(when, "loop_amen", context.destination,{});
-    synthEngine.playSample(when+2, "loop_amen", context.destination,{ cutoff:800 });
+    synthEngine.playSample(when, "loop_amen", effect.in,{});
+    synthEngine.playSample(when+2, "loop_amen", effect.in,{ cutoff:800 });
     // play some more samples to test the pan
     when+=2;
     for (let pan=-1; pan<=1; pan+=0.5) {
       console.log(`pan=${pan}`);
-      synthEngine.playSample(when+4, "guit_em9", context.destination,{ pan:pan, level:0.5});
+      synthEngine.playSample(when+4, "guit_em9", effect.in,{ pan:pan, level:0.5});
       when+=2;
     }
   }

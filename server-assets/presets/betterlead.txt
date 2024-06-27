@@ -1,0 +1,60 @@
+@synth betterlead
+longname : Better lead
+type : synth
+author : Guy J Brown
+version : 1.0
+doc : Better analogue lead using supersaw and sub osc
+@end
+
+# parameters
+
+@param cutoff
+type : float
+mutable: yes
+step : 0.01
+min : 100
+max : 8000
+default : 3000
+doc : cutoff frequency
+@end
+
+# modules
+
+SUPERSAW : osc
+SAW-OSC : sub
+LPF : lowpass
+VCA : vca
+VCA : mix
+VCA : sublevel
+ADSR : filterenv
+
+# patch
+
+osc.out -> mix.in
+sub.out -> sublevel.in
+sublevel.out -> mix.in
+mix.out -> lowpass.in
+lowpass.out -> vca.in
+vca.out -> audio.in
+filterenv.out -> lowpass.cutoffCV
+
+# tweak
+
+osc.pitch = param.pitch
+sub.pitch = param.pitch*0.5
+vca.level = param.level
+lowpass.cutoff = param.cutoff
+osc.detune = 16
+osc.spread = 1
+sublevel.level = 0.2
+mix.level=0.7
+
+filterenv.level = param.cutoff
+filterenv.attack = 0.3
+filterenv.decay = 2
+filterenv.sustain = param.cutoff*0.1
+filterenv.release = 3
+
+
+
+# end
