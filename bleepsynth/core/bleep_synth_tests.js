@@ -6,7 +6,7 @@ import Constants from "./constants.js";
 export default class BleepSynthTests {
 
   static TEST_PATCHES = ["buzzer", "synflute", "noise","elpiano","fmbell","fmpluck","filterwobble"];
-  static ASSET_PATH = "/synth-designer/server-assets";
+  static ASSET_PATH = "/synth-designer/bleepsynth/server-assets";
 
   static async testSynthFromGenerator() {
     console.log("testing synths");
