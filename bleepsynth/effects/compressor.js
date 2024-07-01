@@ -1,5 +1,6 @@
 import { MonitoredDynamicsCompressorNode } from "../core/monitored_components.js";
 import BleepEffect from "./effect.js";
+import Utility from "../core/utility.js";
 
 export default class Compressor extends BleepEffect {
 
@@ -110,7 +111,7 @@ export default class Compressor extends BleepEffect {
     }
 
     static getTweaks() {
-        return super.getTweaks().concat(["threshold", "knee", "ratio", "attack", "release"]);  
+        return super.getTweaks().concat(["threshold", "knee", "ratio", "attack", "release"]);
     }
 
 }

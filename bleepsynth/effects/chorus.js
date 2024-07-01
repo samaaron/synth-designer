@@ -1,5 +1,6 @@
 import BleepEffect from "./effect.js";
 import { MonitoredDelayNode, MonitoredGainNode, MonitoredOscillatorNode, MonitoredStereoPannerNode } from "../core/monitored_components.js";
+import Utility from "../core/utility.js";
 
 export default class Chorus extends BleepEffect {
 
