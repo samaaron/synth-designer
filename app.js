@@ -411,7 +411,8 @@ async function loadSelectedEffect() {
     model.fx.stop();
   }
   // needs to add to fx chain
-  model.fx = await model.synthEngine.createEffect(selectedName);
+  model.fx = model.synthEngine.createEffect(selectedName);
+  await model.fx.load();
   model.fx.out.connect(model.synthEngine.context.destination);
   setWetLevel(GUI.getSliderValue("wetLevel"));
 }

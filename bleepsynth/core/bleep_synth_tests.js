@@ -6,6 +6,7 @@ import Constants from "./constants.js";
 export default class BleepSynthTests {
 
   static TEST_PATCHES = ["buzzer", "synflute", "noise","elpiano","fmbell","fmpluck","filterwobble"];
+  static ASSET_PATH = "/synth-designer/server-assets";
 
   static async testSynthFromGenerator() {
     console.log("testing synths");
@@ -13,7 +14,7 @@ export default class BleepSynthTests {
     const synthEngine = new BleepSynthEngine(context);
     let when = context.currentTime;
     for (let patch of BleepSynthTests.TEST_PATCHES) {
-      const patchFile = `/synth-designer/assets/presets/${patch}.txt`;
+      const patchFile = `${BleepSynthTests.ASSET_PATH}/presets/${patch}.txt`;
       console.log(`testing ${patchFile}`);
       const result = await synthEngine.createGeneratorFromURL(patchFile);
       const generator = result.generator;
@@ -54,8 +55,9 @@ export default class BleepSynthTests {
   static async testSampler() {
     // start the engine
     const context = new AudioContext();
-    const synthEngine = new BleepSynthEngine(context);
-    const effect = await synthEngine.createEffect("reverb_large");
+    const synthEngine = new BleepSynthEngine(context, BleepSynthTests.ASSET_PATH);
+    const effect = synthEngine.createEffect("reverb_large");
+    await effect.load();
     effect.out.connect(context.destination);
     // play a sample
     let when = context.currentTime;
@@ -134,7 +136,7 @@ export default class BleepSynthTests {
     // start the engine
     const context = new AudioContext();
     // also test passing an asset path
-    const synthEngine = new BleepSynthEngine(context,"/synth-designer/server-assets");
+    const synthEngine = new BleepSynthEngine(context, BleepSynthTests.ASSET_PATH);
     const finalMix = synthEngine.createFinalMix();
     finalMix.out.connect(context.destination);
     finalMix.setGain(0.8);

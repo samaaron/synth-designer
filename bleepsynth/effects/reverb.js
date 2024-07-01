@@ -7,6 +7,7 @@ export default class Reverb extends BleepEffect {
 
     #convolver
     #cache
+    #impulseUrl
 
     /**
      * make a reverb effect
@@ -14,9 +15,10 @@ export default class Reverb extends BleepEffect {
      * @param {Monitor} monitor
      * @param {BufferCache} cache
      */
-    constructor(context, monitor, cache) {
+    constructor(context, monitor, cache, impulseUrl) {
         super(context, monitor);
         this.#cache = cache;
+        this.#impulseUrl = impulseUrl;
         this.#convolver = new MonitoredConvolverNode(context, monitor);
         // connect everything up
         this._wetGain.connect(this.#convolver);
@@ -24,15 +26,25 @@ export default class Reverb extends BleepEffect {
         // default settings
         this.setWetLevel(0.2);
         this.setDryLevel(1);
+        this.loadImpulse();
     }
 
     /**
      * load an impulse response
-     * @param {string} filename
      */
-    async load(url) {
-        const buffer = await this.#cache.loadBuffer(url, this._context);
+    async loadImpulse() {
+        if (this.#convolver.buffer) {
+          console.log("no need to load impulse for convolver")
+          return true;
+        }
+        const buffer = await this.#cache.loadBuffer(this.#impulseUrl, this._context);
         this.#convolver.buffer = buffer;
+        return true;
+    }
+
+    async load() {
+      super.load();
+      this.loadImpulse();
     }
 
     /**
