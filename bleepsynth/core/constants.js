@@ -62,6 +62,7 @@ const MODULE_CLASSES = {
 };
 
 const EFFECT_CLASSES = {
+  "reverb": Reverb,
   "reverb_large": Reverb,
   "reverb_medium": Reverb,
   "reverb_small": Reverb,
@@ -93,6 +94,7 @@ const EFFECT_CLASSES = {
 };
 
 const REVERB_IMPULSES = {
+  "reverb": "hall-medium.flac",
   "reverb_large": "hall-large.flac",
   "reverb_medium": "hall-medium.flac",
   "reverb_small": "hall-small.flac",
