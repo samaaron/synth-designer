@@ -62,6 +62,7 @@ const MODULE_CLASSES = {
 };
 
 const EFFECT_CLASSES = {
+  "reverb": Reverb,
   "reverb_large": Reverb,
   "reverb_medium": Reverb,
   "reverb_small": Reverb,
@@ -93,6 +94,7 @@ const EFFECT_CLASSES = {
 };
 
 const REVERB_IMPULSES = {
+  "reverb": "hall-medium.flac",
   "reverb_large": "hall-large.flac",
   "reverb_medium": "hall-medium.flac",
   "reverb_small": "hall-small.flac",
@@ -110,24 +112,34 @@ const REVERB_IMPULSES = {
 };
 
 const SYNTH_PRESETS = [
+  "analoguelead",
   "bansuri",
+  "betterlead",
   "bishi-bass",
   "bishi-wobble",
   "brasspad",
   "breton",
   "buzzer",
   "childhood",
+  "chiral",
   "choir",
+  "comb",
+  "crossfadertest",
   "default",
   "dogbass",
   "dognoise",
   "elpiano",
+  "envtest",
   "fairvoice",
   "filterwobble",
   "fmbell",
+  "fmpluck",
+  "foldertest",
+  "formant",
   "funkybass",
   "hammond",
   "highnoise",
+  "junopad",
   "ninth",
   "noise",
   "noisehat",
@@ -138,14 +150,21 @@ const SYNTH_PRESETS = [
   "saveaprayer",
   "sawlead",
   "simplepulse",
+  "soft-lead",
+  "spiral",
   "subbass",
   "submarine",
   "supersaw",
   "sweepbass",
   "synflute",
+  "synthstrings",
   "tanpura",
+  "temp",
+  "test",
   "thickbass",
+  "two-operator-fm",
   "voxhumana",
+  "wasp",
 ];
 
 const Constants = {

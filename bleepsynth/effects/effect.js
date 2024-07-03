@@ -121,6 +121,10 @@ export default class BleepEffect {
     return ["out"];
   }
 
+  async load() {
+    // do nothing - this can be overriden in subclasses
+  }
+
 }
 
 

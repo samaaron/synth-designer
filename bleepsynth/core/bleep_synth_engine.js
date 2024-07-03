@@ -28,7 +28,7 @@ export default class BleepSynthEngine {
      * cannot not call this directly, use createInstance(context)
      * @param {AudioContext} context
      */
-    constructor(context,assetPath="/synth-designer/server-assets") {
+    constructor(context,assetPath="/synth-designer/bleepsynth/server-assets") {
         this.#context = context;
         this.#presetPath = `${assetPath}/presets`;
         this.#samplePath = `${assetPath}/samples`;
@@ -133,8 +133,20 @@ export default class BleepSynthEngine {
      * load a sample into the buffer cache
      * @param {string} sampleName
      */
-    loadSample(sampleName) {
+    async loadSample(sampleName) {
         this.#bufferCache.loadBuffer(`${this.#samplePath}/${sampleName}.flac`, this.#context);
+    }
+
+    /**
+     * load a reverb impulse into the buffer cache
+     * @param {string} reverbName
+     */
+    async loadImpulse(reverbName) {
+        this.#bufferCache.loadBuffer(this.impulseUrl(reverbName), this.#context);
+    }
+
+    impulseUrl(reverbName) {
+        return `${this.#impulsePath}/${Constants.REVERB_IMPULSES[reverbName]}`;
     }
 
     /**
@@ -176,12 +188,11 @@ export default class BleepSynthEngine {
      * @param {string} name
      * @returns {BleepEffect}
      */
-    async createEffect(name) {
+    createEffect(name) {
         let effect = null;
         const className = Constants.EFFECT_CLASSES[name];
         if (className === Reverb) {
-            effect = new Reverb(this.#context, this.#monitor, this.#bufferCache);
-            await effect.load(`${this.#impulsePath}/${Constants.REVERB_IMPULSES[name]}`);
+            effect = new Reverb(this.#context, this.#monitor, this.#bufferCache, this.impulseUrl(name));
         } else {
             effect = new className(this.#context, this.#monitor);
         }
