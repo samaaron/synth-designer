@@ -3,7 +3,7 @@ import Scope from './js/scope.js';
 import ScopeView from './js/scopeview.js';
 import Utility from './bleepsynth/core/utility.js';
 import Flags from './bleepsynth/core/flags.js';
-import BleepSynthTests from './bleepsynth/core/bleep_synth_tests.js';
+// import BleepSynthTests from './bleepsynth/core/bleep_synth_tests.js';
 import MidiSystem from './midi/midi_system.js';
 import Flowchart from './js/flowchart.js';
 import Model from './js/model.js';
@@ -300,7 +300,7 @@ async function start() {
   if (Flags.RUN_TESTS) {
     // BleepSynthTests.testSynthFromGenerator();
     // BleepSynthTests.testSynthCache();
-    BleepSynthTests.testSampler();
+    // BleepSynthTests.testSampler();
     // BleepSynthTests.testFinalMix();
     // BleepSynthTests.testGranulator();
   }
