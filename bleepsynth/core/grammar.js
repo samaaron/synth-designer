@@ -1,5 +1,5 @@
 import Constants from "./constants.js";
-import "../vendor/unpkg.com_ohm-js@17.1.0_dist_ohm.js";
+import * as ohm from "../vendor/ohm";
 
 export default class Grammar {
 

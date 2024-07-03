@@ -1,4 +1,4 @@
-import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+import mermaid from './vendor/mermaid';
 import GUI from './GUI.js';
 
 export default class Flowchart {
