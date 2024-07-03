@@ -130,7 +130,7 @@ export default class Model {
      * */
     async loadPreset(name) {
         try {
-            const response = await fetch(`bleepsynth/server-assets/presets/${name}.txt`);
+            const response = await fetch(`/bleep-synth-assets/presets/${name}.txt`);
             if (!response.ok) {
                 throw new Error(`HTTP error when fetching file: ${response.status}`);
             }

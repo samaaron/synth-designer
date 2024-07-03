@@ -28,7 +28,7 @@ export default class BleepSynthEngine {
      * cannot not call this directly, use createInstance(context)
      * @param {AudioContext} context
      */
-    constructor(context,assetPath="/synth-designer/bleepsynth/server-assets") {
+    constructor(context,assetPath="/bleep-synth-assets/") {
         this.#context = context;
         this.#presetPath = `${assetPath}/presets`;
         this.#samplePath = `${assetPath}/samples`;
