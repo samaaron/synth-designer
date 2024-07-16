@@ -3,7 +3,7 @@ longname : Chiral
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : Tone into wavefolder with modulation something like Fors Chiral
+doc : Tone into wavefolder with modulation like Fors Chiral
 @end
 
 # parameters
