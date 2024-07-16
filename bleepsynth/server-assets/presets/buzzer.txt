@@ -3,7 +3,7 @@ longname : Simple buzzer
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : A very simple buzzer with no envelopes for testing
+doc : A simple buzzer with no envelopes for testing
 @end
 
 # modules
