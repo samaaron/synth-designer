@@ -1,0 +1,115 @@
+@synth bishibass
+longname : Bishi synth bass sound
+type : synth
+author : Guy Brown
+version : 1.0
+doc : Pulse width modulation bass sound with an analog feel
+@end
+
+@param cutoff
+type: float
+mutable: yes
+step: 0.01
+min: 100
+max: 8000
+default: 4000
+doc : Controls the brightness of the sound
+@end
+
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.01
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.5
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.5
+doc: release time
+@end
+
+@param volume
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.7
+doc : Controls the overall volume
+@end
+
+# this is a pulse oscillator high pass filtered
+# and add a sine as a sub oscillator
+
+PULSE-OSC : vco
+SIN-OSC : sub
+VCA : vca
+VCA : volume
+LPF : lowpass
+HPF : highpass
+ADSR : env
+SIN-OSC : lfo
+VCA : pwm
+
+# connect them
+
+vco.out -> lowpass.in
+lowpass.out -> highpass.in
+highpass.out -> vca.in
+sub.out -> vca.in
+vca.out -> volume.in
+volume.out -> audio.in
+env.out -> volume.levelCV
+
+# tweaks
+
+vco.pitch = param.pitch
+env.level = param.level*param.volume
+env.attack = param.attack
+env.release = param.release
+env.sustain = param.sustain*param.volume
+env.decay = param.decay
+
+lfo.pitch = 0.4
+vco.pulsewidth = 0.5
+lfo.out -> pwm.in
+pwm.out -> vco.pulsewidthCV
+pwm.level = 0.4
+vca.level=0.7
+
+lowpass.cutoff = param.cutoff
+highpass.cutoff = param.pitch
+
+sub.pitch = param.pitch*0.5
+
+# end
+
+

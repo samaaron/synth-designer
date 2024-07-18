@@ -66,6 +66,55 @@ default: 0.5
 doc: high values give more chiff
 @end
 
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.02
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.05
+min: 0
+max: 5
+default: 0.1
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.5
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: release time
+@end
+
+@param volume
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.7
+doc : overall volume
+@end
 
 # modules
 
@@ -109,11 +158,11 @@ lfo.pitch = param.rate
 
 # apply the envelope 
 
-env.attack = 0.02
-env.level = param.level
-env.sustain = param.level*(1-param.chiff)
-env.release = 0.1
-env.decay = 0.05
+env.attack = param.attack
+env.level = param.level*param.volume
+env.sustain = param.level*param.volume*(1-param.sustain)
+env.release = param.release
+env.decay = param.decay
 
 noiseenv.level = param.noise
 noiseenv.attack = 0

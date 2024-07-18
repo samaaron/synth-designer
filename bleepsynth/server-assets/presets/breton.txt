@@ -6,6 +6,36 @@ version : 1.0
 doc : Breton electric piano
 @end
 
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 2
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0
+doc: sustain level
+@end
+
 @param release
 type: float
 mutable: no
@@ -22,7 +52,7 @@ mutable: no
 step: 0.01
 min: 0
 max: 1
-default: 0.5
+default: 0.7
 doc: overall volume
 @end
 
@@ -30,6 +60,7 @@ doc: overall volume
 
 PULSE-OSC : vco
 VCA : gain
+VCA : atten
 LPF : lpf
 HPF : hpf
 VCA : vca
@@ -40,7 +71,8 @@ ADSR : env2
 
 vco.out -> hpf.in
 hpf.out -> lpf.in
-lpf.out -> vca.in
+lpf.out -> atten.in
+atten.out -> vca.in
 env1.out -> vca.levelCV
 env2.out -> lpf.cutoffCV
 
@@ -52,11 +84,12 @@ vco.pulsewidth = 0.55
 hpf.cutoff = 100
 lpf.resonance = 3
 vco.pitch = param.pitch
+atten.level = 0.5
 
-env1.attack = 0
+env1.attack = param.attack
 env1.level = param.level*param.volume
-env1.decay = 2
-env1.sustain = 0
+env1.decay = param.decay
+env1.sustain = param.sustain*param.level*param.volume
 env1.release = param.release
 
 env2.level = map(param.pitch,1200,1700)

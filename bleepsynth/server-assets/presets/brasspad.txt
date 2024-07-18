@@ -18,13 +18,93 @@ default : 1000
 doc : cutoff frequency
 @end
 
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 1
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 2
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.5
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 1.5
+doc: release time
+@end
+
+@param vcf_attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 1
+doc: attack time
+@end
+
+@param vcf_decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 2
+doc: decay time
+@end
+
+@param vcf_sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.2
+doc: sustain level
+@end
+
+@param vcf_release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 2
+doc: release time
+@end
+
 @param volume
 type : float
 mutable: no
 step : 0.01
 min : 0
 max : 1
-default : 0.5
+default : 0.7
 doc : overall volume
 @end
 
@@ -44,17 +124,18 @@ ADSR : filtenv
 
 env.out -> vca.levelCV
 env.level = param.level*param.volume
-env.attack = 1
-env.decay = 2
-env.sustain = 0.5
-env.release = 1.5
+env.attack = param.attack
+env.decay = param.decay
+env.sustain = param.sustain*param.volume*param.level
+env.release = param.release
 
 filtenv.out -> lowpass.cutoffCV
+
 filtenv.level = param.cutoff
-filtenv.attack = 1
-filtenv.decay = 2
-filtenv.sustain = 200
-filtenv.release = 1.5
+filtenv.attack = param.vcf_attack
+filtenv.decay = param.vcf_decay
+filtenv.sustain = param.cutoff*param.vcf_sustain
+filtenv.release = param.vcf_release
 
 osc1.out -> mix.in
 osc2.out -> mix.in

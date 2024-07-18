@@ -3,7 +3,7 @@ longname : Better lead
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : Better analogue lead using supersaw and sub osc
+doc : Better analogue lead using supersaw and sub osc. Also perfectly good for pads if you tweak the envelope.
 @end
 
 # parameters
@@ -14,8 +14,128 @@ mutable: yes
 step : 0.01
 min : 100
 max : 8000
-default : 3000
+default : 4500
 doc : cutoff frequency
+@end
+
+@param resonance
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 30
+default : 4
+doc : filter resonance
+@end
+
+@param detune
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 12
+default : 4
+doc : oscillator detune
+@end
+
+@param sub_level
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.2
+doc : sub-oscillator level
+@end
+
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.01
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 1
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: release time
+@end
+
+@param vcf_attack
+type: float
+mutable: yes
+step: 0.05
+min: 0
+max: 5
+default: 0
+doc: filter attack time
+@end
+
+@param vcf_decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.2
+doc: filter decay time
+@end
+
+@param vcf_sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.5
+doc: filter sustain level
+@end
+
+@param vcf_release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: filter release time
+@end
+
+@param volume
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.7
+doc : overall volume
 @end
 
 # modules
@@ -27,6 +147,7 @@ VCA : vca
 VCA : mix
 VCA : sublevel
 ADSR : filterenv
+ADSR : env
 
 # patch
 
@@ -36,6 +157,7 @@ sublevel.out -> mix.in
 mix.out -> lowpass.in
 lowpass.out -> vca.in
 vca.out -> audio.in
+env.out -> vca.levelCV
 filterenv.out -> lowpass.cutoffCV
 
 # tweak
@@ -44,17 +166,22 @@ osc.pitch = param.pitch
 sub.pitch = param.pitch*0.5
 vca.level = param.level
 lowpass.cutoff = param.cutoff
-osc.detune = 16
+lowpass.resonance = param.resonance
+osc.detune = param.detune
 osc.spread = 1
-sublevel.level = 0.2
-mix.level=0.7
+sublevel.level = param.sub_level
+mix.level=0.4
 
 filterenv.level = param.cutoff
-filterenv.attack = 0.3
-filterenv.decay = 2
-filterenv.sustain = param.cutoff*0.1
-filterenv.release = 3
+filterenv.attack = param.vcf_attack
+filterenv.decay = param.vcf_decay
+filterenv.sustain = param.cutoff*param.vcf_sustain
+filterenv.release = param.vcf_release
 
-
+env.level = param.level*param.volume
+env.attack = param.attack
+env.decay = param.decay
+env.sustain = param.level*param.sustain*param.volume
+env.release = param.release
 
 # end
