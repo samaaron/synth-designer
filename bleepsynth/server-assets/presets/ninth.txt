@@ -14,7 +14,7 @@ mutable: yes
 step : 0.01
 min : 100
 max : 8000
-default : 2000
+default : 2500
 doc : cutoff frequency
 @end
 
@@ -34,9 +34,61 @@ mutable: yes
 step : 0.01
 min : 0
 max : 20
-default : 5
+default : 3.5
 doc : vibrato depth
 @end
+
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.01
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.2
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 1
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: release time
+@end
+
+@param volume
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.7
+doc: overall volume
+@end
+
+
 # modules
 
 SAW-OSC : osc1
@@ -79,11 +131,11 @@ osc3.pitch = param.pitch*1.5
 osc4.pitch = param.pitch*2.25
 
 env.out -> vca.levelCV
-env.attack = 0.01
-env.release = 0.05
-env.decay = 0.2
-env.level = param.level
-env.sustain = param.level
+env.attack = param.attack
+env.release = param.release
+env.decay = param.decay
+env.level = param.level*param.volume*0.4
+env.sustain = param.level*param.sustain*param.volume*0.4
 
 lowpass.resonance = 5
 

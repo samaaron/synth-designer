@@ -38,6 +38,46 @@ default : 15
 doc : the detuning amount of the upper octave square wave
 @end
 
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.02
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 1
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: release time
+@end
+
 @param volume
 type : float
 mutable : yes
@@ -76,11 +116,11 @@ mix.level = 0.4
 lowpass.resonance = 0
 highpass.resonance = 0     
 
-env.level = param.level*param.volume
-env.attack = 0.02
-env.release = 0.1
-env.decay = 0.1
-env.sustain = param.level*param.volume*0.2
+env.level = param.level*param.volume*0.4
+env.attack = param.attack
+env.release = param.release
+env.decay = param.decay
+env.sustain = param.sustain*param.level*param.volume*0.4
 
 osc1.pitch = param.pitch
 osc2.pitch = param.pitch

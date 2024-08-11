@@ -32,8 +32,68 @@ mutable: yes
 step: 0.01
 min: 0
 max: 1
-default: 0
+default: 0.5
 doc: changes the modulation level
+@end
+
+@param cutoff
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 20000
+default : 12000
+doc : filter cutoff
+@end
+
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.2
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.5
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.7
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: release time
+@end
+
+@param volume
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 1
+default : 0.7
+doc : overall volume
 @end
 
 # modules
@@ -43,14 +103,18 @@ FORMANT : formant
 VCA : vca
 SIN-OSC : lfo
 VCA : modgain
+LPF : vcf
+ADSR : env
 
 # patch
 
 osc.out -> formant.in
-formant.out -> vca.in
+formant.out -> vcf.in
+vcf.out -> vca.in
 vca.out -> audio.in
 lfo.out -> modgain.in
 modgain.out -> formant.vowelCV
+env.out -> vca.levelCV
 
 # tweak
 
@@ -60,6 +124,12 @@ formant.vowel = param.vowel
 modgain.level = param.mod_level
 lfo.pitch = param.mod_rate
 osc.pulsewidth = 0.1
+vcf.cutoff = param.cutoff
 
+env.attack = param.attack
+env.decay = param.decay
+env.sustain = param.sustain*param.level*param.volume
+env.release = param.release
+env.level = param.level*param.volume
 
 # end

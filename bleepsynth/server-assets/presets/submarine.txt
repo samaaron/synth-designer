@@ -46,7 +46,7 @@ highpass.cutoff = param.pitch
 lowpass.resonance = 20
 highpass.resonance = 20
 
-volume.level = param.volume
+volume.level = param.volume*param.level*0.2
 
 osc.pitch = param.pitch
 

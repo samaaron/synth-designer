@@ -162,9 +162,9 @@ lpf.resonance = param.resonance
 env.out -> vca.levelCV
 env.attack = param.attack
 env.decay = param.decay
-env.sustain = param.sustain*param.level*param.volume
+env.sustain = param.sustain*param.level*param.volume*0.5
 env.release = param.release
-env.level = param.level*param.volume
+env.level = param.level*param.volume*0.5
 
 # we add a small random variation to the detune each time a note is played
 # this avoids samey phasing effects

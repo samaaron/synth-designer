@@ -16,16 +16,6 @@ default: 0.5
 doc : controls the brightness of the sound
 @end
 
-@param decay
-type: float
-mutable: no
-step: 0.01
-min: 0
-max: 1
-default: 0.5
-doc : controls the decay time of the envelope
-@end
-
 @param randomness
 type: float
 mutable: no
@@ -44,6 +34,46 @@ min: 0
 max: 1
 default: 0.5
 doc : controls the level of the sub oscillator an octave below the note you play
+@end
+
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.01
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: no
+step: 0.01
+min: 0
+max: 1
+default: 0.2
+doc : controls the decay time of the envelope
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: release time
 @end
 
 @param volume
@@ -95,10 +125,10 @@ filter2.resonance = 0
 
 # apply the envelope 
 
-env.attack = 0.001
-env.level = param.level*param.volume
-env.sustain = 0
-env.release = 0.1
+env.attack = param.attack
+env.level = param.level*param.volume*0.7
+env.sustain = param.sustain*param.level*param.volume*0.7
+env.release = param.release
 env.decay = map(param.decay,0.1,1)
 
 # filter envelope

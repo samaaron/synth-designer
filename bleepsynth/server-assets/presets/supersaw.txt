@@ -123,10 +123,10 @@ osc.level = 0.4
 
 # envelope
 
-env.level = param.level*param.volume
+env.level = param.level*param.volume*0.5
 env.attack = param.attack
 env.decay = param.decay
-env.sustain = param.sustain*param.level*param.volume
+env.sustain = param.sustain*param.level*param.volume*0.5
 env.release = param.release
 
 # end

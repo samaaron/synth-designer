@@ -12,18 +12,48 @@ mutable: yes
 step: 0.01
 min: 0
 max: 1
-default : 0.53
+default : 0.4
 doc : Controls the harmonicity of the bell sound
+@end
+
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0
+doc: attack time
 @end
 
 @param decay
 type: float
-mutable: no
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 1.2
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
 step: 0.01
 min: 0
 max: 1
-default : 0.28
-doc : Controls the decay of the bell sound
+default: 0
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.7
+doc: release time
 @end
 
 @param volume
@@ -55,13 +85,13 @@ env.out -> vca.levelCV
 carrier.out -> vca.in
 vca.out -> audio.in
 
-env.attack = 0
-env.decay = map(param.decay,0.1,2)
-env.sustain = 0
-env.release = 0.2
+env.attack = param.attack
+env.decay = param.decay
+env.sustain = param.level*param.volume*param.sustain
+env.release = param.release
 env.level = param.level*param.volume
 
-gain.level = map(param.timbre,1,500)*map(param.level,0,1)
+gain.level = map(param.timbre,1,2000)*map(param.level,0,1)
 
 # tweak
 

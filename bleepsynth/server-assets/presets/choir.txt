@@ -26,6 +26,46 @@ default : 0.85
 doc : amount of vibrato
 @end
 
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.2
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 1
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 1.2
+doc: release time
+@end
+
 @param volume
 type : float
 mutable: yes
@@ -68,7 +108,7 @@ saw.out -> f1.in
 f1.out -> mix.in
 
 mix.out -> lowpass.in
-mix.level = param.level*0.2*param.volume
+mix.level = 0.05
 lowpass.out -> highpass.in
 highpass.out -> vca.in
 
@@ -86,11 +126,11 @@ f1.resonance = 25
 saw.pitch = param.pitch
 
 env.out -> vca.levelCV
-env.level = 1
-env.attack = 1.2
-env.decay = 0.1
-env.sustain = 1
-env.release = 2
+env.level = param.level*param.volume
+env.attack = param.attack
+env.decay = param.decay
+env.sustain = param.level*param.volume
+env.release = param.release
 
 highpass.cutoff = 100
 lowpass.cutoff = param.cutoff

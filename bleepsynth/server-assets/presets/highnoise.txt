@@ -81,7 +81,7 @@ shaper.out -> vca.in
 vca.out -> gain.in
 gain.out -> audio.in
 
-gain.level = param.level*param.volume
+gain.level = param.level*param.volume*0.1
 
 filter1.cutoff = param.cutoff
 filter1.resonance = param.resonance

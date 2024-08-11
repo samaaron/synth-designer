@@ -34,7 +34,7 @@ mutable: yes
 step: 0.01
 min: -2400
 max: 2400
-default: 0
+default: -1200
 doc : detune amount of the square wave oscillator in cents
 @end
 
@@ -53,8 +53,8 @@ type: float
 mutable: yes
 step: 0.01
 min: 0
-max: 1
-default: 0.2
+max: 25
+default: 5
 doc : filter resonance
 @end
 
@@ -63,7 +63,7 @@ type: float
 mutable: no
 step: 0.01
 min: 0
-max: 1
+max: 0.95
 default: 0.4
 doc : envelope modulation amount
 @end
@@ -94,20 +94,18 @@ VCA : sawgain
 VCA : sqrgain
 VCA : mix
 LPF : lowpass1
-LPF : lowpass2
 ADSR : filterenv
 ADSR : ampenv
 VCA : vca
 
-# patching - note that we use two filters in series to get a sharper cutoff
+# patching 
 
 saw.out -> sawgain.in
 sawgain.out -> mix.in
 sqr.out -> sqrgain.in
 sqrgain.out -> mix.in
 mix.out -> lowpass1.in
-lowpass1.out -> lowpass2.in
-lowpass2.out -> vca.in
+lowpass1.out -> vca.in
 vca.out -> audio.in
 ampenv.out -> vca.levelCV
 
@@ -119,15 +117,14 @@ sqrgain.level = param.sqr_level
 sqr.detune = param.detune
 saw.pitch = param.pitch
 sqr.pitch = param.pitch
-lowpass1.resonance = map(param.resonance,0,20)
-lowpass2.resonance = map(param.resonance,0,20)
+lowpass1.resonance = param.resonance
 
 # amplitude envelope
 
-ampenv.level = param.level*param.volume
+ampenv.level = param.level*param.volume*0.4
 ampenv.attack = 0.01
 ampenv.release = 0.01
-ampenv.sustain = param.level*param.volume
+ampenv.sustain = param.level*param.volume*0.4
 ampenv.decay = 0.1
 
 # filter envelope
@@ -138,9 +135,8 @@ filterenv.decay = map(param.decay,0.01,0.5)
 filterenv.sustain = param.cutoff*(1-param.env_mod)
 filterenv.release = 0.1
 
-# modulate the cutoff of both filters with the envelope
+# modulate the cutoff of both filter with the envelope
 
 filterenv.out -> lowpass1.cutoffCV
-filterenv.out -> lowpass2.cutoffCV
 
 # end of file

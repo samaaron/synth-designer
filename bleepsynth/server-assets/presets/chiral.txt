@@ -3,7 +3,7 @@ longname : Chiral
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : Tone into wavefolder with modulation like Fors Chiral
+doc : Tone into wavefolder with modulation something like Fors Chiral
 @end
 
 # parameters
@@ -14,7 +14,7 @@ mutable: yes
 step : 0.01
 min : 100
 max : 8000
-default : 2000
+default : 1850
 doc : cutoff frequency
 @end
 
@@ -24,7 +24,7 @@ mutable: yes
 step : 0.01
 min : 0
 max : 20
-default : 0
+default : 1.5
 doc : filter resonance
 @end
 
@@ -44,7 +44,7 @@ mutable: yes
 step : 0.01
 min : 0
 max : 1
-default : 0
+default : 0.03
 doc : gain modulation
 @end
 
@@ -54,7 +54,7 @@ mutable: yes
 step : 0.01
 min : -1
 max : 1
-default : 0
+default : -0.59
 doc : wavefolder symmetry
 @end
 
@@ -64,7 +64,7 @@ mutable: yes
 step : 0.01
 min : 0
 max : 1
-default : 0
+default : 0.4
 doc : symmetry modulation
 @end
 
@@ -84,7 +84,7 @@ mutable: yes
 step : 0.01
 min : 0
 max : 1
-default : 0
+default : 0.36
 doc : amp mod level
 @end
 
@@ -94,7 +94,7 @@ mutable: yes
 step : 0.01
 min : 0.125
 max : 8
-default : 1
+default : 1.50
 doc : amp mod rate
 @end
 
@@ -104,7 +104,7 @@ mutable: yes
 step : 0.01
 min : 0.01
 max : 12
-default : 0.05
+default : 0.61
 doc : lfo rate
 @end
 
@@ -114,7 +114,7 @@ mutable: yes
 step : 0.01
 min : 0
 max : 5
-default : 0.1
+default : 1.2
 doc : attack
 @end
 
@@ -124,7 +124,7 @@ mutable: yes
 step : 0.01
 min : 0
 max : 5
-default : 0.1
+default : 1.6
 doc : decay
 @end
 
@@ -154,7 +154,7 @@ mutable: yes
 step : 0.01
 min : 0
 max : 1
-default : 0.8
+default : 0.3
 doc : volume
 @end
 
@@ -218,8 +218,8 @@ symmetrymod.level = param.symmetry_mod
 
 env.attack = param.attack
 env.decay = param.decay
-env.sustain = param.sustain*param.level*param.volume
+env.sustain = param.sustain*param.level*param.volume*0.5
 env.release = param.release
-env.level = param.level*param.volume
+env.level = param.level*param.volume*0.5
 
 # end

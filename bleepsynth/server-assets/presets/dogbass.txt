@@ -16,13 +16,53 @@ default: 700
 doc : Controls the brightness of the sound
 @end
 
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.01
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.5
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.15
+doc: release time
+@end
+
 @param volume
 type: float
 mutable: yes
 step: 0.01
 min: 0
 max: 1
-default: 1
+default: 0.8
 doc : Controls the overall volume
 @end
 

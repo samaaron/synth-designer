@@ -152,10 +152,10 @@ vcf.out -> vca.in
 vca.out -> audio.in
 vcf.resonance = map(param.resonance,0,8)
 
-env1.level = param.level*param.volume
+env1.level = param.level*param.volume*0.4
 env1.attack = 0.001
 env1.decay = 0.5
-env1.sustain = param.level*param.volume
+env1.sustain = param.level*param.volume*0.4
 env1.release = 0.1
 
 env2.level = param.cutoff

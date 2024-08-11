@@ -193,8 +193,8 @@ percenv.release = 0.1
 
 env.attack = 0.01
 env.decay = 0.1
-env.level = param.volume*0.2
-env.sustain = param.volume*0.2
+env.level = param.volume*param.level*0.05
+env.sustain = param.volume*param.level*0.05
 env.release = 0.01
 
 mix.out -> audio.in

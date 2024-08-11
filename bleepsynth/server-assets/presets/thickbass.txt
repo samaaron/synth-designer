@@ -66,6 +66,46 @@ default : 10
 doc : controls the resonance of the filter
 @end
 
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.01
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.5
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 1
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: release time
+@end
+
 @param volume
 type: float
 mutable: yes
@@ -121,11 +161,11 @@ vcf.out -> vca.in
 vca.out -> audio.in
 vcf.resonance = map(param.resonance,0,8)
 
-env1.level = param.level*param.volume
-env1.attack = 0.001
-env1.decay = 0.5
-env1.sustain = param.level*param.volume
-env1.release = 0.1
+env1.level = param.level*param.volume*0.5
+env1.attack = param.attack
+env1.decay = param.decay
+env1.sustain = param.level*param.volume*param.sustain*0.5
+env1.release = param.release
 
 env2.level = param.cutoff
 env2.attack = 0.01

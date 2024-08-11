@@ -103,8 +103,8 @@ lowpass.resonance = 0
 
 amp.attack=param.amp_attack
 amp.decay=0.3
-amp.level=param.level*param.volume
-amp.sustain=param.level*param.volume
+amp.level=param.level*param.volume*0.5
+amp.sustain=param.level*param.volume*0.5
 amp.release=0.1
 
 amp.out -> vca.levelCV

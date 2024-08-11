@@ -31,9 +31,29 @@ type: float
 mutable: yes
 step: 0.01
 min: 0
-max: 2
+max: 5
 default: 0.5
-doc: attack
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.1
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.7
+doc: sustain level
 @end
 
 @param release
@@ -41,10 +61,11 @@ type: float
 mutable: yes
 step: 0.01
 min: 0
-max: 2
+max: 5
 default: 0.5
-doc: release
+doc: release time
 @end
+
 
 @param cutoff
 type: float
@@ -62,7 +83,7 @@ mutable: yes
 step: 0.01
 min: 0
 max: 1
-default: 0.8
+default: 0.7
 doc: master volume
 @end
 
@@ -104,8 +125,8 @@ lowpass.cutoff = param.cutoff
 lowpass.resonance = 0.01
 
 env.attack = param.attack
-env.level = param.level*param.volume
-env.sustain = param.level*param.volume
+env.level = param.level*param.volume*0.5
+env.sustain = param.sustain*param.level*param.volume*0.5
 env.decay = 1
 env.release = param.release
 

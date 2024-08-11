@@ -18,6 +18,26 @@ default : 0.15
 doc : decay
 @end
 
+@param cutoff
+type : float
+mutable: yes
+step : 0.01
+min : 10
+max : 20000
+default : 12000
+doc : cutoff
+@end
+
+@param resonance
+type : float
+mutable: yes
+step : 0.01
+min : 0
+max : 25
+default : 0
+doc : resonance
+@end
+
 @param volume
 type : float
 mutable: yes
@@ -32,15 +52,17 @@ doc : master volume control
 
 NOISE : noise
 HPF : highpass
+LPF : lowpass
 VCA : vca
 VCA : volume
 DECAY : env
 
 noise.out -> highpass.in
-highpass.out -> vca.in
+highpass.out -> lowpass.in
+lowpass.out -> vca.in
 vca.out -> volume.in
 volume.out -> audio.in
-volume.level = param.volume
+volume.level = param.volume*0.5
 
 env.out -> vca.levelCV
 env.level = 1
@@ -48,5 +70,7 @@ env.decay = param.decay
 env.attack = 0.01
 
 highpass.cutoff = map(param.level,14000,4000)
+lowpass.cutoff = param.cutoff
+lowpass.resonance = param.resonance
 
 # end

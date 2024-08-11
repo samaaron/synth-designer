@@ -78,6 +78,46 @@ default : 1.5
 doc : delay before LFO fades in
 @end
 
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.01
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 2
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.8
+doc: release time
+@end
+
 @param volume
 type : float
 mutable: yes
@@ -140,10 +180,10 @@ lfoenv.out -> lfodepth.levelCV
 # envelopes
 
 ampenv.level = param.level*param.volume
-ampenv.attack = 0.01
-ampenv.decay = 2
-ampenv.sustain = 0
-ampenv.release = 0.8
+ampenv.attack = param.attack
+ampenv.decay = param.decay
+ampenv.sustain = param.sustain
+ampenv.release = param.release
 ampenv.out -> vca.levelCV
 
 filterenv.level = param.low_cutoff

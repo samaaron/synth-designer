@@ -158,10 +158,10 @@ trigain.level = param.tri_level
 singain.level = param.sin_level
 sawgain.level = param.saw_level
 
-env.level = param.level*param.volume
+env.level = param.level*param.volume*0.5
 env.attack = param.attack
 env.decay = param.decay
-env.sustain = param.sustain*param.level
+env.sustain = param.sustain*param.level*param.volume*0.5
 env.release = param.release
 
 # end

@@ -1,9 +1,9 @@
-@synth noise
-longname : random noise
+@synth softlead
+longname : Soft lead
 type : synth
 author : Guy J Brown
 version : 1.0
-doc : A random noise patch for testing
+doc : A soft lead sound
 @end
 
 # parameters
@@ -12,20 +12,10 @@ doc : A random noise patch for testing
 type : float
 mutable: yes
 step : 0.01
-min : 10
-max : 20000
-default : 500
-doc : cutoff
-@end
-
-@param resonance
-type : float
-mutable: yes
-step : 0.01
-min : 0
-max : 25
-default : 5
-doc : resonance
+min : 100
+max : 3000
+default : 1000
+doc : cutoff frequency
 @end
 
 @param attack
@@ -44,7 +34,7 @@ mutable: yes
 step: 0.01
 min: 0
 max: 5
-default: 0.1
+default: 0.2
 doc: decay time
 @end
 
@@ -54,7 +44,7 @@ mutable: yes
 step: 0.01
 min: 0
 max: 1
-default: 1
+default: 0.8
 doc: sustain level
 @end
 
@@ -69,36 +59,54 @@ doc: release time
 @end
 
 @param volume
-type : float
+type: float
 mutable: yes
-step : 0.01
-min : 0
-max : 1
-default : 0.7
-doc : overall volume
+step: 0.01
+min: 0
+max: 5
+default: 0.7
+doc: release time
 @end
+
 
 # modules
 
-NOISE : noise
+SAW-OSC : osc
+TRI-OSC : lfo1
+TRI-OSC : lfo2
 LPF : lowpass
 VCA : vca
+VCA : pitchmod
+VCA : filtermod
 ADSR : env
 
 # patch
 
-noise.out -> lowpass.in
+osc.out -> lowpass.in
 lowpass.out -> vca.in
 vca.out -> audio.in
 
-lowpass.cutoff = param.cutoff
-lowpass.resonance = param.resonance
+lfo1.out -> pitchmod.in
+pitchmod.out -> osc.pitchCV
+lfo1.pitch = 3.8
+pitchmod.level = 1.4
+
+lfo2.out -> filtermod.in
+filtermod.out -> lowpass.cutoffCV
+lfo2.pitch = 5
+filtermod.level = param.cutoff*0.2
+
+env.out -> vca.levelCV
+
+# tweak
+
+env.level = param.level*param.volume*0.3
 env.attack = param.attack
 env.release = param.release
 env.decay = param.decay
-env.sustain = param.level*param.volume*param.sustain*0.5
-env.level = param.level*param.volume*0.5
+env.sustain = param.level*param.volume*param.sustain*0.3
 
-env.out -> vca.levelCV
+osc.pitch = param.pitch
+lowpass.cutoff = param.cutoff
 
 # end

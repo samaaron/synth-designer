@@ -56,6 +56,46 @@ default : 0.8
 doc : length of filter envelope decay
 @end
 
+@param attack
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.01
+doc: attack time
+@end
+
+@param decay
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.2
+doc: decay time
+@end
+
+@param sustain
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 1
+default: 0.7
+doc: sustain level
+@end
+
+@param release
+type: float
+mutable: yes
+step: 0.01
+min: 0
+max: 5
+default: 0.01
+doc: release time
+@end
+
 @param volume
 type : float
 mutable: no
@@ -97,11 +137,11 @@ saw2.detune = param.detune
 
 ampenv.out -> vca.levelCV
 
-ampenv.attack = 0.01
-ampenv.release = 0.01
-ampenv.level = param.level*param.volume
-ampenv.decay = 0.1
-ampenv.sustain = param.level*param.volume
+ampenv.attack = param.attack
+ampenv.release = param.release
+ampenv.level = param.level*param.volume*0.2
+ampenv.decay = param.decay
+ampenv.sustain = param.sustain*param.level*param.volume*0.2
 
 # end
 

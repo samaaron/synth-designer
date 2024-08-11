@@ -24,7 +24,7 @@ mutable: yes
 step : 0.01
 min : 0
 max : 1
-default : 0
+default : 0.93
 doc : fm
 @end
 
@@ -41,10 +41,10 @@ doc : feedback
 @param op1_ratio
 type : float
 mutable: yes
-step : 0.5
+step : 0.01
 min : 0.5
 max : 32
-default : 1
+default : 1.01
 doc : frequency ratio
 @end
 
@@ -54,7 +54,7 @@ mutable: yes
 step : 0.01
 min : 0.1
 max : 10
-default : 2
+default : 0.42
 doc : modulator decay
 @end
 
@@ -64,7 +64,7 @@ mutable: yes
 step : 0.01
 min : 0.1
 max : 10
-default : 2
+default : 0.32
 doc : carrier decay
 @end
 
@@ -74,7 +74,7 @@ mutable: yes
 step : 0.01
 min : 0
 max : 1
-default : 0.8
+default : 0.7
 doc : master volume control
 @end
 
@@ -114,7 +114,7 @@ feedback.level = param.op1_fback*1000
 # carrier envelope
 
 carenv.out -> vca.levelCV
-carenv.level = param.level*param.volume
+carenv.level = param.level*param.volume*0.3
 carenv.decay = param.op1_car_decay
 carenv.attack = 0.01
 
