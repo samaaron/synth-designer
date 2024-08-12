@@ -25,6 +25,7 @@ import StereoDelay from '../effects/stereo_delay.js';
 import Tremolo from '../effects/tremolo.js';
 import Leslie from '../effects/leslie.js';
 import LoFi from '../effects/lofi.js';
+import EQThree from '../effects/eqthree.js';
 
 const MAX_MIDI_FREQ = 4186; // C8
 const MIN_MIDI_FREQ = 27.5;  // A0
@@ -82,6 +83,7 @@ const EFFECT_CLASSES = {
   "chorus": Chorus,
   "compressor": Compressor,
   "distortion": Distortion,
+  "eqthree": EQThree,
   "overdrive": Overdrive,
   "deep_phaser": DeepPhaser,
   "pico_pebble": PicoPebble,
