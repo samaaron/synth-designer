@@ -26,6 +26,7 @@ import Tremolo from '../effects/tremolo.js';
 import Leslie from '../effects/leslie.js';
 import LoFi from '../effects/lofi.js';
 import EQThree from '../effects/eqthree.js';
+import GainPan from '../effects/gainpan.js';
 
 const MAX_MIDI_FREQ = 4186; // C8
 const MIN_MIDI_FREQ = 27.5;  // A0
@@ -92,7 +93,8 @@ const EFFECT_CLASSES = {
   "stereo_delay": StereoDelay,
   "tremolo": Tremolo,
   "leslie": Leslie,
-  "lofi": LoFi
+  "lofi": LoFi,
+  "gainpan": GainPan
 };
 
 const REVERB_IMPULSES = {
