@@ -56,7 +56,7 @@ export default class Sampler {
      * clean up and remove from monitor
      */
     stop() {
-        console.log("releasing sample");
+        // console.log("releasing sample");
         this.#volume.disconnect();
         this.#pan.disconnect();
         this.#lowpass.disconnect();
@@ -74,7 +74,7 @@ export default class Sampler {
      * @param {number} time
      */
     play(when = this.#context.currentTime) {
-        console.log("playing sample");
+        // console.log("playing sample");
         this.#source.start(when);
     }
 

@@ -26,7 +26,7 @@ export default class Granulator {
         size: { min: 0.1, max: 1, default: 0.2 },           // grain size in sec
         time_var: { min: 0, max: 0.1, default: 0.05 },      // time variance of grain start (jitter)
     };
-    
+
     #volume = null;
     #monitor = null;
     #lowpass = null;
@@ -45,7 +45,7 @@ export default class Granulator {
         this.#monitor = monitor;
         this.#buffer = buffer;
         this.#opts = {...this.#getDefaultOpts(), ...opts};
-        console.log(this.#opts);
+        // console.log(this.#opts);
         // lowpass
         this.#lowpass = new MonitoredBiquadFilterNode(context, monitor, {
             type: "lowpass",
@@ -74,7 +74,7 @@ export default class Granulator {
      * clean up and remove from monitor
      */
     stop() {
-        console.log("releasing granulator");
+        // console.log("releasing granulator");
         this.#volume.disconnect();
         this.#pan.disconnect();
         this.#lowpass.disconnect();
