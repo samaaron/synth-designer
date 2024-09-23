@@ -35,3 +35,4 @@ An incomplete tutorial/manual for the live coding software is [here](https://git
 
 Sam Aaron helped a lot. I also got a lot of inspiration from Tone.js and various patches in Native Instruments Reaktor (particularly for the phaser and flanger). Other sources are acknowledged in the code.
 
+This work was funded by an award from the Higher Education Innovation Fund (HEIF) to the University of Sheffield.
