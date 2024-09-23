@@ -7,7 +7,7 @@ This repo contains two things - a system for designing synthesizers with WebAudi
 The synth designer provides a scripting language that allows you to connect together modular synthesis components such as oscillators, amplifiers and filters in order to make new software instruments. I'm afraid that the documentation is currently rather sparse (OK, non-existent) but if you look at some of the examples you will hopefully get the idea of what's going on. It builds on WebAudio to provide goodies such as:
 
 * A variable pulse-width oscillator
-* A LFO with phase control
+* A LFO with variable phase
 * Supersaw oscillator
 * Envelope generators (ADSR, exponential decay)
 * Formant filter
@@ -17,6 +17,8 @@ The synth designer provides a scripting language that allows you to connect toge
 * Noise generator
 
 The interface dynamically graphs the WebAudio network for you, like this:
+
+![synth builder interface](/images/screenshot.png)
 
 ## Synthesis Engine
 
