@@ -9,6 +9,7 @@ The synth designer provides a scripting language that allows you to connect toge
 * A variable pulse-width oscillator
 * A LFO with variable phase
 * Supersaw oscillator
+* Oscillators that can use a range of custom wavetables
 * Envelope generators (ADSR, exponential decay)
 * Formant filter
 * Wavefolding
