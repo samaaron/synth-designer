@@ -1,10 +1,22 @@
 # synth-designer
 
-This repo contains two things - a system for designing synthesizers with WebAudio, and an synthesis engine that underpins software for live coding developed by Sam Aaron and myself. Initially we developed this for a techno programming masterclass with The Black Dog as part of the University of Sheffield's Festival of the Mind 2024.
+This repo contains two things - a system for designing synthesizers with WebAudio, and a synthesis engine that underpins software for live coding developed by Sam Aaron and myself. Initially we developed this for a techno programming masterclass with The Black Dog as part of the University of Sheffield's Festival of the Mind 2024.
 
 ## Synth Designer
 
-The synth designer provides a scripting language that allows you to connect together modular synthesis components such as oscillators, amplifiers and filters in order to make new software instruments. I'm afraid that the documentation is currently rather sparse (OK, non-existent) but if you look at some of the examples you will hopefully get the idea of what's going on.
+The synth designer provides a scripting language that allows you to connect together modular synthesis components such as oscillators, amplifiers and filters in order to make new software instruments. I'm afraid that the documentation is currently rather sparse (OK, non-existent) but if you look at some of the examples you will hopefully get the idea of what's going on. It builds on WebAudio to provide goodies such as:
+
+* A variable pulse-width oscillator
+* A LFO with phase control
+* Supersaw oscillator
+* Envelope generators (ADSR, exponential decay)
+* Formant filter
+* Wavefolding
+* Comb filter
+* Crossfader
+* Noise generator
+
+The interface dynamically graphs the WebAudio network for you, like this:
 
 ## Synthesis Engine
 
