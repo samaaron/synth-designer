@@ -1,6 +1,7 @@
 # In case you use Node.js/npm, you want to ignore these.
 npm-debug.log
-/assets/node_modules/
+/node_modules/
+package-lock.json
 
 # mac detritus
 .DS_Store

@@ -1,0 +1,8 @@
+{
+  "name": "synth-designer",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "mermaid": "^11.4.0"
+  }
+}

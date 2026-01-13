@@ -1,4 +1,4 @@
-import mermaid from './vendor/mermaid';
+import mermaid from 'mermaid';
 import GUI from './GUI.js';
 
 export default class Flowchart {
